@@ -15,11 +15,12 @@ INCLUDE_DIRS=$(Trilinos_INCLUDE_DIRS) $(Trilinos_TPL_INCLUDE_DIRS)
 LIBRARY_DIRS=$(Trilinos_LIBRARY_DIRS) $(Trilinos_TPL_LIBRARY_DIRS)
 LIBRARIES=$(Trilinos_LIBRARIES) $(Trilinos_TPL_LIBRARIES)
 
+INCLUDE = -I../include -I${INCLUDE_DIRS}
+
 LINK_FLAGS=$(Trilinos_EXTRA_LD_FLAGS)
 
 #just assuming that epetra is turned on.
 DEFINES=-DMYAPP_EPETRA
-
 
 default: testAMG 
 
@@ -38,13 +39,12 @@ print_info:
 	@echo "   Trilinos_BUILD_SHARED_LIBS = $(Trilinos_BUILD_SHARED_LIBS)"
 	@echo "End of Trilinos details\n"
 
+%.o: %.C
+	$(CXX) -c $(CXX_FLAGS) $(INCLUDE) $(DEFINES) $< -o $@
 
 # build the 
 testAMG: ./testAMG.o
 	$(CXX) $(CXX_FLAGS) testAMG.o -o testAMG $(LINK_FLAGS) $(INCLUDE_DIRS) $(DEFINES) $(LIBRARY_DIRS) $(LIBRARIES)
-
-testAMG.o:
-	$(CXX) -c $(CXX_FLAGS) $(INCLUDE_DIRS) $(DEFINES) testAMG.C
 
 clean:
 	rm -rf ./*.o ./*.a 
