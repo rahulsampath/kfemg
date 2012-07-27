@@ -54,6 +54,7 @@ void tensorProduct3D(int K,  const std::vector<double> & si,const std::vector<do
   n2b_zeta = n1e_zeta;
   n2e_zeta = n2b_zeta + ndf_zeta;
 
+  /*
   printf("n1b_si : %d n1e_si : %d\n", n1b_si, n1e_si); 
   printf("n2b_si : %d n2e_si : %d\n", n2b_si, n2e_si); 
 
@@ -62,6 +63,8 @@ void tensorProduct3D(int K,  const std::vector<double> & si,const std::vector<do
 
   printf("n1b_zeta : %d n1e_zeta : %d\n", n1b_zeta, n1e_zeta); 
   printf("n2b_zeta : %d n2e_zeta : %d\n", n2b_zeta, n2e_zeta); 
+  
+  */
 
   printf("\n <<<<< entering tensorProduct3D >>>>>\n");
   //
@@ -143,7 +146,6 @@ void tensorProduct3D(int K,  const std::vector<double> & si,const std::vector<do
       }
     }
   }
-  printf("\n <<<<< after seven node, kk : %d >>>>>\n", kk);
   //
   //-------- node 8 -----------
   //
