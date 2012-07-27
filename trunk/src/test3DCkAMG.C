@@ -5,9 +5,12 @@
 #include <vector>
 #include <cassert>
 #include <cstdlib>
+
 #include "mpi.h"
 #include "ml_include.h"
 #include "kfemgUtils.h"
+#include "gaussQuad.h"
+#include "tpShapeFunctions.h"
 
 #define LOC_TO_GLOB(i, j, k, Nx, Ny) (((((k)*(Ny)) + (j))*(Nx)) + (i)) 
 
@@ -19,9 +22,11 @@ struct GlobalData {
 } myData;
 
 void applyBCs(){
+
+  int dofspNd = pow((myData.K+1),3);
+
   for(unsigned int i = 0; i < (dofspNd*(myData.Nx *myData.Ny *myData.Nz )); ++i) {
     unsigned int id1, id2;
-    int dofspNd = pow((myData.K+1),3);
 
     id1 = i; 
     // yz plane
@@ -236,25 +241,34 @@ void applyBCs(){
 
 }
 
-double evalPhiPrime(int dofID, double xsi, double xeta, double xzeta){
+double evaldphi(std::vector<long long int> & coeffs, double xsi, double xeta, double xzeta, 
+    std::vector<double> & dsietazetadx, std::vector<double> & dsietazetady, std::vector<double> & dsietazetadz)
+{
 
-  std::vector<long long int> coeffs;
-  read1DshapeFnCoeffs(myData.K, coeffs);
+  // number of shape functions in each direction
+  int jsi   = 2*( myData.K + 1);
+  //total number of sets including derivatives
+  int jdim  = ( myData.K + 2);
 
-  for(int j; j< ; ++j){
-    for(int i=0; i< ; ++i){
-      si[j] += (coeffs[i]/coeffs[i+1])*pow(xsi,i);
-    }
-    for(int i=0; i< ; ++i){
-      eta[j] += (coeffs[i]/coeffs[i+1])*pow(xeta,i);
-    }
-    for(int i=0; i< ; ++i){
-      zeta[j] += (coeffs[i]/coeffs[i+1])*pow(xzeta,i);
+  std::vector<double> si(jsi*jdim);
+  std::vector<double> eta(jsi*jdim);
+  std::vector<double> zeta(jsi*jdim);
+
+  for(int k=0; k< jdim; k++){
+    for(int j=0; j< jsi ; ++j){
+      // number of coefficients in rational form
+      for(int i=0; i< jsi; i++){
+        int idx =  k* jsi *jsi * 2 + j * 2 * jsi + 2 * i;   //?????
+        si[k*jsi + j] += (coeffs[idx]/coeffs[idx+1])*pow(xsi,idx/jsi);
+        eta[k*jsi+ j] += (coeffs[idx]/coeffs[idx+1])*pow(xeta,idx/jsi);
+        zeta[k*jsi+j] += (coeffs[idx]/coeffs[idx+1])*pow(xzeta,idx/jsi);
+      }
     }
   }
 
-  tensorProduct3D(si, eta, zeta, sietazeta);
-  assert(coeffs[0] == 1LL);
+  tensorProduct3D(myData.K, si, eta, zeta, dsietazetadx, 1, 0, 0);
+  tensorProduct3D(myData.K, si, eta, zeta, dsietazetady, 0, 1, 0);
+  tensorProduct3D(myData.K, si, eta, zeta, dsietazetadz, 0, 0, 1);
 
 }
 
@@ -263,40 +277,68 @@ void computeMatrix() {
   int numNdpEl = 8;
   int dofspNd = pow((myData.K+1),3);
   int dofspEl = dofspNd*numNdpEl ;
-  int qtPts = 2*myData.K+1;
+  int qtPts = 2*myData.K+2;
 
   int dofId=0;
-  typedef int** int2Ptr;
   typedef int* intPtr;
-  int2Ptr elemDofMap = new int2Ptr[numNdpEl];
-  for(int i=0;i<numNdpEl;i++){
-    elemDofMap[i] = new double [dofspNd];
-    for(int j=0;j<dofspNd;j++){
-      elemDofMap[i][j] = dofId; 
-      ++dofId;
-    }
+  intPtr elemDofMap;
+  elemDofMap = new int [dofspNd*numNdpEl];
+  for(int j=0;j<dofspNd*numNdpEl;j++){
+    elemDofMap[j] = dofId; 
+    ++dofId;
   }
 
+  std::vector<double> gaussWts(qtPts);
+  std::vector<double> gaussPts(qtPts);
+  gaussQuad(gaussPts, gaussWts);  
+
   double elementMat[dofspNd*numNdpEl][dofspNd*numNdpEl];
-  for(int i = 0; i < numNdpEl; ++i) {
-    for(int c = 0; c < dofspNd; ++c) {
-      for(int j = 0; j < numNdpEl; ++j) {
-        for(int d = 0; d < dofspNd; ++d) {
-          elementMat[elemDofMap[i][c]][elemDofMap[j][d]] = 0.0;
+
+  std::vector<long long int> coeffs;
+  read1DshapeFnCoeffs(myData.K, coeffs);
+
+  std::vector<double> dsietazetadx ( pow((myData.K+1),3)*8 );
+  std::vector<double> dsietazetady ( pow((myData.K+1),3)*8 );
+  std::vector<double> dsietazetadz ( pow((myData.K+1),3)*8 );
+
+  std::vector<double> dNdx_qts (pow((myData.K+1),3)*8 * qtPts * qtPts * qtPts);
+  std::vector<double> dNdy_qts (pow((myData.K+1),3)*8 * qtPts * qtPts * qtPts);
+  std::vector<double> dNdz_qts (pow((myData.K+1),3)*8 * qtPts * qtPts * qtPts);
+
+  for(int i = 0; i < pow((myData.K+1),3)*8 ; ++i) {
+    for(int e = 0; e < qtPts; ++e) {
+      for(int f = 0; f < qtPts; ++f) {
+        for(int g = 0; g < qtPts; ++g) {
+          evaldphi(coeffs, gaussPts[e], gaussPts[f], gaussPts[g], dsietazetadx, dsietazetady, dsietazetadz);
+          dNdx_qts.insert(dNdx_qts.end(), dsietazetadx.begin(), dsietazetadx.end());
+          dNdy_qts.insert(dNdy_qts.end(), dsietazetady.begin(), dsietazetady.end());
+          dNdz_qts.insert(dNdz_qts.end(), dsietazetadz.begin(), dsietazetadz.end());
+        }//end g
+      }//end f
+    }//end e
+  }
+
+  int qp3 = qtPts* qtPts* qtPts; 
+  int qp2 = qtPts* qtPts; 
+  int qp  = qtPts; 
+
+  for(int i = 0; i < dofspNd*numNdpEl; ++i) {
+      for(int j = 0; j < dofspNd*numNdpEl; ++j) {
+          elementMat[elemDofMap[i]][elemDofMap[j]] = 0.0;
           for(int e = 0; e < qtPts; ++e) {
             for(int f = 0; f < qtPts; ++f) {
               for(int g = 0; g < qtPts; ++g) {
-                elementMat[elemDofMap[i][c]][elemDofMap[j][d]] += (gaussWts[e]*gaussWts[f]*gaussWts[g]*(
-                      (evalPhiPrime(elemDofMap[i][c], gaussPts[e], gaussPts[f], gaussPts[g])*evalPhiPrime(elemDofMap[j][d], gaussPts[e], gaussPts[f], gaussPts[g])) + 
-                      (evalPhiPrime(elemDofMap[i][c], gaussPts[e], gaussPts[f], gaussPts[g])*evalPhiPrime(elemDofMap[j][d], gaussPts[e], gaussPts[f], gaussPts[g])) + 
-                      (evalPhiPrime(elemDofMap[i][c], gaussPts[e], gaussPts[f], gaussPts[g])*evalPhiPrime(elemDofMap[j][d], gaussPts[e], gaussPts[f], gaussPts[g]))  
-                      ));
+
+                int idx = i*qp3 + e*qp2 + f*qp + g;
+                int jdx = j*qp3 + e*qp2 + f*qp + g;
+                
+                elementMat[elemDofMap[i]][elemDofMap[j]] += (gaussWts[e]*gaussWts[f]*gaussWts[g]*(
+                      (dNdx_qts[idx]*dNdx_qts[jdx]) + (dNdy_qts[idx]*dNdy_qts[jdx]) + (dNdz_qts[idx]*dNdz_qts[jdx]) ));
+
               }//end g
             }//end f
           }//end e
-        }//end for d
       }//end for j
-    }//end for c
   }//end for i
 
   myData.nonZeroCols.resize(dofspNd*(myData.Nx * myData.Ny * myData.Nz));
@@ -310,10 +352,10 @@ void computeMatrix() {
         int zi[] = {0, 0, 0, 0, 1, 1, 1,1};
         for(int rn = 0; rn < 8; ++rn) {
           for(int rd = 0; rd < dofspNd; ++rd) {
-            int row = (dofspNd*((((kelem + zi[rn])*Ny + (jelem + yi[rn]))*Nx) + ielem + xi[rn])) + rd;
+            int row = (dofspNd*((((kelem + zi[rn])*myData.Ny + (jelem + yi[rn]))*myData.Nx) + ielem + xi[rn])) + rd;
             for(int cn = 0; cn < 8; ++cn) {
               for(int cd = 0; cd < dofspNd; ++cd) {
-                int col = (dofspNd*((((kelem + zi[cn])*Ny + (jelem + yi[cn]))*Nx) + ielem + xi[cn])) + cd;
+                int col = (dofspNd*((((kelem + zi[cn])*myData.Ny + (jelem + yi[cn]))*myData.Nx) + ielem + xi[cn])) + cd;
                 int idx = -1;
                 for(size_t k = 0; k < myData.nonZeroCols[row].size(); ++k) {
                   if(myData.nonZeroCols[row][k] == col) {
@@ -336,9 +378,8 @@ void computeMatrix() {
   }//end for kelem
 
   applyBCs();
+
 }
-
-
 
 int myMatVec(ML_Operator *data, int in_length, double in[], int out_length, double out[]) {
   for(int i = 0; i < out_length; ++i) {
@@ -390,6 +431,7 @@ int main(int argc, char *argv[])
 
   std::cout<<"Mat create time = "<<(computeMatEndTime - computeMatStartTime)<<std::endl;
 
+  abort();
   const int numPDEs = pow((myData.K+1),3);
   int maxIterations = 1000;
   if(numGrids == 1) {
@@ -402,6 +444,7 @@ int main(int argc, char *argv[])
   ML* ml_object;
   ML_Create(&ml_object, numGrids);
 
+  int dofspNd = pow((myData.K+1),3);
   ML_Init_Amatrix(ml_object, 0, dofspNd*(myData.Nx * myData.Ny * myData.Nz), dofspNd*(myData.Nx * myData.Ny * myData.Nz), &myData);
   ML_Set_Amatrix_Getrow(ml_object, 0, &myGetRow, NULL, dofspNd*(myData.Nx * myData.Ny * myData.Nz));
   ML_Set_Amatrix_Matvec(ml_object, 0, &myMatVec);
@@ -431,16 +474,16 @@ int main(int argc, char *argv[])
 
   double setupEnd = MPI_Wtime();
 
-  double* solArr = new double[2*(myData.N)];
-  double* rhsArr = new double[2*(myData.N)];
+  double* solArr = new double[dofspNd*(myData.Nx * myData.Ny * myData.Nz)];
+  double* rhsArr = new double[dofspNd*(myData.Nx * myData.Ny * myData.Nz)];
 
-  for(int i = 0; i < (2*(myData.N)); i++) {
+  for(int i = 0; i < (dofspNd*(myData.Nx * myData.Ny * myData.Nz)); i++) {
     solArr[i] = (static_cast<double>(rand()))/(static_cast<double>(RAND_MAX));
   }//end for i
 
-  myMatVec(NULL, (2*myData.N), solArr, (2*myData.N), rhsArr);
+  myMatVec(NULL, (dofspNd*(myData.Nx * myData.Ny * myData.Nz)), solArr, (dofspNd*(myData.Nx * myData.Ny * myData.Nz)), rhsArr);
 
-  for(int i = 0; i < (2*(myData.N)); i++) {
+  for(int i = 0; i < (dofspNd*(myData.Nx * myData.Ny * myData.Nz)); i++) {
     solArr[i] = 0.0;
   }//end for i
 
