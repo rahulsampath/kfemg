@@ -6,9 +6,7 @@
 int main() {
   std::vector<long long int> coeffs;
 
-  std::cout << "Before Reading "<< std::endl;
   read1DshapeFnCoeffs(1, coeffs);
-  std::cout << "After Reading "<< std::endl;
   assert(coeffs.size() == 32);
   assert(coeffs[0] == 1LL);
   assert(coeffs[31] == 4LL);
