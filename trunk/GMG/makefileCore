@@ -1,0 +1,21 @@
+
+INCLUDE = -I./include 
+
+EXEC = bin/testRead  
+
+all : $(EXEC)
+
+./src/kfemgUtils.o: ./src/kfemgUtils.C
+	$(SCC) -c $(INCLUDE) $< -o $@
+
+./src/testRead.o: ./src/testRead.C
+	$(SCC) -c $(INCLUDE) $< -o $@
+
+bin/testRead : ./src/testRead.o ./src/kfemgUtils.o
+	$(SCC) $^ -o $@ 
+
+myclean :
+	rm -rf ./src/*~ ./src/*.o  
+	rm -rf $(EXEC)
+
+
