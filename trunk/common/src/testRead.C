@@ -1,7 +1,7 @@
 
-#include "kfemgUtils.h"
 #include <cassert>
 #include <iostream>
+#include "common/include/commonUtils.h"
 
 int main() {
   std::vector<long long int> coeffs;

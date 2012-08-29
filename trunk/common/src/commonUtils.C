@@ -1,11 +1,8 @@
 
-#include <cstdlib>
 #include <cstdio>
-#include <cmath>
-#include <cassert>
-#include <iostream>
+#include <cstring>
 #include <vector>
-#include "kfemgUtils.h"
+#include "common/include/commonUtils.h"
 
 bool softEquals(double a, double b) {
   return ((fabs(a - b)) < 1.0e-14);
@@ -45,22 +42,20 @@ double gaussWt(int n, double x) {
   return (2.0/((1.0 - (x*x))*polyPrime*polyPrime));
 }
 
-int main(int argc, char**argv) {
-  assert(argc == 2);
-  int n = atoi(argv[1]);
+void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs) {
+  char fname[256];
+  sprintf(fname, "C%dShFnCoeffs1D.txt", K);
 
-  std::cout<<"Testing "<<n<<" Point Rule."<<std::endl;
+  FILE *fp = fopen(fname, "r"); 
 
-  std::vector<double> gPt(n);
-  std::vector<double> gWt(n);
-  gaussQuad(gPt, gWt);
+  int numCoeffs = 4*(K + 1)*(K + 1);
 
-  for(int i = 0; i < n; ++i) {
-    assert(softEquals(legendrePoly(n, gPt[i]), 0));
-    assert(softEquals(gaussWt(n, gPt[i]), gWt[i]));
-  }//end i
+  coeffs.resize(2*numCoeffs);
+  for(int i = 0; i < (2*numCoeffs); ++i) {
+    fscanf(fp, "%lld", &(coeffs[i]));
+  }//end i 
 
-  std::cout<<"Pass!"<<std::endl;
+  fclose(fp);
 }
 
 
