@@ -6,42 +6,75 @@
 #include <vector>
 #include "common/include/commonUtils.h"
 
-bool softEquals(double a, double b) {
-  return ((fabs(a - b)) < 1.0e-14);
-}
+double eval1DshFnDerivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
+    std::vector<long long int> & coeffs, double x, unsigned int l) {
+  assert(nodeId < 2);
+  assert(dofId <= K);
+  assert(K <= 10);
+  //x is the coordinate in the reference element.
+  assert(x >= -1.0);
+  assert(x <= 1.0);
+  assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
 
-double legendrePoly(int n, double x) {
-  double result;
-  if(n == 0) {
-    result = 1.0;
-  } else if(n == 1) {
-    result = x;
-  } else {
-    int m = n - 1;
-    result = ( ((static_cast<double>((2*m) + 1))*x*legendrePoly(m, x)) -
-        (m*legendrePoly((m - 1), x)) )/(static_cast<double>(m + 1));
-  }
+  unsigned int P = (2*K) + 1;
+
+  long long int* coeffArr = &(coeffs[2*(P + 1)*((nodeId*(K + 1)) + dofId)]);
+
+  double result = 0.0;
+
+  for(unsigned int i = 0; i <= P; ++i) {
+    double num = coeffArr[2*i];
+    double den = coeffArr[(2*i) + 1];
+    double c = num/den;
+    result += (c*powDerivative(x, i, l));    
+  }//end i
+
   return result;
 }
 
-double legendrePolyPrime(int n, double x) {
+double powDerivative(double x, unsigned int i, unsigned int l) {
   double result;
-  if(n == 0) {
+  
+  if(l > i) {
     result = 0.0;
-  } else if(n == 1) {
-    result = 1.0;
+  } else if(l == i) {
+    result = static_cast<double>(factorial(l));
   } else {
-    int m = n - 1;
-    result = ( ((static_cast<double>((2*m) + 1))*legendrePoly(m, x)) +
-        ((static_cast<double>((2*m) + 1))*x*legendrePolyPrime(m, x)) - 
-        (m*legendrePolyPrime((m - 1), x)) )/(static_cast<double>(m + 1));
+    unsigned int p = (i - l);
+    result = pow(x, (static_cast<int>(p)));
+    while(p < i) {
+      result *= (static_cast<double>(p + 1));
+      ++p;
+    }
   }
+
   return result;
 }
 
-double gaussWt(int n, double x) {
-  double polyPrime = legendrePolyPrime(n, x);
-  return (2.0/((1.0 - (x*x))*polyPrime*polyPrime));
+double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K, 
+    std::vector<long long int> & coeffs, double x) {
+  assert(nodeId < 2);
+  assert(dofId <= K);
+  assert(K <= 10);
+  //x is the coordinate in the reference element.
+  assert(x >= -1.0);
+  assert(x <= 1.0);
+  assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
+
+  unsigned int P = (2*K) + 1;
+
+  long long int* coeffArr = &(coeffs[2*(P + 1)*((nodeId*(K + 1)) + dofId)]);
+
+  double result = 0.0;
+
+  for(int i = 0; i <= P; ++i) {
+    double num = coeffArr[2*i];
+    double den = coeffArr[(2*i) + 1];
+    double c = num/den;
+    result += (c*pow(x, i));    
+  }//end i
+
+  return result;
 }
 
 void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs) {
@@ -61,5 +94,44 @@ void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs) {
 
   fclose(fp);
 }
+
+bool softEquals(double a, double b) {
+  return ((fabs(a - b)) < 1.0e-14);
+}
+
+double legendrePoly(int n, double x) {
+  double result;
+  if(n == 0) {
+    result = 1.0;
+  } else if(n == 1) {
+    result = x;
+  } else {
+    int m = n - 1;
+    result = ( ((static_cast<double>((2*m) + 1))*x*legendrePoly(m, x)) -
+        ((static_cast<double>(m))*legendrePoly((m - 1), x)) )/(static_cast<double>(m + 1));
+  }
+  return result;
+}
+
+double legendrePolyPrime(int n, double x) {
+  double result;
+  if(n == 0) {
+    result = 0.0;
+  } else if(n == 1) {
+    result = 1.0;
+  } else {
+    int m = n - 1;
+    result = ( ((static_cast<double>((2*m) + 1))*legendrePoly(m, x)) +
+        ((static_cast<double>((2*m) + 1))*x*legendrePolyPrime(m, x)) - 
+        ((static_cast<double>(m))*legendrePolyPrime((m - 1), x)) )/(static_cast<double>(m + 1));
+  }
+  return result;
+}
+
+double gaussWt(int n, double x) {
+  double polyPrime = legendrePolyPrime(n, x);
+  return (2.0/((1.0 - (x*x))*polyPrime*polyPrime));
+}
+
 
 
