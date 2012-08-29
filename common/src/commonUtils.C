@@ -46,7 +46,7 @@ double gaussWt(int n, double x) {
 
 void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs) {
   char fname[256];
-  sprintf(fname, "C%dShFnCoeffs1D.txt", K);
+  sprintf(fname, "../../common/ShFnCoeffs1D/C%dShFnCoeffs1D.txt", K);
 
   FILE *fp = fopen(fname, "r"); 
 
