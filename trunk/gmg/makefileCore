@@ -1,27 +1,9 @@
 
-INCLUDE = -I./include 
+INCLUDE = -I.. 
 
-EXEC = bin/testRead bin/testGaussQuad 
+EXEC =  
 
 all : $(EXEC)
-
-./src/gaussQuad.o: ./src/gaussQuad.C
-	$(SCC) -c $(INCLUDE) $< -o $@
-
-./src/kfemgUtils.o: ./src/kfemgUtils.C
-	$(SCC) -c $(INCLUDE) $< -o $@
-
-./src/testRead.o: ./src/testRead.C
-	$(SCC) -c $(INCLUDE) $< -o $@
-
-./src/testGaussQuad.o: ./src/testGaussQuad.C
-	$(SCC) -c $(INCLUDE) $< -o $@
-
-bin/testRead : ./src/testRead.o ./src/kfemgUtils.o
-	$(SCC) $^ -o $@ 
-
-bin/testGaussQuad : ./src/testGaussQuad.o ./src/gaussQuad.o 
-	$(SCC) $^ -o $@ 
 
 myclean :
 	rm -rf ./src/*~ ./src/*.o  

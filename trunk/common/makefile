@@ -1,9 +1,8 @@
 
 SHELL = /bin/sh
 
-PCC = mpicxx
-
-SCC = g++
+CC = g++
+#CC = mpicxx
 
 include ./makefileCore
 

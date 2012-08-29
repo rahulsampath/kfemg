@@ -6,9 +6,7 @@ include ${PETSC_DIR}/conf/variables
 
 CFLAGS = -DPETSC_USE_LOG 
 
-PCC = mpicxx
-
-SCC = g++
+CC = mpicxx
 
 include ./makefileCore
 
