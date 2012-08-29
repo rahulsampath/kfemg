@@ -7,13 +7,13 @@
 #include "common/include/commonUtils.h"
 
 double eval1DshFnDerivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
-    std::vector<long long int> & coeffs, double x, unsigned int l) {
+    std::vector<long long int> & coeffs, double xi, unsigned int l) {
   assert(nodeId < 2);
   assert(dofId <= K);
   assert(K <= 10);
-  //x is the coordinate in the reference element.
-  assert(x >= -1.0);
-  assert(x <= 1.0);
+  //xi is the coordinate in the reference element.
+  assert(xi >= -1.0);
+  assert(xi <= 1.0);
   assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
 
   unsigned int P = (2*K) + 1;
@@ -26,7 +26,7 @@ double eval1DshFnDerivative(unsigned int nodeId, unsigned int dofId, unsigned in
     double num = coeffArr[2*i];
     double den = coeffArr[(2*i) + 1];
     double c = num/den;
-    result += (c*powDerivative(x, i, l));    
+    result += (c*powDerivative(xi, i, l));    
   }//end i
 
   return result;
@@ -52,13 +52,13 @@ double powDerivative(double x, unsigned int i, unsigned int l) {
 }
 
 double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K, 
-    std::vector<long long int> & coeffs, double x) {
+    std::vector<long long int> & coeffs, double xi) {
   assert(nodeId < 2);
   assert(dofId <= K);
   assert(K <= 10);
-  //x is the coordinate in the reference element.
-  assert(x >= -1.0);
-  assert(x <= 1.0);
+  //xi is the coordinate in the reference element.
+  assert(xi >= -1.0);
+  assert(xi <= 1.0);
   assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
 
   unsigned int P = (2*K) + 1;
@@ -71,7 +71,7 @@ double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K,
     double num = coeffArr[2*i];
     double den = coeffArr[(2*i) + 1];
     double c = num/den;
-    result += (c*pow(x, i));    
+    result += (c*pow(xi, i));    
   }//end i
 
   return result;
