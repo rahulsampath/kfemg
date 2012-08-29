@@ -1,6 +1,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cassert>
+#include <cmath>
 #include <vector>
 #include "common/include/commonUtils.h"
 
@@ -47,6 +49,8 @@ void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs) {
   sprintf(fname, "C%dShFnCoeffs1D.txt", K);
 
   FILE *fp = fopen(fname, "r"); 
+
+  assert(fp != NULL);
 
   int numCoeffs = 4*(K + 1)*(K + 1);
 
