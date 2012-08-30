@@ -19,7 +19,7 @@ int main(int argc, char**argv) {
 
   for(int i = 0; i < n; ++i) {
     assert(softEquals(legendrePoly(n, gPt[i]), 0));
-    assert(softEquals(gaussWt(n, gPt[i]), gWt[i]));
+    assert(softEquals(gaussWeight(n, gPt[i]), gWt[i]));
   }//end i
 
   std::cout<<"Pass!"<<std::endl;

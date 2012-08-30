@@ -17,7 +17,7 @@ all : $(EXEC)
 ./src/testGaussQuad.o: ./src/testGaussQuad.C
 	$(CC) -c $(INCLUDE) $< -o $@
 
-bin/testRead : ./src/testRead.o ./src/commonUtils.o
+bin/testRead : ./src/testRead.o ./src/commonUtils.o ./src/gaussQuad.o 
 	$(CC) $^ -o $@ 
 
 bin/testGaussQuad : ./src/testGaussQuad.o ./src/commonUtils.o ./src/gaussQuad.o 

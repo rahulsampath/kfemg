@@ -14,6 +14,32 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
   for(unsigned int i = 0; i < matSz; ++i) {
     mat[i] = new double[matSz];
   }//end i
+
+  unsigned int P = (2*K) + 1;
+  unsigned int numGaussPts = 2;
+  std::vector<double> gPt(numGaussPts);
+  std::vector<double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  for(unsigned int rNode = 0, r = 0; rNode < 2; ++rNode) {
+    for(unsigned int rDof = 0; rDof <= K; ++rDof, ++r) {
+      for(unsigned int cNode = 0, c = 0; cNode < 2; ++cNode) {
+        for(unsigned int cDof = 0; cDof <= K; ++cDof, ++c) {
+          mat[r][c] = 0.0;
+          for(unsigned int g = 0; g < numGaussPts; ++g) {
+            mat[r][c] += ( gWt[g] * eval1DshFnLderivative(rNode, rDof, K, coeffs, gPt[g], 1) *
+                eval1DshFnLderivative(cNode, cDof, K, coeffs, gPt[g], 1) );
+          }//end g
+        }//end cDof
+      }//end cNode
+    }//end rDof
+  }//end rNode
+
+  for(unsigned int i = 0; i < matSz; ++i) {
+    for(unsigned int j = 0; j < matSz; ++j) {
+      mat[i][j] *= (2.0/hx);
+    }//end j
+  }//end i
 }
 
 void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
@@ -24,6 +50,9 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
   for(unsigned int i = 0; i < matSz; ++i) {
     mat[i] = new double[matSz];
   }//end i
+
+  unsigned int P = (2*K) + 1;
+
 }
 
 void destroyPoisson1DelementMatrix(unsigned int K, double** mat) {
@@ -42,15 +71,15 @@ void destroyPoisson3DelementMatrix(unsigned int K, double** mat) {
   delete [] mat;
 }
 
-double eval3DshFnDerivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
+double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
     std::vector<long long int> & coeffs, double zi, double yi, double xi,
     unsigned int zl, unsigned int yl, unsigned int xl, double hz, double hy, double hx) {
 
   double result = ( pow((2.0/hz), zl) * pow((2.0/hy), yl) * pow((2.0/hx), xl) * 
-      eval1DshFnDerivative(zNodeId, zDofId, K, coeffs, zi, zl) *
-      eval1DshFnDerivative(yNodeId, yDofId, K, coeffs, yi, yl) *
-      eval1DshFnDerivative(xNodeId, xDofId, K, coeffs, xi, xl) );
+      eval1DshFnLderivative(zNodeId, zDofId, K, coeffs, zi, zl) *
+      eval1DshFnLderivative(yNodeId, yDofId, K, coeffs, yi, yl) *
+      eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
 
   return result;
 }
@@ -66,7 +95,7 @@ double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNode
   return result;
 }
 
-double eval1DshFnDerivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
+double eval1DshFnLderivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
     std::vector<long long int> & coeffs, double xi, unsigned int l) {
   assert(nodeId < 2);
   assert(dofId <= K);
@@ -188,7 +217,7 @@ double legendrePolyPrime(int n, double x) {
   return result;
 }
 
-double gaussWt(int n, double x) {
+double gaussWeight(int n, double x) {
   double polyPrime = legendrePolyPrime(n, x);
   return (2.0/((1.0 - (x*x))*polyPrime*polyPrime));
 }
