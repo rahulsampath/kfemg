@@ -16,6 +16,11 @@ void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs);
 
 void gaussQuad(std::vector<double> & x, std::vector<double> & w);
 
+double eval3DshFnDerivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
+    unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
+    std::vector<long long int> & coeffs, double zi, double yi, double xi,
+    unsigned int zl, unsigned int yl, unsigned int xl, double hz, double hy, double hx);
+
 double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
     std::vector<long long int> & coeffs, double zi, double yi, double xi);
