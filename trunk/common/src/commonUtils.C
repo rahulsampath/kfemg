@@ -11,7 +11,10 @@ double eval3DshFnDerivative(unsigned int zNodeId, unsigned int yNodeId, unsigned
     std::vector<long long int> & coeffs, double zi, double yi, double xi,
     unsigned int zl, unsigned int yl, unsigned int xl, double hz, double hy, double hx) {
 
-  double result = ;
+  double result = ( pow((2.0/hz), zl) * pow((2.0/hy), yl) * pow((2.0/hx), xl) * 
+      eval1DshFnDerivative(zNodeId, zDofId, K, coeffs, zi, zl) *
+      eval1DshFnDerivative(yNodeId, yDofId, K, coeffs, yi, yl) *
+      eval1DshFnDerivative(xNodeId, xDofId, K, coeffs, xi, xl) );
 
   return result;
 }
