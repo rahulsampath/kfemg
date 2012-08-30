@@ -6,6 +6,42 @@
 #include <vector>
 #include "common/include/commonUtils.h"
 
+void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
+    double hx, double**& mat) {
+  unsigned int matSz = 2*(K + 1);
+  typedef double* doublePtr;
+  mat = new doublePtr[matSz];
+  for(unsigned int i = 0; i < matSz; ++i) {
+    mat[i] = new double[matSz];
+  }//end i
+}
+
+void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
+    double hz, double hy, double hx, double**& mat) {
+  unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
+  typedef double* doublePtr;
+  mat = new doublePtr[matSz];
+  for(unsigned int i = 0; i < matSz; ++i) {
+    mat[i] = new double[matSz];
+  }//end i
+}
+
+void destroyPoisson1DelementMatrix(unsigned int K, double** mat) {
+  unsigned int matSz = 2*(K + 1);
+  for(unsigned int i = 0; i < matSz; ++i) {
+    delete [] (mat[i]);
+  }//end i
+  delete [] mat;
+}
+
+void destroyPoisson3DelementMatrix(unsigned int K, double** mat) {
+  unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
+  for(unsigned int i = 0; i < matSz; ++i) {
+    delete [] (mat[i]);
+  }//end i
+  delete [] mat;
+}
+
 double eval3DshFnDerivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
     std::vector<long long int> & coeffs, double zi, double yi, double xi,
@@ -82,18 +118,18 @@ double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K,
   return result;
 }
 
-void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs) {
+void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs) {
   char fname[256];
-  sprintf(fname, "../../common/ShFnCoeffs1D/C%dShFnCoeffs1D.txt", K);
+  sprintf(fname, "../../common/ShFnCoeffs1D/C%uShFnCoeffs1D.txt", K);
 
   FILE *fp = fopen(fname, "r"); 
 
   assert(fp != NULL);
 
-  int numCoeffs = 4*(K + 1)*(K + 1);
+  unsigned int numCoeffs = 4*(K + 1)*(K + 1);
 
   coeffs.resize(2*numCoeffs);
-  for(int i = 0; i < (2*numCoeffs); ++i) {
+  for(unsigned int i = 0; i < (2*numCoeffs); ++i) {
     fscanf(fp, "%lld", &(coeffs[i]));
   }//end i 
 

@@ -12,9 +12,19 @@ double gaussWt(int n, double x);
 
 bool softEquals(double a, double b);
 
-void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs);
+void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs);
 
 void gaussQuad(std::vector<double> & x, std::vector<double> & w);
+
+void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
+    double hx, double**& mat);
+
+void destroyPoisson1DelementMatrix(unsigned int K, double** mat);
+
+void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
+    double hz, double hy, double hx, double**& mat);
+
+void destroyPoisson3DelementMatrix(unsigned int K, double** mat);
 
 double eval3DshFnDerivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
