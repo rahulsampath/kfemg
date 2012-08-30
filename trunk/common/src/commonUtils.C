@@ -6,6 +6,27 @@
 #include <vector>
 #include "common/include/commonUtils.h"
 
+double eval3DshFnDerivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
+    unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
+    std::vector<long long int> & coeffs, double zi, double yi, double xi,
+    unsigned int zl, unsigned int yl, unsigned int xl, double hz, double hy, double hx) {
+
+  double result = ;
+
+  return result;
+}
+
+double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
+    unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
+    std::vector<long long int> & coeffs, double zi, double yi, double xi) {
+
+  double result = ( eval1DshFn(zNodeId, zDofId, K, coeffs, zi) *
+      eval1DshFn(yNodeId, yDofId, K, coeffs, yi) *
+      eval1DshFn(xNodeId, xDofId, K, coeffs, xi) );
+
+  return result;
+}
+
 double eval1DshFnDerivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
     std::vector<long long int> & coeffs, double xi, unsigned int l) {
   assert(nodeId < 2);
@@ -28,25 +49,6 @@ double eval1DshFnDerivative(unsigned int nodeId, unsigned int dofId, unsigned in
     double c = num/den;
     result += (c*powDerivative(xi, i, l));    
   }//end i
-
-  return result;
-}
-
-double powDerivative(double x, unsigned int i, unsigned int l) {
-  double result;
-  
-  if(l > i) {
-    result = 0.0;
-  } else if(l == i) {
-    result = static_cast<double>(factorial(l));
-  } else {
-    unsigned int p = (i - l);
-    result = pow(x, (static_cast<int>(p)));
-    while(p < i) {
-      result *= (static_cast<double>(p + 1));
-      ++p;
-    }
-  }
 
   return result;
 }
@@ -93,6 +95,25 @@ void read1DshapeFnCoeffs(int K, std::vector<long long int> & coeffs) {
   }//end i 
 
   fclose(fp);
+}
+
+double powDerivative(double x, unsigned int i, unsigned int l) {
+  double result;
+
+  if(l > i) {
+    result = 0.0;
+  } else if(l == i) {
+    result = static_cast<double>(factorial(l));
+  } else {
+    unsigned int p = (i - l);
+    result = pow(x, (static_cast<int>(p)));
+    while(p < i) {
+      result *= (static_cast<double>(p + 1));
+      ++p;
+    }
+  }
+
+  return result;
 }
 
 bool softEquals(double a, double b) {
