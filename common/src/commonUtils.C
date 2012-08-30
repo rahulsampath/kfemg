@@ -6,6 +6,73 @@
 #include <vector>
 #include "common/include/commonUtils.h"
 
+void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
+    double hz, double hy, double hx, double**& mat) {
+  unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
+  typedef double* doublePtr;
+  mat = new doublePtr[matSz];
+  for(unsigned int i = 0; i < matSz; ++i) {
+    mat[i] = new double[matSz];
+  }//end i
+
+  unsigned int numGaussPts = K + 1;
+  std::vector<double> gPt(numGaussPts);
+  std::vector<double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  for(unsigned int rNodeZ = 0, r = 0; rNodeZ < 2; ++rNodeZ) {
+    for(unsigned int rNodeY = 0; rNodeY < 2; ++rNodeY) {
+      for(unsigned int rNodeX = 0; rNodeX < 2; ++rNodeX) {
+        for(unsigned int rDofZ = 0; rDofZ <= K; ++rDofZ) {
+          for(unsigned int rDofY = 0; rDofY <= K; ++rDofY) {
+            for(unsigned int rDofX = 0; rDofX <= K; ++rDofX, ++r) {
+              for(unsigned int cNodeZ = 0, c = 0; cNodeZ < 2; ++cNodeZ) {
+                for(unsigned int cNodeY = 0; cNodeY < 2; ++cNodeY) {
+                  for(unsigned int cNodeX = 0; cNodeX < 2; ++cNodeX) {
+                    for(unsigned int cDofZ = 0; cDofZ <= K; ++cDofZ) {
+                      for(unsigned int cDofY = 0; cDofY <= K; ++cDofY) {
+                        for(unsigned int cDofX = 0; cDofX <= K; ++cDofX, ++c) {
+                          mat[r][c] = 0.0;
+                          for(unsigned int gZ = 0; gZ < numGaussPts; ++gZ) {
+                            for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
+                              for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
+                                mat[r][c] += ( gWt[gZ] * gWt[gY] * gWt[gX] * (
+                                      ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
+                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) * 
+                                        eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
+                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) ) +
+                                      ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
+                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 1, 0, hz, hy, hx) * 
+                                        eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
+                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 1, 0, hz, hy, hx) ) +
+                                      ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
+                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) *
+                                        eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
+                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) ) 
+                                      ) );
+                              }//end gX
+                            }//end gY
+                          }//end gZ
+                        }//end cDofX
+                      }//end cDofY
+                    }//end cDofZ
+                  }//end cNodeX
+                }//end cNodeY
+              }//end cNodeZ
+            }//end rDofX
+          }//end rDofY
+        }//end rDofZ
+      }//end rNodeX
+    }//end rNodeY
+  }//end rNodeZ
+
+  for(unsigned int i = 0; i < matSz; ++i) {
+    for(unsigned int j = 0; j < matSz; ++j) {
+      mat[i][j] *= (hx*hy*hz/8.0);
+    }//end j
+  }//end i
+}
+
 void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
     double hx, double**& mat) {
   unsigned int matSz = 2*(K + 1);
@@ -15,8 +82,7 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
     mat[i] = new double[matSz];
   }//end i
 
-  unsigned int P = (2*K) + 1;
-  unsigned int numGaussPts = 2;
+  unsigned int numGaussPts = K + 1;
   std::vector<double> gPt(numGaussPts);
   std::vector<double> gWt(numGaussPts);
   gaussQuad(gPt, gWt);
@@ -40,19 +106,6 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
       mat[i][j] *= (2.0/hx);
     }//end j
   }//end i
-}
-
-void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
-    double hz, double hy, double hx, double**& mat) {
-  unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
-  typedef double* doublePtr;
-  mat = new doublePtr[matSz];
-  for(unsigned int i = 0; i < matSz; ++i) {
-    mat[i] = new double[matSz];
-  }//end i
-
-  unsigned int P = (2*K) + 1;
-
 }
 
 void destroyPoisson1DelementMatrix(unsigned int K, double** mat) {
