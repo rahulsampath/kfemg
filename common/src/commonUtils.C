@@ -7,12 +7,11 @@
 #include "common/include/commonUtils.h"
 
 void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
-    double hz, double hy, double hx, double**& mat) {
+    double hz, double hy, double hx, std::vector<std::vector<double> >& mat) {
   unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
-  typedef double* doublePtr;
-  mat = new doublePtr[matSz];
+  mat.resize(matSz);
   for(unsigned int i = 0; i < matSz; ++i) {
-    mat[i] = new double[matSz];
+    (mat[i]).resize(matSz);
   }//end i
 
   unsigned int numGaussPts = K + 1;
@@ -74,12 +73,11 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
 }
 
 void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
-    double hx, double**& mat) {
+    double hx, std::vector<std::vector<double> >& mat) {
   unsigned int matSz = 2*(K + 1);
-  typedef double* doublePtr;
-  mat = new doublePtr[matSz];
+  mat.resize(matSz);
   for(unsigned int i = 0; i < matSz; ++i) {
-    mat[i] = new double[matSz];
+    (mat[i]).resize(matSz);
   }//end i
 
   unsigned int numGaussPts = K + 1;
@@ -106,22 +104,6 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
       mat[i][j] *= (2.0/hx);
     }//end j
   }//end i
-}
-
-void destroyPoisson1DelementMatrix(unsigned int K, double** mat) {
-  unsigned int matSz = 2*(K + 1);
-  for(unsigned int i = 0; i < matSz; ++i) {
-    delete [] (mat[i]);
-  }//end i
-  delete [] mat;
-}
-
-void destroyPoisson3DelementMatrix(unsigned int K, double** mat) {
-  unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
-  for(unsigned int i = 0; i < matSz; ++i) {
-    delete [] (mat[i]);
-  }//end i
-  delete [] mat;
 }
 
 double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
