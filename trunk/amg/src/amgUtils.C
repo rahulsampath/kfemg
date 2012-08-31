@@ -28,7 +28,7 @@ int myGetRow(ML_Operator *data, int N_requested_rows, int requested_rows[],
         values[cnt] = (myMat->vals)[row][j];
         ++cnt;
       }//end for j
-      row_lengths[i] = cols.size();
+      row_lengths[i] = ((myMat->nzCols)[row]).size();
     } else {
       return 0;
     }

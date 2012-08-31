@@ -16,7 +16,7 @@ all : $(EXEC)
 bin/testAMG : ./src/testAMG.o ./src/amgUtils.o 
 	$(PCC) $^ -o $@ $(LIBS) 
 
-myclean :
+clean :
 	rm -rf ./src/*~ ./src/*.o  
 	rm -rf $(EXEC)
 

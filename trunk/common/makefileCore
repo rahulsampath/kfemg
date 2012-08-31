@@ -23,7 +23,7 @@ bin/testRead : ./src/testRead.o ./src/commonUtils.o ./src/gaussQuad.o
 bin/testGaussQuad : ./src/testGaussQuad.o ./src/commonUtils.o ./src/gaussQuad.o 
 	$(PCC) $^ -o $@ 
 
-myclean :
+clean :
 	rm -rf ./src/*~ ./src/*.o  
 	rm -rf $(EXEC)
 

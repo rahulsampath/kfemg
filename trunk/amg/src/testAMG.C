@@ -14,7 +14,9 @@ int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   assert(argc > 2);
   const int numGrids = atoi(argv[1]);
-  myData.N = atoi(argv[2]);
+  const int N = atoi(argv[2]);
+
+  MyMatrix myMat;
 
   double computeMatStartTime = MPI_Wtime();
  // computeMatrix();
@@ -32,10 +34,12 @@ int main(int argc, char *argv[]) {
   double setupStart = MPI_Wtime();
   ML_set_random_seed(123456);
   ML* ml_object;
+  ML_Aggregate* agg_object;
   ML_Create(&ml_object, numGrids);
+  ML_Aggregate_Create(&agg_object);
 
-  ML_Init_Amatrix(ml_object, 0, (2*(myData.N)), (2*(myData.N)), &myData);
-  ML_Set_Amatrix_Getrow(ml_object, 0, &myGetRow, NULL, (2*(myData.N)));
+  ML_Init_Amatrix(ml_object, 0, (2*N), (2*N), &myMat);
+  ML_Set_Amatrix_Getrow(ml_object, 0, &myGetRow, NULL, (2*N));
   ML_Set_Amatrix_Matvec(ml_object, 0, &myMatVec);
   ML_Set_MaxIterations(ml_object, maxIterations);
   ML_Set_Tolerance(ml_object, 1.0e-12);
@@ -43,8 +47,6 @@ int main(int argc, char *argv[]) {
   ML_Set_PrintLevel(10);
   ML_Set_OutputLevel(ml_object, 10);
 
-  ML_Aggregate* agg_object;
-  ML_Aggregate_Create(&agg_object);
   agg_object->num_PDE_eqns = numPDEs;
   agg_object->nullspace_dim = 1;
   ML_Aggregate_Set_MaxCoarseSize(agg_object, coarseSize);
@@ -63,16 +65,16 @@ int main(int argc, char *argv[]) {
 
   double setupEnd = MPI_Wtime();
 
-  double* solArr = new double[2*(myData.N)];
-  double* rhsArr = new double[2*(myData.N)];
+  double* solArr = new double[2*N];
+  double* rhsArr = new double[2*N];
 
-  for(int i = 0; i < (2*(myData.N)); i++) {
+  for(int i = 0; i < (2*N); i++) {
     solArr[i] = (static_cast<double>(rand()))/(static_cast<double>(RAND_MAX));
   }//end for i
 
-  myMatVec(NULL, (2*myData.N), solArr, (2*myData.N), rhsArr);
+  myMatVec(NULL, (2*N), solArr, (2*N), rhsArr);
 
-  for(int i = 0; i < (2*(myData.N)); i++) {
+  for(int i = 0; i < (2*N); ++i) {
     solArr[i] = 0.0;
   }//end for i
 
