@@ -6,22 +6,22 @@ EXEC = bin/testRead bin/testGaussQuad
 all : $(EXEC)
 
 ./src/gaussQuad.o: ./src/gaussQuad.C
-	$(CC) -c $(INCLUDE) $< -o $@
+	$(PCC) -c $(INCLUDE) $< -o $@
 
 ./src/commonUtils.o: ./src/commonUtils.C
-	$(CC) -c $(INCLUDE) $< -o $@
+	$(PCC) -c $(INCLUDE) $< -o $@
 
 ./src/testRead.o: ./src/testRead.C
-	$(CC) -c $(INCLUDE) $< -o $@
+	$(PCC) -c $(INCLUDE) $< -o $@
 
 ./src/testGaussQuad.o: ./src/testGaussQuad.C
-	$(CC) -c $(INCLUDE) $< -o $@
+	$(PCC) -c $(INCLUDE) $< -o $@
 
 bin/testRead : ./src/testRead.o ./src/commonUtils.o ./src/gaussQuad.o 
-	$(CC) $^ -o $@ 
+	$(PCC) $^ -o $@ 
 
 bin/testGaussQuad : ./src/testGaussQuad.o ./src/commonUtils.o ./src/gaussQuad.o 
-	$(CC) $^ -o $@ 
+	$(PCC) $^ -o $@ 
 
 myclean :
 	rm -rf ./src/*~ ./src/*.o  

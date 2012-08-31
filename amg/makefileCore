@@ -1,0 +1,20 @@
+
+INCLUDE = -I.. ${ML_INCLUDE_DIRS}
+
+LIBS = ${ML_LIBRARY_DIRS} ${ML_LIBRARIES} ${ML_TPL_LIBRARIES}
+
+EXEC = bin/testAMG 
+
+all : $(EXEC)
+
+./src/testAMG.o: ./src/testAMG.C
+	$(PCC) -c $(INCLUDE) $< -o $@
+
+bin/testAMG : ./src/testAMG.o  
+	$(PCC) $^ -o $@ $(LIBS) 
+
+myclean :
+	rm -rf ./src/*~ ./src/*.o  
+	rm -rf $(EXEC)
+
+
