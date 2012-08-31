@@ -7,10 +7,13 @@ EXEC = bin/testAMG
 
 all : $(EXEC)
 
+./src/amgUtils.o: ./src/amgUtils.C
+	$(PCC) -c $(INCLUDE) $< -o $@
+
 ./src/testAMG.o: ./src/testAMG.C
 	$(PCC) -c $(INCLUDE) $< -o $@
 
-bin/testAMG : ./src/testAMG.o  
+bin/testAMG : ./src/testAMG.o ./src/amgUtils.o 
 	$(PCC) $^ -o $@ $(LIBS) 
 
 myclean :
