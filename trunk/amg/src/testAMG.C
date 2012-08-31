@@ -12,92 +12,83 @@
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  assert(argc == 5);
-  const int dim = atoi(argv[1]); 
+
+  assert(argc > 4);
+  const unsigned int dim = atoi(argv[1]); 
   assert( (dim == 1) || (dim == 3) );
-  const int K = atoi(argv[2]);
-  const int N = atoi(argv[3]); //Nodes per dimension
-  const int numGrids = atoi(argv[4]);
+  const unsigned int K = atoi(argv[2]);
+  const unsigned int numGrids = atoi(argv[3]);
+  const unsigned int Nx = atoi(argv[4]); 
+  unsigned int Ny = 1;
+  unsigned int Nz = 1;
+  if(dim == 3) {
+    Ny = atoi(argv[5]);
+    Nz = atoi(argv[6]);
+  }
+  bool useRandomRHS = atoi(argv[7]);
+
+  double hx = 1.0/(static_cast<double>(Nx - 1));
+  double hy, hz;
+  if(dim == 3) {
+    hy = 1.0/(static_cast<double>(Ny - 1));
+    hz = 1.0/(static_cast<double>(Nz - 1));
+  }
 
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
 
-  MyMatrix myMat;
+  std::vector<std::vector<double> > elemMat;
+  if(dim == 1) {
+    createPoisson1DelementMatrix(K, coeffs, hx, elemMat);
+  } else {
+    createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat);
+  }
 
   double computeMatStartTime = MPI_Wtime();
- // computeMatrix();
+  MyMatrix myMat;
+  // computeMatrix();
   double computeMatEndTime = MPI_Wtime();
 
   std::cout<<"Mat create time = "<<(computeMatEndTime - computeMatStartTime)<<std::endl;
 
-  const int numPDEs = 2;
-  int maxIterations = 1000;
+  unsigned int maxIters = 1000;
   if(numGrids == 1) {
-    maxIterations = 1;
+    maxIters = 1;
   }
-  const int coarseSize = 8;
 
   double setupStart = MPI_Wtime();
-  ML_set_random_seed(123456);
-  ML* ml_object;
-  ML_Aggregate* agg_object;
-  ML_Create(&ml_object, numGrids);
-  ML_Aggregate_Create(&agg_object);
-
-  ML_Init_Amatrix(ml_object, 0, (2*N), (2*N), &myMat);
-  ML_Set_Amatrix_Getrow(ml_object, 0, &myGetRow, NULL, (2*N));
-  ML_Set_Amatrix_Matvec(ml_object, 0, &myMatVec);
-  ML_Set_MaxIterations(ml_object, maxIterations);
-  ML_Set_Tolerance(ml_object, 1.0e-12);
-  ML_Set_ResidualOutputFrequency(ml_object, 1);
-  ML_Set_PrintLevel(10);
-  ML_Set_OutputLevel(ml_object, 10);
-
-  agg_object->num_PDE_eqns = numPDEs;
-  agg_object->nullspace_dim = 1;
-  ML_Aggregate_Set_MaxCoarseSize(agg_object, coarseSize);
-  ML_Aggregate_Set_CoarsenScheme_UncoupledMIS(agg_object);
-
-  const int nlevels = ML_Gen_MGHierarchy_UsingAggregation(ml_object, 0, ML_INCREASING, agg_object);
-  std::cout<<"Number of actual levels: "<<nlevels<<std::endl;
-
-  for(int lev = 0; lev < (nlevels - 1); ++lev) {
-    ML_Gen_Smoother_SymGaussSeidel(ml_object, lev, ML_BOTH, 2, 1.0);
-    //ML_Gen_Smoother_Jacobi(ml_object, lev, ML_BOTH, 2, 0.8);
-  }
-  ML_Gen_Smoother_Amesos(ml_object, (nlevels - 1), ML_AMESOS_KLU, -1, 0.0);
-
-  ML_Gen_Solver(ml_object, ML_MGV, 0, (nlevels-1));
-
+  ML* ml_obj;
+  ML_Aggregate* agg_obj;
+  createMLobjects(ml_obj, agg_obj, numGrids, maxIters, dim, K, myMat);
   double setupEnd = MPI_Wtime();
 
-  double* solArr = new double[2*N];
-  double* rhsArr = new double[2*N];
+  double* solArr = new double[(myMat.vals).size()];
+  double* rhsArr = new double[(myMat.vals).size()];
 
-  for(int i = 0; i < (2*N); i++) {
-    solArr[i] = (static_cast<double>(rand()))/(static_cast<double>(RAND_MAX));
-  }//end for i
+  if(useRandomRHS) {
+    computeRandomRHS(rhsArr, myMat);
+  } else {
+    assert(false);
+  }
 
-  myMatVec(NULL, (2*N), solArr, (2*N), rhsArr);
-
-  for(int i = 0; i < (2*N); ++i) {
+  for(int i = 0; i < (myMat.vals).size(); ++i) {
     solArr[i] = 0.0;
   }//end for i
 
   double solveStart = MPI_Wtime();
 
-  ML_Iterate(ml_object, solArr, rhsArr);
+  ML_Iterate(ml_obj, solArr, rhsArr);
 
   double solveEnd = MPI_Wtime();
 
-  ML_Aggregate_Destroy(&agg_object);
-  ML_Destroy(&ml_object);
+  destroyMLobjects(ml_obj, agg_obj);
 
   std::cout<<"Setup Time = "<<(setupEnd - setupStart)<<std::endl;
   std::cout<<"Solve Time = "<<(solveEnd - solveStart)<<std::endl;
 
   delete [] solArr;
   delete [] rhsArr;
+
   MPI_Finalize();
 }  
 
