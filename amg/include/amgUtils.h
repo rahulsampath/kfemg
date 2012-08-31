@@ -10,10 +10,19 @@ struct MyMatrix {
   std::vector<std::vector<double> > vals;
 };
 
-int myMatVec(ML_Operator *data, int in_length, double in[], int out_length, double out[]);
+int myMatVec(ML_Operator* data, int in_length, double in[], int out_length, double out[]);
 
-int myGetRow(ML_Operator *data, int N_requested_rows, int requested_rows[],
+void myMatVecPrivate(MyMatrix* myMat, const unsigned int len, double* in, double* out);
+
+int myGetRow(ML_Operator* data, int N_requested_rows, int requested_rows[],
     int allocated_space, int columns[], double values[], int row_lengths[]);
+
+void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int numGrids, 
+    const unsigned int maxIters, const unsigned int dim, const unsigned int K, MyMatrix& myMat);
+
+void destroyMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj);
+
+void computeRandomRHS(double* rhsArr, MyMatrix & myMat);
 
 #endif
 
