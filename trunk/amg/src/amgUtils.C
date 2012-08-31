@@ -4,19 +4,14 @@
 #include "ml_include.h"
 #include "amg/include/amgUtils.h"
 
-void computeRandomRHS(double* rhsArr, MyMatrix & myMat) {
-  const unsigned int len = (myMat.vals).size();
-  double* tmpSol = new double[len];
-  for(unsigned int i = 0; i < len; ++i) {
-    tmpSol[i] = (static_cast<double>(rand()))/(static_cast<double>(RAND_MAX));
-  }//end for i
-  myMatVecPrivate(&myMat, len, tmpSol, rhsArr);
-  delete [] tmpSol;
-}
-
-void destroyMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj) {
-  ML_Aggregate_Destroy(&agg_obj);
-  ML_Destroy(&ml_obj);
+void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj) {
+  krylov_obj = ML_Krylov_Create(ml_obj->comm);
+  ML_Krylov_Set_PrintFreq(krylov_obj, 1);
+  ML_Krylov_Set_Method(krylov_obj, ML_CG);
+  ML_Krylov_Set_Amatrix(krylov_obj, &((ml_obj->Amat)[0]));
+  ML_Krylov_Set_PreconFunc(krylov_obj, ML_MGVSolve_Wrapper);
+  ML_Krylov_Set_Precon(krylov_obj, ml_obj);
+  ML_Krylov_Set_Tolerance(krylov_obj, 1.0e-12);
 }
 
 void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int numGrids, 
@@ -45,12 +40,12 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
 
   ML_Aggregate_Create(&agg_obj);
   agg_obj->num_PDE_eqns = numPDEs;
-  agg_obj->nullspace_dim = 1;
+  agg_obj->nullspace_dim = 1; //CHECK THIS!
   ML_Aggregate_Set_MaxCoarseSize(agg_obj, coarseSize);
   ML_Aggregate_Set_CoarsenScheme_UncoupledMIS(agg_obj);
 
   const unsigned int nlevels = ML_Gen_MGHierarchy_UsingAggregation(ml_obj, 0, ML_INCREASING, agg_obj);
-  std::cout<<"Number of actual levels: "<<nlevels<<std::endl;
+  std::cout<<"Number of actual MG levels: "<<nlevels<<std::endl;
 
   for(int lev = 0; lev < (nlevels - 1); ++lev) {
     ML_Gen_Smoother_SymGaussSeidel(ml_obj, lev, ML_BOTH, 2, 1.0);
@@ -59,6 +54,21 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
   ML_Gen_Smoother_Amesos(ml_obj, (nlevels - 1), ML_AMESOS_KLU, -1, 0.0);
 
   ML_Gen_Solver(ml_obj, ML_MGV, 0, (nlevels-1));
+}
+
+void destroyMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj) {
+  ML_Aggregate_Destroy(&agg_obj);
+  ML_Destroy(&ml_obj);
+}
+
+void computeRandomRHS(double* rhsArr, MyMatrix & myMat) {
+  const unsigned int len = (myMat.vals).size();
+  double* tmpSol = new double[len];
+  for(unsigned int i = 0; i < len; ++i) {
+    tmpSol[i] = (static_cast<double>(rand()))/(static_cast<double>(RAND_MAX));
+  }//end for i
+  myMatVecPrivate(&myMat, len, tmpSol, rhsArr);
+  delete [] tmpSol;
 }
 
 int myGetRow(ML_Operator* data, int N_requested_rows, int requested_rows[],
