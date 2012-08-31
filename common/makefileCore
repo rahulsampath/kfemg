@@ -1,27 +1,26 @@
 
 INCLUDE = -I.. 
 
+ARCHIVES = ./lib/libcommon.a 
+
+LIBS = -L./lib -lcommon 
+
 EXEC = bin/testRead bin/testGaussQuad 
 
-all : $(EXEC)
+all : ${ARCHIVES} $(EXEC)
 
-./src/gaussQuad.o: ./src/gaussQuad.C
+./src/%.o: ./src/%.C
 	$(PCC) -c $(INCLUDE) $< -o $@
 
-./src/commonUtils.o: ./src/commonUtils.C
-	$(PCC) -c $(INCLUDE) $< -o $@
+./lib/libcommon.a: ./src/commonUtils.o ./src/gaussQuad.o 
+	${AR} ${AR_FLAGS} $@ $^
+	${RANLIB} $@
 
-./src/testRead.o: ./src/testRead.C
-	$(PCC) -c $(INCLUDE) $< -o $@
+bin/testRead : ./src/testRead.o  
+	$(PCC) $^ -o $@ $(LIBS)
 
-./src/testGaussQuad.o: ./src/testGaussQuad.C
-	$(PCC) -c $(INCLUDE) $< -o $@
-
-bin/testRead : ./src/testRead.o ./src/commonUtils.o ./src/gaussQuad.o 
-	$(PCC) $^ -o $@ 
-
-bin/testGaussQuad : ./src/testGaussQuad.o ./src/commonUtils.o ./src/gaussQuad.o 
-	$(PCC) $^ -o $@ 
+bin/testGaussQuad : ./src/testGaussQuad.o  
+	$(PCC) $^ -o $@ $(LIBS)
 
 clean :
 	rm -rf ./src/*~ ./src/*.o  
