@@ -17,15 +17,30 @@ int main(int argc, char *argv[]) {
   const unsigned int dim = atoi(argv[1]); 
   assert( (dim == 1) || (dim == 3) );
   const unsigned int K = atoi(argv[2]);
-  const unsigned int numGrids = atoi(argv[3]);
+  bool useRandomRHS = atoi(argv[3]);
   const unsigned int Nx = atoi(argv[4]); 
   unsigned int Ny = 1;
   unsigned int Nz = 1;
+  unsigned int numGrids = 20;
+  bool useMLasPC = false;
   if(dim == 3) {
+    assert(argc > 6);
     Ny = atoi(argv[5]);
     Nz = atoi(argv[6]);
+    if(argc > 7) {
+      numGrids = atoi(argv[7]);
+    }
+    if(argc > 8) {
+      useMLasPC = atoi(argv[8]);
+    }
+  } else {
+    if(argc > 5) {
+      numGrids = atoi(argv[5]);
+    }
+    if(argc > 6) {
+      useMLasPC = atoi(argv[6]);
+    }
   }
-  bool useRandomRHS = atoi(argv[7]);
 
   double hx = 1.0/(static_cast<double>(Nx - 1));
   double hy, hz;
@@ -37,30 +52,37 @@ int main(int argc, char *argv[]) {
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
 
+  double createElemMatStartTime = MPI_Wtime();
   std::vector<std::vector<double> > elemMat;
   if(dim == 1) {
     createPoisson1DelementMatrix(K, coeffs, hx, elemMat);
   } else {
     createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat);
   }
+  double createElemMatEndTime = MPI_Wtime();
 
-  double computeMatStartTime = MPI_Wtime();
+  double assemblyStartTime = MPI_Wtime();
   MyMatrix myMat;
   // computeMatrix();
-  double computeMatEndTime = MPI_Wtime();
-
-  std::cout<<"Mat create time = "<<(computeMatEndTime - computeMatStartTime)<<std::endl;
+  double assemblyEndTime = MPI_Wtime();
 
   unsigned int maxIters = 1000;
   if(numGrids == 1) {
     maxIters = 1;
   }
 
-  double setupStart = MPI_Wtime();
+  double mlSetupStart = MPI_Wtime();
   ML* ml_obj;
   ML_Aggregate* agg_obj;
   createMLobjects(ml_obj, agg_obj, numGrids, maxIters, dim, K, myMat);
-  double setupEnd = MPI_Wtime();
+  double mlSetupEnd = MPI_Wtime();
+
+  double krylovSetupStart = MPI_Wtime();
+  ML_Krylov* krylov_obj = NULL;
+  if(useMLasPC) {
+    createKrylovObject(krylov_obj, ml_obj);
+  }
+  double krylovSetupEnd = MPI_Wtime();
 
   double* solArr = new double[(myMat.vals).size()];
   double* rhsArr = new double[(myMat.vals).size()];
@@ -77,13 +99,23 @@ int main(int argc, char *argv[]) {
 
   double solveStart = MPI_Wtime();
 
-  ML_Iterate(ml_obj, solArr, rhsArr);
+  if(useMLasPC) {
+    ML_Krylov_Solve(krylov_obj, ((myMat.vals).size()), rhsArr, solArr);
+  } else {
+    ML_Iterate(ml_obj, solArr, rhsArr);
+  }
 
   double solveEnd = MPI_Wtime();
 
   destroyMLobjects(ml_obj, agg_obj);
 
-  std::cout<<"Setup Time = "<<(setupEnd - setupStart)<<std::endl;
+  if(useMLasPC) {
+    ML_Krylov_Destroy(&krylov_obj);
+  }
+
+  std::cout<<"Element Matrix Computation Time = "<<(createElemMatEndTime - createElemMatStartTime)<<std::endl; 
+  std::cout<<"Assembly Time = "<<(assemblyEndTime - assemblyStartTime)<<std::endl; 
+  std::cout<<"ML Setup Time = "<<(mlSetupEnd - mlSetupStart)<<std::endl;
   std::cout<<"Solve Time = "<<(solveEnd - solveStart)<<std::endl;
 
   delete [] solArr;
