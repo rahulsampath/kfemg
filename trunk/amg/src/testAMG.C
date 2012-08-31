@@ -12,9 +12,15 @@
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  assert(argc > 2);
-  const int numGrids = atoi(argv[1]);
-  const int N = atoi(argv[2]);
+  assert(argc == 5);
+  const int dim = atoi(argv[1]); 
+  assert( (dim == 1) || (dim == 3) );
+  const int K = atoi(argv[2]);
+  const int N = atoi(argv[3]); //Nodes per dimension
+  const int numGrids = atoi(argv[4]);
+
+  std::vector<long long int> coeffs;
+  read1DshapeFnCoeffs(K, coeffs);
 
   MyMatrix myMat;
 
