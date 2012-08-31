@@ -20,4 +20,3 @@ clean :
 	rm -rf ./src/*~ ./src/*.o  
 	rm -rf $(EXEC)
 
-
