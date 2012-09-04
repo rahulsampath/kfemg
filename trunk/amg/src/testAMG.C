@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   double krylovSetupStart = MPI_Wtime();
   ML_Krylov* krylov_obj = NULL;
   if(useMLasPC) {
-    createKrylovObject(krylov_obj, ml_obj);
+    createKrylovObject(krylov_obj, ml_obj, maxIters);
   }
   double krylovSetupEnd = MPI_Wtime();
 
