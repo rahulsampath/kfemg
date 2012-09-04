@@ -76,8 +76,10 @@ int main(int argc, char *argv[]) {
   double assemblyStartTime = MPI_Wtime();
   MyMatrix myMat;
   assembleMatrix(myMat, elemMat, K, dim, Nx, Ny, Nz);
-  dirichletMatrixCorrection(myMat, K, dim, Nx, Ny, Nz);
   double assemblyEndTime = MPI_Wtime();
+  double applyBCstartTime = MPI_Wtime();
+  dirichletMatrixCorrection(myMat, K, dim, Nx, Ny, Nz);
+  double applyBCendTime = MPI_Wtime();
 
   double mlSetupStart = MPI_Wtime();
   ML* ml_obj;
@@ -121,6 +123,7 @@ int main(int argc, char *argv[]) {
 
   std::cout<<"Element Matrix Computation Time = "<<(createElemMatEndTime - createElemMatStartTime)<<std::endl; 
   std::cout<<"Assembly Time = "<<(assemblyEndTime - assemblyStartTime)<<std::endl; 
+  std::cout<<"ApplyBC Time = "<<(applyBCendTime - applyBCstartTime)<<std::endl; 
   std::cout<<"ML Setup Time = "<<(mlSetupEnd - mlSetupStart)<<std::endl;
   std::cout<<"Krylov Setup Time = "<<(krylovSetupEnd - krylovSetupStart)<<std::endl;
   std::cout<<"Solve Time = "<<(solveEnd - solveStart)<<std::endl;
