@@ -4,6 +4,14 @@
 #include "ml_include.h"
 #include "amg/include/amgUtils.h"
 
+void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
+    const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
+}
+
+void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const unsigned int dim,
+    const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
+}
+
 void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj) {
   krylov_obj = ML_Krylov_Create(ml_obj->comm);
   ML_Krylov_Set_PrintFreq(krylov_obj, 1);

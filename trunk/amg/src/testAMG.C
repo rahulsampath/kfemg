@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   unsigned int Ny = 1;
   unsigned int Nz = 1;
   unsigned int numGrids = 20;
-  bool useMLasPC = false;
+  bool useMLasPC = true;
   if(dim == 3) {
     assert(argc > 6);
     Ny = atoi(argv[5]);
@@ -63,7 +63,8 @@ int main(int argc, char *argv[]) {
 
   double assemblyStartTime = MPI_Wtime();
   MyMatrix myMat;
-  // computeMatrix();
+  assembleMatrix(myMat, elemMat, K, dim, Nx, Ny, Nz);
+  dirichletMatrixCorrection(myMat, K, dim, Nx, Ny, Nz);
   double assemblyEndTime = MPI_Wtime();
 
   unsigned int maxIters = 1000;
@@ -98,13 +99,11 @@ int main(int argc, char *argv[]) {
   }//end for i
 
   double solveStart = MPI_Wtime();
-
   if(useMLasPC) {
     ML_Krylov_Solve(krylov_obj, ((myMat.vals).size()), rhsArr, solArr);
   } else {
     ML_Iterate(ml_obj, solArr, rhsArr);
   }
-
   double solveEnd = MPI_Wtime();
 
   destroyMLobjects(ml_obj, agg_obj);
@@ -116,6 +115,7 @@ int main(int argc, char *argv[]) {
   std::cout<<"Element Matrix Computation Time = "<<(createElemMatEndTime - createElemMatStartTime)<<std::endl; 
   std::cout<<"Assembly Time = "<<(assemblyEndTime - assemblyStartTime)<<std::endl; 
   std::cout<<"ML Setup Time = "<<(mlSetupEnd - mlSetupStart)<<std::endl;
+  std::cout<<"Krylov Setup Time = "<<(krylovSetupEnd - krylovSetupStart)<<std::endl;
   std::cout<<"Solve Time = "<<(solveEnd - solveStart)<<std::endl;
 
   delete [] solArr;
