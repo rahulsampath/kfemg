@@ -14,7 +14,9 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
     const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz);
 
 void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const unsigned int dim,
-    const unsigned int Nx, const unsigned int Ny, const unsigned int Nz);
+    const int Nx, const int Ny, const int Nz);
+
+void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, double val);
 
 int myMatVec(ML_Operator* data, int in_length, double in[], int out_length, double out[]);
 
