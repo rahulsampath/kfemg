@@ -10,6 +10,7 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
     const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
   unsigned int ye, ze;
   unsigned int dofsPerNode;
+  assert(Nx > 1);
   if(dim == 1) {
     assert(Nz == 1);
     assert(Ny == 1);
@@ -74,32 +75,31 @@ void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const uns
   } else {
     dofsPerNode = (K + 1)*(K + 1)*(K + 1);
   }
+  assert(Nx > 1);
 
-  //x = 0
-  {
-    int xi = 0;
+  std::vector<int> xVec; 
+  xVec.push_back(0);
+  xVec.push_back((Nx - 1));
+
+  std::vector<int> yVec; 
+  yVec.push_back(0);
+  if(Ny > 1) {
+    yVec.push_back((Ny - 1));
+  }
+
+  std::vector<int> zVec;
+  zVec.push_back(0);
+  if(Nz > 1) {
+    zVec.push_back((Nz - 1));
+  }
+
+  //x
+  for(int c = 0; c < xVec.size(); ++c) {
+    int xi = xVec[c];
     for(int zi = 0; zi < Nz; ++zi) {
       for(int yi = 0; yi < Ny; ++yi) {
         std::vector<int> nh;
-        for(int k = -1; k < 2; ++k) {
-          int zo = zi + k;
-          if( (zo >= 0) && (zo < Nz) ) {
-            for(int j = -1; j < 2; ++j) {
-              int yo = yi + j;
-              if( (yo >= 0) && (yo < Ny) ) {
-                for(int i = -1; i < 2; ++i) {
-                  int xo = xi + i;
-                  if( (xo >= 0) && (xo < Nx) ) {
-                    if( k || j || i ) {
-                      int oth = (((zo*Ny) + yo)*Nx) + xo;
-                      nh.push_back(oth);
-                    }
-                  }
-                }//end i
-              }
-            }//end j
-          }
-        }//end k
+        getNeighbors(nh, zi, yi, xi, Nz, Ny, Nx);
         int bnd = (((zi*Ny) + yi)*Nx) + xi;
         int db = 0;
         int bid = (bnd*dofsPerNode) + db;
@@ -118,32 +118,61 @@ void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const uns
         setValue(myMat, bid, bid, 1.0);
       }//end yi
     }//end zi
-  }
+  }//end c 
 
-  //x = (Nx - 1)
-  {
-    int xi = (Nx - 1);
-  }
+  //y
+  for(int c = 0; c < yVec.size(); ++c) {
+    int yi = yVec[c];
+    for(int zi = 0; zi < Nz; ++zi) {
+      for(int xi = 0; xi < Nx; ++xi) {        
+        std::vector<int> nh;
+        getNeighbors(nh, zi, yi, xi, Nz, Ny, Nx);
+        int bnd = (((zi*Ny) + yi)*Nx) + xi;
+        int db = 0;
+        int bid = (bnd*dofsPerNode) + db;
+        for(int n = 0; n < nh.size(); ++n) {
+          for(int dn = 0; dn < dofsPerNode; ++dn){
+            int nid = (nh[n]*dofsPerNode) + dn;
+            setValue(myMat, bid, nid, 0.0);
+            setValue(myMat, nid, bid, 0.0);
+          }//end dn
+        }//end n
+        for(int od = 1; od < dofsPerNode; ++od) {
+          int oid = (bnd*dofsPerNode) + od;
+          setValue(myMat, bid, oid, 0.0);
+          setValue(myMat, oid, bid, 0.0);
+        }//end od
+        setValue(myMat, bid, bid, 1.0);
+      }//end xi
+    }//end zi
+  }//end c
 
-  //y = 0
-  {
-    int yi = 0;
-  }
-
-  //y = (Ny - 1)
-  {
-    int yi = (Ny - 1);
-  }
-
-  //z = 0
-  {
-    int zi = 0;
-  }
-
-  //z = (Nz - 1)
-  {
-    int zi = (Nz - 1);
-  }
+  //z
+  for(int c = 0; c < zVec.size(); ++c) {
+    int zi = zVec[c];
+    for(int yi = 0; yi < Ny; ++yi) {
+      for(int xi = 0; xi < Nx; ++xi) {
+        std::vector<int> nh;
+        getNeighbors(nh, zi, yi, xi, Nz, Ny, Nx);
+        int bnd = (((zi*Ny) + yi)*Nx) + xi;
+        int db = 0;
+        int bid = (bnd*dofsPerNode) + db;
+        for(int n = 0; n < nh.size(); ++n) {
+          for(int dn = 0; dn < dofsPerNode; ++dn){
+            int nid = (nh[n]*dofsPerNode) + dn;
+            setValue(myMat, bid, nid, 0.0);
+            setValue(myMat, nid, bid, 0.0);
+          }//end dn
+        }//end n
+        for(int od = 1; od < dofsPerNode; ++od) {
+          int oid = (bnd*dofsPerNode) + od;
+          setValue(myMat, bid, oid, 0.0);
+          setValue(myMat, oid, bid, 0.0);
+        }//end od
+        setValue(myMat, bid, bid, 1.0);
+      }//end xi
+    }//end yi
+  }//end c
 }
 
 void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj) {
@@ -248,6 +277,29 @@ void myMatVecPrivate(MyMatrix* myMat, const unsigned int len, double* in, double
       out[i] += ( ((myMat->vals)[i][j]) * (in[(myMat->nzCols)[i][j]]) );
     }//end for j
   }//end for i
+}
+
+void getNeighbors(std::vector<int> & nh, int zi, int yi, int xi, int Nz, int Ny, int Nx) {
+  nh.clear();
+  for(int k = -1; k < 2; ++k) {
+    int zo = zi + k;
+    if( (zo >= 0) && (zo < Nz) ) {
+      for(int j = -1; j < 2; ++j) {
+        int yo = yi + j;
+        if( (yo >= 0) && (yo < Ny) ) {
+          for(int i = -1; i < 2; ++i) {
+            int xo = xi + i;
+            if( (xo >= 0) && (xo < Nx) ) {
+              if( k || j || i ) {
+                int oth = (((zo*Ny) + yo)*Nx) + xo;
+                nh.push_back(oth);
+              }
+            }
+          }//end i
+        }
+      }//end j
+    }
+  }//end k
 }
 
 void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, double val) {
