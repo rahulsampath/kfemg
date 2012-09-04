@@ -36,13 +36,13 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
           unsigned int zr = (nr/4);
           unsigned int yr = ((nr/2)%2);
           unsigned int xr = (nr%2);
-          for(unsigned int dr = 0; dr <= dofsPerNode; ++r, ++dr) {
+          for(unsigned int dr = 0; dr < dofsPerNode; ++r, ++dr) {
             unsigned int row = ((((((zi + zr)*Ny) + (yi + yr))*Nx) + (xi + xr))*dofsPerNode) + dr;
             for(unsigned int nc = 0, c = 0; nc < nodesPerElem; ++nc) {
               unsigned int zc = (nc/4);
               unsigned int yc = ((nc/2)%2);
               unsigned int xc = (nc%2);
-              for(unsigned int dc = 0; dc <= dofsPerNode; ++c, ++dc) {
+              for(unsigned int dc = 0; dc < dofsPerNode; ++c, ++dc) {
                 unsigned int col = ((((((zi + zc)*Ny) + (yi + yc))*Nx) + (xi + xc))*dofsPerNode) + dc;
                 std::vector<unsigned int>::iterator pos = std::lower_bound(((myMat.nzCols)[row]).begin(),
                     ((myMat.nzCols)[row]).end(), col);
@@ -65,7 +65,85 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
 }
 
 void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const unsigned int dim,
-    const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
+    const int Nx, const int Ny, const int Nz) {
+  int dofsPerNode;
+  if(dim == 1) {
+    assert(Nz == 1);
+    assert(Ny == 1);
+    dofsPerNode = (K + 1);
+  } else {
+    dofsPerNode = (K + 1)*(K + 1)*(K + 1);
+  }
+
+  //x = 0
+  {
+    int xi = 0;
+    for(int zi = 0; zi < Nz; ++zi) {
+      for(int yi = 0; yi < Ny; ++yi) {
+        std::vector<int> nh;
+        for(int k = -1; k < 2; ++k) {
+          int zo = zi + k;
+          if( (zo >= 0) && (zo < Nz) ) {
+            for(int j = -1; j < 2; ++j) {
+              int yo = yi + j;
+              if( (yo >= 0) && (yo < Ny) ) {
+                for(int i = -1; i < 2; ++i) {
+                  int xo = xi + i;
+                  if( (xo >= 0) && (xo < Nx) ) {
+                    if( k || j || i ) {
+                      int oth = (((zo*Ny) + yo)*Nx) + xo;
+                      nh.push_back(oth);
+                    }
+                  }
+                }//end i
+              }
+            }//end j
+          }
+        }//end k
+        int bnd = (((zi*Ny) + yi)*Nx) + xi;
+        int db = 0;
+        int bid = (bnd*dofsPerNode) + db;
+        for(int n = 0; n < nh.size(); ++n) {
+          for(int dn = 0; dn < dofsPerNode; ++dn){
+            int nid = (nh[n]*dofsPerNode) + dn;
+            setValue(myMat, bid, nid, 0.0);
+            setValue(myMat, nid, bid, 0.0);
+          }//end dn
+        }//end n
+        for(int od = 1; od < dofsPerNode; ++od) {
+          int oid = (bnd*dofsPerNode) + od;
+          setValue(myMat, bid, oid, 0.0);
+          setValue(myMat, oid, bid, 0.0);
+        }//end od
+        setValue(myMat, bid, bid, 1.0);
+      }//end yi
+    }//end zi
+  }
+
+  //x = (Nx - 1)
+  {
+    int xi = (Nx - 1);
+  }
+
+  //y = 0
+  {
+    int yi = 0;
+  }
+
+  //y = (Ny - 1)
+  {
+    int yi = (Ny - 1);
+  }
+
+  //z = 0
+  {
+    int zi = 0;
+  }
+
+  //z = (Nz - 1)
+  {
+    int zi = (Nz - 1);
+  }
 }
 
 void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj) {
@@ -170,6 +248,9 @@ void myMatVecPrivate(MyMatrix* myMat, const unsigned int len, double* in, double
       out[i] += ( ((myMat->vals)[i][j]) * (in[(myMat->nzCols)[i][j]]) );
     }//end for j
   }//end for i
+}
+
+void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, double val) {
 }
 
 
