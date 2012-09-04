@@ -189,14 +189,10 @@ void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const uns
   }//end c
 }
 
-void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const bool useCG, const unsigned int maxIters) {
+void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters) {
   krylov_obj = ML_Krylov_Create(ml_obj->comm);
-  if(useCG) {
-    ML_Krylov_Set_Method(krylov_obj, ML_CG);
-  } else {
-    ML_Krylov_Set_Method(krylov_obj, ML_GMRES);
-    ML_Krylov_Set_GMRESSize(krylov_obj, 40);
-  }
+  //ML_GMRES does not work!
+  ML_Krylov_Set_Method(krylov_obj, ML_CG);
   ML_Krylov_Set_Amatrix(krylov_obj, &((ml_obj->Amat)[0]));
   ML_Krylov_Set_PreconFunc(krylov_obj, ML_MGVSolve_Wrapper);
   ML_Krylov_Set_Precon(krylov_obj, ml_obj);

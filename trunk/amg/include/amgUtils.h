@@ -34,7 +34,7 @@ void destroyMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj);
 
 void computeRandomRHS(double* rhsArr, MyMatrix & myMat);
 
-void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const bool useCG, const unsigned int maxIters);
+void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters);
 
 #endif
 
