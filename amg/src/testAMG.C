@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
   dirichletMatrixCorrection(myMat, K, dim, Nx, Ny, Nz);
   double assemblyEndTime = MPI_Wtime();
 
-  unsigned int maxIters = 1000;
+  unsigned int maxIters = 10000;
   if(numGrids == 1) {
     maxIters = 1;
   }
