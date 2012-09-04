@@ -13,7 +13,7 @@
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   if(argc <= 4) {
-    std::cout<<"USAGE: <exe> dim K useRandomRHS Nx (Ny) (Nz) [numGrids] [useMLasPC]."<<std::endl;
+    std::cout<<"USAGE: <exe> dim K useRandomRHS Nx (Ny) (Nz) [numGrids] [useMLasPC] [maxIters]."<<std::endl;
     std::cout<<"[]: Optional. (): Depends on dim."<<std::endl;
     assert(false);
   }
@@ -44,6 +44,13 @@ int main(int argc, char *argv[]) {
   if(argc > (5 + dim)) {
     useMLasPC = atoi(argv[(5 + dim)]);
   }
+  unsigned int maxIters = 10000;
+  if(argc > (6 + dim)) {
+    maxIters = atoi(argv[(6 + dim)]);
+  }
+  if(numGrids == 1) {
+    maxIters = 1;
+  }
 
   double hx = 1.0/(static_cast<double>(Nx - 1));
   double hy, hz;
@@ -71,11 +78,6 @@ int main(int argc, char *argv[]) {
   assembleMatrix(myMat, elemMat, K, dim, Nx, Ny, Nz);
   dirichletMatrixCorrection(myMat, K, dim, Nx, Ny, Nz);
   double assemblyEndTime = MPI_Wtime();
-
-  unsigned int maxIters = 10000;
-  if(numGrids == 1) {
-    maxIters = 1;
-  }
 
   double mlSetupStart = MPI_Wtime();
   ML* ml_obj;
