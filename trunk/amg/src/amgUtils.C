@@ -317,6 +317,11 @@ void getNeighbors(std::vector<int> & nh, int zi, int yi, int xi, int Nz, int Ny,
 }
 
 void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, double val) {
+  std::vector<unsigned int>::iterator pos = std::lower_bound(((myMat.nzCols)[row]).begin(),
+      ((myMat.nzCols)[row]).end(), col);
+  assert(pos != (((myMat.nzCols)[row]).end()));
+  assert((*pos) == col);
+  (myMat.vals)[row][(pos - (((myMat.nzCols)[row]).begin()))] = val;
 }
 
 
