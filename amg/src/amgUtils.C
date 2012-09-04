@@ -1,11 +1,67 @@
 
 #include <cassert>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 #include "ml_include.h"
 #include "amg/include/amgUtils.h"
 
 void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
     const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
+  unsigned int ye, ze;
+  unsigned int dofsPerNode;
+  if(dim == 1) {
+    assert(Nz == 1);
+    assert(Ny == 1);
+    ze = 1;
+    ye = 1;
+    dofsPerNode = (K + 1);
+  } else {
+    ze = Nz - 1;
+    ye = Ny - 1;
+    dofsPerNode = (K + 1)*(K + 1)*(K + 1);
+  }
+  unsigned int xe = Nx - 1;
+  unsigned int matSz = dofsPerNode*Nz*Ny*Nx;
+  myMat.nzCols.clear();
+  myMat.vals.clear();
+  myMat.nzCols.resize(matSz);
+  myMat.vals.resize(matSz);
+
+  unsigned int nodesPerElem = (1 << dim);
+  for(unsigned int zi = 0; zi < ze; ++zi) {
+    for(unsigned int yi = 0; yi < ye; ++yi) {
+      for(unsigned int xi = 0; xi < xe; ++xi) {
+        for(unsigned int nr = 0, r = 0; nr < nodesPerElem; ++nr) {
+          unsigned int zr = (nr/4);
+          unsigned int yr = ((nr/2)%2);
+          unsigned int xr = (nr%2);
+          for(unsigned int dr = 0; dr <= dofsPerNode; ++r, ++dr) {
+            unsigned int row = ((((((zi + zr)*Ny) + (yi + yr))*Nx) + (xi + xr))*dofsPerNode) + dr;
+            for(unsigned int nc = 0, c = 0; nc < nodesPerElem; ++nc) {
+              unsigned int zc = (nc/4);
+              unsigned int yc = ((nc/2)%2);
+              unsigned int xc = (nc%2);
+              for(unsigned int dc = 0; dc <= dofsPerNode; ++c, ++dc) {
+                unsigned int col = ((((((zi + zc)*Ny) + (yi + yc))*Nx) + (xi + xc))*dofsPerNode) + dc;
+                std::vector<unsigned int>::iterator pos = std::lower_bound(((myMat.nzCols)[row]).begin(),
+                    ((myMat.nzCols)[row]).end(), col);
+                if(pos == (((myMat.nzCols)[row]).end())) {
+                  ((myMat.vals)[row]).insert((((myMat.vals)[row]).end()), (elemMat[r][c]));
+                  ((myMat.nzCols)[row]).insert(pos, col);
+                } else if((*pos) == col) {
+                  (myMat.vals)[row][(pos - (((myMat.nzCols)[row]).begin()))] += (elemMat[r][c]);
+                } else {
+                  ((myMat.vals)[row]).insert(((((myMat.vals)[row]).begin()) + (pos - (((myMat.nzCols)[row]).begin()))), (elemMat[r][c]));
+                  ((myMat.nzCols)[row]).insert(pos, col);
+                }
+              }//end dc
+            }//end nc
+          }//end dr
+        }//end nr
+      }//end xi
+    }//end yi
+  }//end zi
 }
 
 void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const unsigned int dim,
