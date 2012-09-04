@@ -9,20 +9,28 @@
 void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
     const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
   unsigned int ye, ze;
-  unsigned int dofsPerNode;
-  assert(Nx > 1);
-  if(dim == 1) {
-    assert(Nz == 1);
-    assert(Ny == 1);
-    ze = 1;
-    ye = 1;
-    dofsPerNode = (K + 1);
-  } else {
-    ze = Nz - 1;
+  unsigned int dofsPerNode = (K + 1);
+  if(dim > 1) {
+    assert(Ny > 1);
     ye = Ny - 1;
-    dofsPerNode = (K + 1)*(K + 1)*(K + 1);
+    dofsPerNode *= (K + 1);
+  } else {
+    assert(Ny == 1);
+    ye = 1;
   }
+  if(dim > 2) {
+    assert(Nz > 1);
+    ze = Nz - 1;
+    dofsPerNode *= (K + 1);
+  } else {
+    assert(Nz == 1);
+    ze = 1;
+  }
+  assert(dim > 0);
+  assert(Nx > 1);
+
   unsigned int xe = Nx - 1;
+
   unsigned int matSz = dofsPerNode*Nz*Ny*Nx;
   myMat.nzCols.clear();
   myMat.vals.clear();
@@ -67,14 +75,20 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
 
 void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const unsigned int dim,
     const int Nx, const int Ny, const int Nz) {
-  int dofsPerNode;
-  if(dim == 1) {
-    assert(Nz == 1);
-    assert(Ny == 1);
-    dofsPerNode = (K + 1);
+  int dofsPerNode = (K + 1);
+  if(dim > 1) {
+    assert(Ny > 1);
+    dofsPerNode *= (K + 1);
   } else {
-    dofsPerNode = (K + 1)*(K + 1)*(K + 1);
+    assert(Ny == 1);
   }
+  if(dim > 2) {
+    assert(Nz > 1);
+    dofsPerNode *= (K + 1);
+  } else {
+    assert(Nz == 1);
+  }
+  assert(dim > 0);
   assert(Nx > 1);
 
   std::vector<int> xVec; 
@@ -82,14 +96,14 @@ void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const uns
   xVec.push_back((Nx - 1));
 
   std::vector<int> yVec; 
-  yVec.push_back(0);
-  if(Ny > 1) {
+  if(dim > 1) {
+    yVec.push_back(0);
     yVec.push_back((Ny - 1));
   }
 
   std::vector<int> zVec;
-  zVec.push_back(0);
-  if(Nz > 1) {
+  if(dim > 2) {
+    zVec.push_back(0);
     zVec.push_back((Nz - 1));
   }
 
