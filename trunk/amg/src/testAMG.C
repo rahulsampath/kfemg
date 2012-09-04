@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   if(argc <= 4) {
     std::cout<<"USAGE: <exe> dim K useRandomRHS Nx (Ny) (Nz) [numGrids] [useMLasPC]."<<std::endl;
-    std::cout<<"[]: Optional. (): Optional depending on dim."<<std::endl;
+    std::cout<<"[]: Optional. (): Depends on dim."<<std::endl;
     assert(false);
   }
   const unsigned int dim = atoi(argv[1]); 
