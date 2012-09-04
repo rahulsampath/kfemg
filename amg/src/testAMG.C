@@ -12,40 +12,45 @@
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-
-  assert(argc > 4);
+  if(argc <= 4) {
+    std::cout<<"USAGE: <exe> dim K useRandomRHS Nx (Ny) (Nz) [numGrids] [useMLasPC]."<<std::endl;
+    std::cout<<"[]: Optional. (): Optional depending on dim."<<std::endl;
+    assert(false);
+  }
   const unsigned int dim = atoi(argv[1]); 
+  assert(dim > 0);
   assert( (dim == 1) || (dim == 3) );
   const unsigned int K = atoi(argv[2]);
   bool useRandomRHS = atoi(argv[3]);
   const unsigned int Nx = atoi(argv[4]); 
+  assert(Nx > 1);
   unsigned int Ny = 1;
-  unsigned int Nz = 1;
-  unsigned int numGrids = 20;
-  bool useMLasPC = true;
-  if(dim == 3) {
-    assert(argc > 6);
+  if(dim > 1) {
+    assert(argc > 5);
     Ny = atoi(argv[5]);
+    assert(Ny > 1);
+  }
+  unsigned int Nz = 1;
+  if(dim > 2) {
+    assert(argc > 6);
     Nz = atoi(argv[6]);
-    if(argc > 7) {
-      numGrids = atoi(argv[7]);
-    }
-    if(argc > 8) {
-      useMLasPC = atoi(argv[8]);
-    }
-  } else {
-    if(argc > 5) {
-      numGrids = atoi(argv[5]);
-    }
-    if(argc > 6) {
-      useMLasPC = atoi(argv[6]);
-    }
+    assert(Nz > 1);
+  }
+  unsigned int numGrids = 20;
+  if(argc > (4 + dim)) {
+    numGrids = atoi(argv[(4 + dim)]);
+  }
+  bool useMLasPC = true;
+  if(argc > (5 + dim)) {
+    useMLasPC = atoi(argv[(5 + dim)]);
   }
 
   double hx = 1.0/(static_cast<double>(Nx - 1));
   double hy, hz;
-  if(dim == 3) {
+  if(dim > 1) {
     hy = 1.0/(static_cast<double>(Ny - 1));
+  }
+  if(dim > 2) {
     hz = 1.0/(static_cast<double>(Nz - 1));
   }
 
