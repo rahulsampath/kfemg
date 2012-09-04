@@ -189,14 +189,15 @@ void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const uns
   }//end c
 }
 
-void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj) {
+void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters) {
   krylov_obj = ML_Krylov_Create(ml_obj->comm);
-  ML_Krylov_Set_PrintFreq(krylov_obj, 1);
   ML_Krylov_Set_Method(krylov_obj, ML_CG);
   ML_Krylov_Set_Amatrix(krylov_obj, &((ml_obj->Amat)[0]));
   ML_Krylov_Set_PreconFunc(krylov_obj, ML_MGVSolve_Wrapper);
   ML_Krylov_Set_Precon(krylov_obj, ml_obj);
+  ML_Krylov_Set_MaxIterations(krylov_obj, maxIters);
   ML_Krylov_Set_Tolerance(krylov_obj, 1.0e-12);
+  ML_Krylov_Set_PrintFreq(krylov_obj, 1);
 }
 
 void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int numGrids, 
@@ -213,14 +214,19 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
   ML_Set_PrintLevel(10);
   ML_Set_OutputLevel(ml_obj, 10);
 
-  unsigned int numPDEs;
-  unsigned int coarseSize;
-  if(dim == 1) {
-    numPDEs = (K + 1); //DOFs per node
-    coarseSize = 3*numPDEs; //2 Elements per dim
-  } else {
-    numPDEs = (K + 1)*(K + 1)*(K + 1); //DOFs per node
-    coarseSize = 27*numPDEs; //2 Elements per dim
+  unsigned int numPDEs = (K + 1); //DOFs per node;
+  if(dim > 1) {
+    numPDEs *= (K + 1);
+  } 
+  if(dim > 2) {
+    numPDEs *= (K + 1);
+  }
+  unsigned int coarseSize = 3*numPDEs; //2 Elements per dim;
+  if(dim > 1) {
+    coarseSize *= 3;
+  } 
+  if(dim > 2) {
+    coarseSize *= 3;
   }
 
   ML_Aggregate_Create(&agg_obj);
