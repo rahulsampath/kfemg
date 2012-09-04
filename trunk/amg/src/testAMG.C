@@ -13,7 +13,7 @@
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   if(argc <= 4) {
-    std::cout<<"USAGE: <exe> dim K useRandomRHS Nx (Ny) (Nz) [numGrids] [useMLasPC]."<<std::endl;
+    std::cout<<"USAGE: <exe> dim K useRandomRHS Nx (Ny) (Nz) [numGrids] [useMLasPC] [useCG]."<<std::endl;
     std::cout<<"[]: Optional. (): Depends on dim."<<std::endl;
     assert(false);
   }
@@ -43,6 +43,10 @@ int main(int argc, char *argv[]) {
   bool useMLasPC = true;
   if(argc > (5 + dim)) {
     useMLasPC = atoi(argv[(5 + dim)]);
+  }
+  bool useCG = false;
+  if(argc > (6 + dim)) {
+    useCG = atoi(argv[(6 + dim)]);
   }
 
   double hx = 1.0/(static_cast<double>(Nx - 1));
@@ -86,7 +90,7 @@ int main(int argc, char *argv[]) {
   double krylovSetupStart = MPI_Wtime();
   ML_Krylov* krylov_obj = NULL;
   if(useMLasPC) {
-    createKrylovObject(krylov_obj, ml_obj, maxIters);
+    createKrylovObject(krylov_obj, ml_obj, useCG, maxIters);
   }
   double krylovSetupEnd = MPI_Wtime();
 

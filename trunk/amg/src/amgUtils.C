@@ -189,9 +189,14 @@ void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const uns
   }//end c
 }
 
-void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters) {
+void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const bool useCG, const unsigned int maxIters) {
   krylov_obj = ML_Krylov_Create(ml_obj->comm);
-  ML_Krylov_Set_Method(krylov_obj, ML_CG);
+  if(useCG) {
+    ML_Krylov_Set_Method(krylov_obj, ML_CG);
+  } else {
+    ML_Krylov_Set_Method(krylov_obj, ML_GMRES);
+    ML_Krylov_Set_GMRESSize(krylov_obj, 40);
+  }
   ML_Krylov_Set_Amatrix(krylov_obj, &((ml_obj->Amat)[0]));
   ML_Krylov_Set_PreconFunc(krylov_obj, ML_MGVSolve_Wrapper);
   ML_Krylov_Set_Precon(krylov_obj, ml_obj);
@@ -239,8 +244,8 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
   std::cout<<"Number of actual MG levels: "<<nlevels<<std::endl;
 
   for(int lev = 0; lev < (nlevels - 1); ++lev) {
-    ML_Gen_Smoother_SymGaussSeidel(ml_obj, lev, ML_BOTH, 2, 1.0);
-    //ML_Gen_Smoother_Jacobi(ml_obj, lev, ML_BOTH, 2, 0.8);
+    //ML_Gen_Smoother_SymGaussSeidel(ml_obj, lev, ML_BOTH, 2, 1.0);
+    ML_Gen_Smoother_Jacobi(ml_obj, lev, ML_BOTH, 2, 0.8);
   }
   ML_Gen_Smoother_Amesos(ml_obj, (nlevels - 1), ML_AMESOS_KLU, -1, 0.0);
 
