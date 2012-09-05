@@ -234,14 +234,17 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
   agg_obj->num_PDE_eqns = numPDEs;
   agg_obj->nullspace_dim = 1; //CHECK THIS!
   ML_Aggregate_Set_MaxCoarseSize(agg_obj, coarseSize);
-  ML_Aggregate_Set_CoarsenScheme_UncoupledMIS(agg_obj);
+ // ML_Aggregate_Set_GraphOrdering(agg_obj);
+ // ML_Aggregate_Set_CoarsenScheme_Uncoupled(agg_obj);
+ // ML_Aggregate_Set_DampingFactor(agg_obj, 0.0);
+  //ML_Aggregate_Set_Threshold(agg_obj, 0.0);
 
   const unsigned int nlevels = ML_Gen_MGHierarchy_UsingAggregation(ml_obj, 0, ML_INCREASING, agg_obj);
   std::cout<<"Number of actual MG levels: "<<nlevels<<std::endl;
 
   for(int lev = 0; lev < (nlevels - 1); ++lev) {
-    //ML_Gen_Smoother_SymGaussSeidel(ml_obj, lev, ML_BOTH, 2, 1.0);
-    ML_Gen_Smoother_Jacobi(ml_obj, lev, ML_BOTH, 2, 0.8);
+    ML_Gen_Smoother_SymGaussSeidel(ml_obj, lev, ML_BOTH, 2, 1.0);
+    //ML_Gen_Smoother_Jacobi(ml_obj, lev, ML_BOTH, 2, (8.0/9.0));
   }
   ML_Gen_Smoother_Amesos(ml_obj, (nlevels - 1), ML_AMESOS_KLU, -1, 0.0);
 
