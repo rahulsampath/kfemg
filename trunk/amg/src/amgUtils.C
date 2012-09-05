@@ -1,10 +1,19 @@
 
 #include <cassert>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <algorithm>
 #include "ml_include.h"
 #include "amg/include/amgUtils.h"
+
+void printMatrix(MyMatrix & myMat) {
+  for(size_t i = 0; i < ((myMat.nzCols).size()); ++i) {
+    for(size_t j = 0; j < (((myMat.nzCols)[i]).size()); ++j) {
+      std::cout<<"A["<<i<<"]["<<((myMat.nzCols)[i][j])<<"] = "<<std::setprecision(15)<<((myMat.vals)[i][j])<<std::endl;
+    }//end j
+  }//end i
+}
 
 void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
     const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
@@ -234,9 +243,9 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
   agg_obj->num_PDE_eqns = numPDEs;
   agg_obj->nullspace_dim = 1; //CHECK THIS!
   ML_Aggregate_Set_MaxCoarseSize(agg_obj, coarseSize);
- // ML_Aggregate_Set_GraphOrdering(agg_obj);
- // ML_Aggregate_Set_CoarsenScheme_Uncoupled(agg_obj);
- // ML_Aggregate_Set_DampingFactor(agg_obj, 0.0);
+  // ML_Aggregate_Set_GraphOrdering(agg_obj);
+  // ML_Aggregate_Set_CoarsenScheme_Uncoupled(agg_obj);
+  // ML_Aggregate_Set_DampingFactor(agg_obj, 0.0);
   //ML_Aggregate_Set_Threshold(agg_obj, 0.0);
 
   const unsigned int nlevels = ML_Gen_MGHierarchy_UsingAggregation(ml_obj, 0, ML_INCREASING, agg_obj);
@@ -333,5 +342,4 @@ void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, double val) 
   assert((*pos) == col);
   (myMat.vals)[row][(pos - (((myMat.nzCols)[row]).begin()))] = val;
 }
-
 

@@ -80,6 +80,7 @@ int main(int argc, char *argv[]) {
   double applyBCstartTime = MPI_Wtime();
   dirichletMatrixCorrection(myMat, K, dim, Nx, Ny, Nz);
   double applyBCendTime = MPI_Wtime();
+  printMatrix(myMat);
 
   double mlSetupStart = MPI_Wtime();
   ML* ml_obj;
