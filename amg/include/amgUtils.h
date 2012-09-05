@@ -10,6 +10,8 @@ struct MyMatrix {
   std::vector<std::vector<double> > vals;
 };
 
+void printMatrix(MyMatrix & myMat);
+
 void getNeighbors(std::vector<int> & nh, int zi, int yi, int xi, int Nz, int Ny, int Nx);
 
 void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
