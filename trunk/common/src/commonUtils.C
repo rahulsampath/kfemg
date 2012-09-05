@@ -14,7 +14,7 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
     (mat[i]).resize(matSz);
   }//end i
 
-  unsigned int numGaussPts = K + 1;
+  unsigned int numGaussPts = (2*K) + 2;
   std::vector<double> gPt(numGaussPts);
   std::vector<double> gWt(numGaussPts);
   gaussQuad(gPt, gWt);
