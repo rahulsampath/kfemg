@@ -68,10 +68,19 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<double> > elemMat;
   if(dim == 1) {
     createPoisson1DelementMatrix(K, coeffs, hx, elemMat);
-  } else {
+  } else if(dim == 3) {
     createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat);
+  } else {
+    assert(false);
   }
   double createElemMatEndTime = MPI_Wtime();
+
+  for(int i = 0; i < elemMat.size(); ++i) {
+    for(int j = 0; j < elemMat[i].size(); ++j) {
+      std::cout<<"E["<<i<<"]["<<j<<"] = "<<std::setprecision(15)<<(elemMat[i][j])<<std::endl;
+    }//end j
+    std::cout<<std::endl;
+  }//end i
 
   double assemblyStartTime = MPI_Wtime();
   MyMatrix myMat;
