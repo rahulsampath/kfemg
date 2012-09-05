@@ -12,6 +12,7 @@ void printMatrix(MyMatrix & myMat) {
     for(size_t j = 0; j < (((myMat.nzCols)[i]).size()); ++j) {
       std::cout<<"A["<<i<<"]["<<((myMat.nzCols)[i][j])<<"] = "<<std::setprecision(15)<<((myMat.vals)[i][j])<<std::endl;
     }//end j
+    std::cout<<std::endl;
   }//end i
 }
 
