@@ -135,6 +135,15 @@ double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNode
   return result;
 }
 
+double eval2DshFn(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, unsigned int xDofId, 
+    unsigned int K, std::vector<long long int> & coeffs, double yi, double xi) {
+
+  double result = ( eval1DshFn(yNodeId, yDofId, K, coeffs, yi) *
+      eval1DshFn(xNodeId, xDofId, K, coeffs, xi) );
+
+  return result;
+}
+
 double eval1DshFnLderivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
     std::vector<long long int> & coeffs, double xi, unsigned int l) {
   assert(nodeId < 2);
