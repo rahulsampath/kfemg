@@ -211,8 +211,8 @@ void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int m
   ML_Krylov_Set_PrintFreq(krylov_obj, 1);
 }
 
-void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int numGrids, 
-    const unsigned int maxIters, const double rTol, const unsigned int dim, const unsigned int K, MyMatrix& myMat) {
+void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int numGrids, const unsigned int maxIters, 
+    const double rTol, const unsigned int dim, const unsigned int K, MyMatrix& myMat) {
   ML_set_random_seed(123456);
 
   ML_Create(&ml_obj, numGrids);
