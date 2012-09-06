@@ -10,17 +10,17 @@ EXEC = bin/testRead bin/testGaussQuad
 all : ${ARCHIVES} $(EXEC)
 
 ./src/%.o: ./src/%.C
-	$(PCC) -c $(INCLUDE) $< -o $@
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 ./lib/libcommon.a: ./src/commonUtils.o ./src/gaussQuad.o 
 	${AR} ${AR_FLAGS} $@ $^
 	${RANLIB} $@
 
 bin/testRead : ./src/testRead.o  
-	$(PCC) $^ -o $@ $(LIBS)
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS)
 
 bin/testGaussQuad : ./src/testGaussQuad.o  
-	$(PCC) $^ -o $@ $(LIBS)
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS)
 
 clean :
 	rm -rf ./src/*~ ./src/*.o  
