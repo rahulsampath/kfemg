@@ -19,7 +19,7 @@ void printMatrix(MyMatrix & myMat) {
 void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
     const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
   unsigned int ye, ze;
-  unsigned int dofsPerNode = (K + 1);
+  size_t dofsPerNode = (K + 1);
   if(dim > 1) {
     assert(Ny > 1);
     ye = Ny - 1;
@@ -42,7 +42,7 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
 
   unsigned int xe = Nx - 1;
 
-  unsigned int matSz = dofsPerNode*Nz*Ny*Nx;
+  size_t matSz = dofsPerNode*Nz*Ny*Nx;
   std::cout<<"GlobalMatSize = "<<matSz<<std::endl;
   myMat.nzCols.clear();
   myMat.vals.clear();
