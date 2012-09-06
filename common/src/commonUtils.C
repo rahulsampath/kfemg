@@ -40,18 +40,17 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
                               for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
                                 mat[r][c] += ( gWt[gZ] * gWt[gY] * gWt[gX] * (
                                       ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
-                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) * 
+                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) *
                                         eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
-                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) ) +
+                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) ) + 
                                       ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
                                                               coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 1, 0, hz, hy, hx) * 
                                         eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
                                           coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 1, 0, hz, hy, hx) ) +
                                       ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
-                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) *
+                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) * 
                                         eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
-                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) ) 
-                                      ) );
+                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) ) ) );
                               }//end gX
                             }//end gY
                           }//end gZ
@@ -71,6 +70,59 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
   for(unsigned int i = 0; i < matSz; ++i) {
     for(unsigned int j = 0; j < matSz; ++j) {
       mat[i][j] *= (hx*hy*hz/8.0);
+    }//end j
+  }//end i
+}
+
+void createPoisson2DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
+    double hy, double hx, std::vector<std::vector<double> >& mat) {
+  unsigned int matSz = 4*(K + 1)*(K + 1);
+  std::cout<<"ElemMatSize = "<<matSz<<std::endl;
+  mat.resize(matSz);
+  for(unsigned int i = 0; i < matSz; ++i) {
+    (mat[i]).resize(matSz);
+  }//end i
+
+  unsigned int numGaussPts = (2*K) + 2;
+  std::cout<<"NumGaussPtsPerDim = "<<numGaussPts<<std::endl;
+  std::vector<double> gPt(numGaussPts);
+  std::vector<double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  for(unsigned int rNodeY = 0, r = 0; rNodeY < 2; ++rNodeY) {
+    for(unsigned int rNodeX = 0; rNodeX < 2; ++rNodeX) {
+      for(unsigned int rDofY = 0; rDofY <= K; ++rDofY) {
+        for(unsigned int rDofX = 0; rDofX <= K; ++rDofX, ++r) {
+          for(unsigned int cNodeY = 0, c = 0; cNodeY < 2; ++cNodeY) {
+            for(unsigned int cNodeX = 0; cNodeX < 2; ++cNodeX) {
+              for(unsigned int cDofY = 0; cDofY <= K; ++cDofY) {
+                for(unsigned int cDofX = 0; cDofX <= K; ++cDofX, ++c) {
+                  mat[r][c] = 0.0;
+                  for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
+                    for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
+                      mat[r][c] += ( gWt[gY] * gWt[gX] * (
+                            ( eval2DshFnGderivative(rNodeY, rNodeX, rDofY, rDofX, K,
+                                                    coeffs, gPt[gY], gPt[gX], 1, 0, hy, hx) * 
+                              eval2DshFnGderivative(cNodeY, cNodeX, cDofY, cDofX, K,
+                                coeffs, gPt[gY], gPt[gX], 1, 0, hy, hx) ) +
+                            ( eval2DshFnGderivative(rNodeY, rNodeX, rDofY, rDofX, K,
+                                                    coeffs, gPt[gY], gPt[gX], 0, 1, hy, hx) * 
+                              eval2DshFnGderivative(cNodeY, cNodeX, cDofY, cDofX, K,
+                                coeffs, gPt[gY], gPt[gX], 0, 1, hy, hx) ) ) );
+                    }//end gX
+                  }//end gY
+                }//end cDofX
+              }//end cDofY
+            }//end cNodeX
+          }//end cNodeY
+        }//end rDofX
+      }//end rDofY
+    }//end rNodeX
+  }//end rNodeY
+
+  for(unsigned int i = 0; i < matSz; ++i) {
+    for(unsigned int j = 0; j < matSz; ++j) {
+      mat[i][j] *= (hx*hy/4.0);
     }//end j
   }//end i
 }
@@ -96,8 +148,8 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
         for(unsigned int cDof = 0; cDof <= K; ++cDof, ++c) {
           mat[r][c] = 0.0;
           for(unsigned int g = 0; g < numGaussPts; ++g) {
-            mat[r][c] += ( gWt[g] * eval1DshFnLderivative(rNode, rDof, K, coeffs, gPt[g], 1) *
-                eval1DshFnLderivative(cNode, cDof, K, coeffs, gPt[g], 1) );
+            mat[r][c] += ( gWt[g] * eval1DshFnGderivative(rNode, rDof, K, coeffs, gPt[g], 1, hx) *
+                eval1DshFnGderivative(cNode, cDof, K, coeffs, gPt[g], 1, hx) );
           }//end g
         }//end cDof
       }//end cNode
@@ -106,7 +158,7 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
 
   for(unsigned int i = 0; i < matSz; ++i) {
     for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= (2.0/hx);
+      mat[i][j] *= (hx/2.0);
     }//end j
   }//end i
 }
@@ -120,6 +172,25 @@ double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigne
       eval1DshFnLderivative(zNodeId, zDofId, K, coeffs, zi, zl) *
       eval1DshFnLderivative(yNodeId, yDofId, K, coeffs, yi, yl) *
       eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
+
+  return result;
+}
+
+double eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, 
+    unsigned int xDofId, unsigned int K, std::vector<long long int> & coeffs, double yi,
+    double xi, unsigned int yl, unsigned int xl, double hy, double hx) {
+
+  double result = ( pow((2.0/hy), yl) * pow((2.0/hx), xl) * 
+      eval1DshFnLderivative(yNodeId, yDofId, K, coeffs, yi, yl) *
+      eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
+
+  return result;
+}
+
+double eval1DshFnGderivative(unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
+    std::vector<long long int> & coeffs, double xi, unsigned int xl, double hx) {
+
+  double result = ( pow((2.0/hx), xl) * eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
 
   return result;
 }
