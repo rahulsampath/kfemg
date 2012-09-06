@@ -38,10 +38,12 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
   }
   assert(dim > 0);
   assert(Nx > 1);
+  std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
 
   unsigned int xe = Nx - 1;
 
   unsigned int matSz = dofsPerNode*Nz*Ny*Nx;
+  std::cout<<"GlobalMatSize = "<<matSz<<std::endl;
   myMat.nzCols.clear();
   myMat.vals.clear();
   myMat.nzCols.resize(matSz);
