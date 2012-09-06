@@ -30,6 +30,13 @@ double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigne
     std::vector<long long int> & coeffs, double zi, double yi, double xi,
     unsigned int zl, unsigned int yl, unsigned int xl, double hz, double hy, double hx);
 
+double eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, 
+    unsigned int xDofId, unsigned int K, std::vector<long long int> & coeffs, double yi, double xi,
+    unsigned int yl, unsigned int xl, double hy, double hx);
+
+double eval1DshFnGderivative(unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
+    std::vector<long long int> & coeffs, double xi, unsigned int xl, double hx);
+
 double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
     std::vector<long long int> & coeffs, double zi, double yi, double xi);

@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   }
   const unsigned int dim = atoi(argv[1]); 
   assert(dim > 0);
-  assert( (dim == 1) || (dim == 3) );
+  assert(dim <= 3);
   std::cout<<"Dim = "<<dim<<std::endl;
   const unsigned int K = atoi(argv[2]);
   std::cout<<"K = "<<K<<std::endl;
@@ -83,10 +83,10 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<double> > elemMat;
   if(dim == 1) {
     createPoisson1DelementMatrix(K, coeffs, hx, elemMat);
-  } else if(dim == 3) {
-    createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat);
+  } else if(dim == 2) {
+    createPoisson2DelementMatrix(K, coeffs, hy, hx, elemMat);
   } else {
-    assert(false);
+    createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat);
   }
   double createElemMatEndTime = MPI_Wtime();
 
