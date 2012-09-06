@@ -29,14 +29,14 @@ void myMatVecPrivate(MyMatrix* myMat, const unsigned int len, double* in, double
 int myGetRow(ML_Operator* data, int N_requested_rows, int requested_rows[],
     int allocated_space, int columns[], double values[], int row_lengths[]);
 
-void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int numGrids, 
-    const unsigned int maxIters, const unsigned int dim, const unsigned int K, MyMatrix& myMat);
+void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int numGrids, const unsigned int maxIters,
+    const double rTol, const unsigned int dim, const unsigned int K, MyMatrix& myMat);
 
 void destroyMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj);
 
 void computeRandomRHS(double* rhsArr, MyMatrix & myMat);
 
-void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters);
+void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters const double rTol);
 
 #endif
 
