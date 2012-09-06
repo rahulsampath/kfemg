@@ -8,13 +8,13 @@ EXEC = bin/testAMG
 all : $(EXEC)
 
 ./src/amgUtils.o: ./src/amgUtils.C
-	$(PCC) -c $(INCLUDE) $< -o $@
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 ./src/testAMG.o: ./src/testAMG.C
-	$(PCC) -c $(INCLUDE) $< -o $@
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 bin/testAMG : ./src/testAMG.o ./src/amgUtils.o 
-	$(PCC) $^ -o $@ $(LIBS) 
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 clean :
 	rm -rf ./src/*~ ./src/*.o  
