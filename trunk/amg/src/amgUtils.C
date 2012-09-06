@@ -199,7 +199,7 @@ void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const uns
   }//end c
 }
 
-void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters) {
+void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters, const double rTol) {
   krylov_obj = ML_Krylov_Create(ml_obj->comm);
   //ML_GMRES does not work!
   ML_Krylov_Set_Method(krylov_obj, ML_CG);
@@ -207,12 +207,12 @@ void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int m
   ML_Krylov_Set_PreconFunc(krylov_obj, ML_MGVSolve_Wrapper);
   ML_Krylov_Set_Precon(krylov_obj, ml_obj);
   ML_Krylov_Set_MaxIterations(krylov_obj, maxIters);
-  ML_Krylov_Set_Tolerance(krylov_obj, 1.0e-12);
+  ML_Krylov_Set_Tolerance(krylov_obj, rTol);
   ML_Krylov_Set_PrintFreq(krylov_obj, 1);
 }
 
 void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int numGrids, 
-    const unsigned int maxIters, const unsigned int dim, const unsigned int K, MyMatrix& myMat) {
+    const unsigned int maxIters, const double rTol, const unsigned int dim, const unsigned int K, MyMatrix& myMat) {
   ML_set_random_seed(123456);
 
   ML_Create(&ml_obj, numGrids);
@@ -220,7 +220,7 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
   ML_Set_Amatrix_Getrow(ml_obj, 0, &myGetRow, NULL, ((myMat.vals).size()));
   ML_Set_Amatrix_Matvec(ml_obj, 0, &myMatVec);
   ML_Set_MaxIterations(ml_obj, maxIters);
-  ML_Set_Tolerance(ml_obj, 1.0e-12);
+  ML_Set_Tolerance(ml_obj, rTol);
   ML_Set_ResidualOutputFrequency(ml_obj, 1);
   ML_Set_PrintLevel(10);
   ML_Set_OutputLevel(ml_obj, 10);
@@ -242,19 +242,14 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
 
   ML_Aggregate_Create(&agg_obj);
   agg_obj->num_PDE_eqns = numPDEs;
-  agg_obj->nullspace_dim = 1; //CHECK THIS!
+  agg_obj->nullspace_dim = 1; 
   ML_Aggregate_Set_MaxCoarseSize(agg_obj, coarseSize);
-  // ML_Aggregate_Set_GraphOrdering(agg_obj);
-  // ML_Aggregate_Set_CoarsenScheme_Uncoupled(agg_obj);
-  // ML_Aggregate_Set_DampingFactor(agg_obj, 0.0);
-  //ML_Aggregate_Set_Threshold(agg_obj, 0.0);
 
   const unsigned int nlevels = ML_Gen_MGHierarchy_UsingAggregation(ml_obj, 0, ML_INCREASING, agg_obj);
   std::cout<<"Number of actual MG levels: "<<nlevels<<std::endl;
 
   for(int lev = 0; lev < (nlevels - 1); ++lev) {
     ML_Gen_Smoother_SymGaussSeidel(ml_obj, lev, ML_BOTH, 2, 1.0);
-    //ML_Gen_Smoother_Jacobi(ml_obj, lev, ML_BOTH, 2, (8.0/9.0));
   }
   ML_Gen_Smoother_Amesos(ml_obj, (nlevels - 1), ML_AMESOS_KLU, -1, 0.0);
 
