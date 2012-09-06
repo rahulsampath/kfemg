@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+#include <iostream>
 #include <cmath>
 #include <vector>
 #include "common/include/commonUtils.h"
