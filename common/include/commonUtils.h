@@ -10,14 +10,17 @@ double legendrePolyPrime(int n, double x);
 
 double gaussWeight(int n, double x); 
 
+void gaussQuad(std::vector<double> & x, std::vector<double> & w);
+
 bool softEquals(double a, double b);
 
 void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs);
 
-void gaussQuad(std::vector<double> & x, std::vector<double> & w);
-
 void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
     double hx, std::vector<std::vector<double> >& mat);
+
+void createPoisson2DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
+    double hy, double hx, std::vector<std::vector<double> >& mat);
 
 void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
     double hz, double hy, double hx, std::vector<std::vector<double> >& mat);
@@ -30,6 +33,9 @@ double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigne
 double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
     std::vector<long long int> & coeffs, double zi, double yi, double xi);
+
+double eval2DshFn(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, unsigned int xDofId, 
+    unsigned int K, std::vector<long long int> & coeffs, double yi, double xi);
 
 double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K, 
     std::vector<long long int> & coeffs, double xi);
