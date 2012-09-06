@@ -76,12 +76,15 @@ int main(int argc, char *argv[]) {
   }
   double createElemMatEndTime = MPI_Wtime();
 
+#ifdef __PRINT_MAT__
+  std::cout<<"Element Matrix: "<<std::endl;
   for(int i = 0; i < elemMat.size(); ++i) {
     for(int j = 0; j < elemMat[i].size(); ++j) {
       std::cout<<"E["<<i<<"]["<<j<<"] = "<<std::setprecision(15)<<(elemMat[i][j])<<std::endl;
     }//end j
     std::cout<<std::endl;
   }//end i
+#endif
 
   double assemblyStartTime = MPI_Wtime();
   MyMatrix myMat;
@@ -90,7 +93,10 @@ int main(int argc, char *argv[]) {
   double applyBCstartTime = MPI_Wtime();
   dirichletMatrixCorrection(myMat, K, dim, Nx, Ny, Nz);
   double applyBCendTime = MPI_Wtime();
+#ifdef __PRINT_MAT__
+  std::cout<<"Assembled Matrix: "<<std::endl;
   printMatrix(myMat);
+#endif
 
   double mlSetupStart = MPI_Wtime();
   ML* ml_obj;
