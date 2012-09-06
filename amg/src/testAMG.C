@@ -14,37 +14,45 @@
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   if(argc <= 4) {
-    std::cout<<"USAGE: <exe> dim K useRandomRHS Nx (Ny) (Nz) [numGrids] [useMLasPC] [maxIters]."<<std::endl;
+    std::cout<<"USAGE: <exe> dim K useRandomRHS Nx (Ny) (Nz) [numGrids] [useMLasPC] [maxIters] [rTol]."<<std::endl;
     std::cout<<"[]: Optional. (): Depends on dim."<<std::endl;
     assert(false);
   }
   const unsigned int dim = atoi(argv[1]); 
   assert(dim > 0);
   assert( (dim == 1) || (dim == 3) );
+  std::cout<<"Dim = "<<dim<<std::endl;
   const unsigned int K = atoi(argv[2]);
+  std::cout<<"K = "<<K<<std::endl;
   bool useRandomRHS = atoi(argv[3]);
+  std::cout<<"Random-RHS = "<<useRandomRHS<<std::endl;
   const unsigned int Nx = atoi(argv[4]); 
   assert(Nx > 1);
+  std::cout<<"Nx = "<<Nx<<std::endl;
   unsigned int Ny = 1;
   if(dim > 1) {
     assert(argc > 5);
     Ny = atoi(argv[5]);
     assert(Ny > 1);
   }
+  std::cout<<"Ny = "<<Ny<<std::endl;
   unsigned int Nz = 1;
   if(dim > 2) {
     assert(argc > 6);
     Nz = atoi(argv[6]);
     assert(Nz > 1);
   }
+  std::cout<<"Nz = "<<Nz<<std::endl;
   unsigned int numGrids = 20;
   if(argc > (4 + dim)) {
     numGrids = atoi(argv[(4 + dim)]);
   }
+  std::cout<<"Max-Num-Grids = "<<numGrids<<std::endl;
   bool useMLasPC = true;
   if(argc > (5 + dim)) {
     useMLasPC = atoi(argv[(5 + dim)]);
   }
+  std::cout<<"ML-as-PC = "<<useMLasPC<<std::endl;
   unsigned int maxIters = 10000;
   if(argc > (6 + dim)) {
     maxIters = atoi(argv[(6 + dim)]);
@@ -52,6 +60,12 @@ int main(int argc, char *argv[]) {
   if(numGrids == 1) {
     maxIters = 1;
   }
+  std::cout<<"MaxIters = "<<maxIters<<std::endl;
+  double rTol = 1.0e-6;
+  if(argc > (7 + dim)) {
+    rTol = atof(argv[(7 + dim)]);
+  }
+  std::cout<<"R-Tol = "<<rTol<<std::endl;
 
   double hx = 1.0/(static_cast<double>(Nx - 1));
   double hy, hz;
@@ -101,13 +115,13 @@ int main(int argc, char *argv[]) {
   double mlSetupStart = MPI_Wtime();
   ML* ml_obj;
   ML_Aggregate* agg_obj;
-  createMLobjects(ml_obj, agg_obj, numGrids, maxIters, dim, K, myMat);
+  createMLobjects(ml_obj, agg_obj, numGrids, maxIters, rTol, dim, K, myMat);
   double mlSetupEnd = MPI_Wtime();
 
   double krylovSetupStart = MPI_Wtime();
   ML_Krylov* krylov_obj = NULL;
   if(useMLasPC) {
-    createKrylovObject(krylov_obj, ml_obj, maxIters);
+    createKrylovObject(krylov_obj, ml_obj, maxIters, rTol);
   }
   double krylovSetupEnd = MPI_Wtime();
 
