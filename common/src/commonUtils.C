@@ -9,12 +9,14 @@
 void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
     double hz, double hy, double hx, std::vector<std::vector<double> >& mat) {
   unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
+  std::cout<<"ElemMatSize = "<<matSz<<std::endl;
   mat.resize(matSz);
   for(unsigned int i = 0; i < matSz; ++i) {
     (mat[i]).resize(matSz);
   }//end i
 
   unsigned int numGaussPts = (2*K) + 2;
+  std::cout<<"NumGaussPtsPerDim = "<<numGaussPts<<std::endl;
   std::vector<double> gPt(numGaussPts);
   std::vector<double> gWt(numGaussPts);
   gaussQuad(gPt, gWt);
@@ -75,12 +77,14 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
 void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
     double hx, std::vector<std::vector<double> >& mat) {
   unsigned int matSz = 2*(K + 1);
+  std::cout<<"ElemMatSize = "<<matSz<<std::endl;
   mat.resize(matSz);
   for(unsigned int i = 0; i < matSz; ++i) {
     (mat[i]).resize(matSz);
   }//end i
 
   unsigned int numGaussPts = (2*K) + 2;
+  std::cout<<"NumGaussPtsPerDim = "<<numGaussPts<<std::endl;
   std::vector<double> gPt(numGaussPts);
   std::vector<double> gWt(numGaussPts);
   gaussQuad(gPt, gWt);
