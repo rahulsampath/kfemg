@@ -1,7 +1,5 @@
 
 #include <iostream>
-#include <string>
-#include <cmath>
 #include <vector>
 #include <cassert>
 #include <iomanip>
