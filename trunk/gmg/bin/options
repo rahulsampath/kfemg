@@ -1,4 +1,8 @@
-
-
-
+-dim 1
+-K 0
+-useRandomRHS true
+-Nx 17
+-Ny 17
+-Nz 17
+-numGrids 10
 
