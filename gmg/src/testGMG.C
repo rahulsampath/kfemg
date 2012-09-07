@@ -24,34 +24,26 @@ int main(int argc, char *argv[]) {
   PetscInt Nx = 17;
   PetscOptionsGetInt(PETSC_NULL, "-Nx", &Nx, PETSC_NULL);
   assert(Nx > 1);
-  std::cout<<"Nx = "<<Nx<<std::endl;
+  std::cout<<"Nx (Finest) = "<<Nx<<std::endl;
   PetscInt Ny = 1;
   if(dim > 1) {
     PetscOptionsGetInt(PETSC_NULL, "-Ny", &Ny, PETSC_NULL);
     assert(Ny > 1);
   }
-  std::cout<<"Ny = "<<Ny<<std::endl;
+  std::cout<<"Ny (Finest) = "<<Ny<<std::endl;
   PetscInt Nz = 1;
   if(dim > 2) {
     PetscOptionsGetInt(PETSC_NULL, "-Nz", &Nz, PETSC_NULL);
     assert(Nz > 1);
   }
-  std::cout<<"Nz = "<<Nz<<std::endl;
+  std::cout<<"Nz (Finest) = "<<Nz<<std::endl;
   PetscInt numGrids = 20;
   PetscOptionsGetInt(PETSC_NULL, "-numGrids", &numGrids, PETSC_NULL);
   std::cout<<"Max-Num-Grids = "<<numGrids<<std::endl;
 
-  double hx = 1.0/(static_cast<double>(Nx - 1));
-  double hy, hz;
-  if(dim > 1) {
-    hy = 1.0/(static_cast<double>(Ny - 1));
-  }
-  if(dim > 2) {
-    hz = 1.0/(static_cast<double>(Nz - 1));
-  }
-
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
+
 
 
   PetscFinalize();
