@@ -4,5 +4,5 @@
 -Nx 17
 -Ny 17
 -Nz 17
--numGrids 10
+-nlevels 10
 

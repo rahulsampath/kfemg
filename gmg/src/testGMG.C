@@ -37,9 +37,9 @@ int main(int argc, char *argv[]) {
     assert(Nz > 1);
   }
   std::cout<<"Nz (Finest) = "<<Nz<<std::endl;
-  PetscInt numGrids = 20;
-  PetscOptionsGetInt(PETSC_NULL, "-numGrids", &numGrids, PETSC_NULL);
-  std::cout<<"Max-Num-Grids = "<<numGrids<<std::endl;
+  PetscInt nlevels = 20;
+  PetscOptionsGetInt(PETSC_NULL, "-nlevels", &nlevels, PETSC_NULL);
+  std::cout<<"nlevels (Max) = "<<nlevels<<std::endl;
 
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
