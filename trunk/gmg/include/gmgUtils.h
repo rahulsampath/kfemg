@@ -12,7 +12,7 @@
 
 bool foundValidDApart(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int npes);
 
-void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, PetscInt nlevels);
+void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx);
 
 #endif
 

@@ -1,8 +1,8 @@
 -dim 1
 -K 0
 -useRandomRHS true
--Nx 17
--Ny 17
--Nz 17
--nlevels 10
+-finestNx 17
+-finestNy 17
+-finestNz 17
+-maxNumLevels 10
 
