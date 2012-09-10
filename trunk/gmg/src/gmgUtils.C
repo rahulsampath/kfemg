@@ -1,10 +1,62 @@
 
-#include "gmg/include/gmgUtils.h"
 #include <vector>
 #include <cmath>
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include "mpi.h"
+#include "gmg/include/gmgUtils.h"
+
+void createComms(std::vector<int>& activeNpes, std::vector<MPI_Comm>& activeComms, int dim,
+    std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm) {
+  int globalRank;
+  int globalNpes;
+  MPI_Comm_rank(globalComm, &globalRank);
+  MPI_Comm_size(globalComm, &globalNpes);
+
+  int maxCoarseNpes = globalNpes;
+  PetscOptionsGetInt(PETSC_NULL, "-maxCoarseNpes", &maxCoarseNpes, PETSC_NULL);
+  if(maxCoarseNpes > globalNpes) {
+    maxCoarseNpes = globalNpes;
+  }
+
+  int numLevels = Nx.size();
+  assert(numLevels > 0);
+  activeNpes.resize(numLevels);
+  activeComms.resize(numLevels);
+
+  MPI_Group globalGroup;
+  MPI_Group subGroup;
+  MPI_Comm_group(globalComm, &globalGroup);
+
+  int* rankList = new int[globalNpes];
+  for(int i = 0; i < globalNpes; ++i) {
+    rankList[i] = i;
+  }//end for i
+
+  int px, py, pz;
+  computePartition(dim, Nz[0], Ny[0], Nx[0], maxCoarseNpes, pz, py, px);
+  activeNpes[0] = (px*py*pz);
+
+  for(int lev = 1; lev < numLevels; ++lev) {
+    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], globalNpes, pz, py, px);
+    activeNpes[lev] = (px*py*pz);
+  }//end lev
+
+  for(int lev = 0; lev < numLevels; ++lev) {
+    if(globalRank < (activeNpes[lev])) {
+      MPI_Group_incl(globalGroup, (activeNpes[lev]), rankList, &subGroup);
+      MPI_Comm_create(globalComm, subGroup, &(activeComms[lev]));
+      MPI_Group_free(&subGroup);
+    } else {
+      MPI_Comm_create(globalComm, MPI_GROUP_EMPTY, &(activeComms[lev]));
+      assert(activeComms[lev] == MPI_COMM_NULL);
+    }
+  }//end lev
+
+  delete [] rankList;
+  MPI_Group_free(&globalGroup);
+}
 
 void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes, int &pz, int &py, int &px) {
   if(dim < 3) {
@@ -89,6 +141,9 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
   PetscInt currNy = 1;
   PetscInt currNz = 1;
 
+  assert(dim > 0);
+  assert(dim <= 3);
+
   PetscOptionsGetInt(PETSC_NULL, "-finestNx", &currNx, PETSC_NULL);
   std::cout<<"Nx (Finest) = "<<currNx<<std::endl;
   if(dim > 1) {
@@ -134,6 +189,20 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
       currNz = 1 + ((currNz - 1)/2); 
     }
   }//lev
+
+  if(dim < 2) {
+    assert(Ny.empty());
+    Ny.resize((Nx.size()), 1);
+  } else { 
+    assert( (Ny.size()) == (Nx.size()) );
+  }
+
+  if(dim < 3) {
+    assert(Nz.empty());
+    Nz.resize((Nx.size()), 1);
+  } else {
+    assert( (Nz.size()) == (Nx.size()) );
+  }
 
   std::cout<<"ActualNumLevels = "<<(Nx.size())<<std::endl;
 }
