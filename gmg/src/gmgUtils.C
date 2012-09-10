@@ -26,7 +26,6 @@ void createComms(std::vector<int>& activeNpes, std::vector<MPI_Comm>& activeComm
   activeComms.resize(numLevels);
 
   MPI_Group globalGroup;
-  MPI_Group subGroup;
   MPI_Comm_group(globalComm, &globalGroup);
 
   int* rankList = new int[globalNpes];
@@ -34,17 +33,23 @@ void createComms(std::vector<int>& activeNpes, std::vector<MPI_Comm>& activeComm
     rankList[i] = i;
   }//end for i
 
-  int px, py, pz;
-  computePartition(dim, Nz[0], Ny[0], Nx[0], maxCoarseNpes, pz, py, px);
-  activeNpes[0] = (px*py*pz);
-
-  for(int lev = 1; lev < numLevels; ++lev) {
-    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], globalNpes, pz, py, px);
-    activeNpes[lev] = (px*py*pz);
-  }//end lev
-
+  //O is the coarsest level.
   for(int lev = 0; lev < numLevels; ++lev) {
+    int px, py, pz;
+    int maxNpes;
+    if(lev == 0) {
+      maxNpes = maxCoarseNpes;
+    } else {
+      maxNpes = globalNpes;
+    }
+    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], maxNpes, pz, py, px);
+    activeNpes[lev] = (px*py*pz);
+    std::cout<<"Active Npes for Level "<<lev<<" = "<<(activeNpes[lev])<<std::endl;
+    if(lev > 0) {
+      assert(activeNpes[lev] >= activeNpes[lev - 1]);
+    }
     if(globalRank < (activeNpes[lev])) {
+      MPI_Group subGroup;
       MPI_Group_incl(globalGroup, (activeNpes[lev]), rankList, &subGroup);
       MPI_Comm_create(globalComm, subGroup, &(activeComms[lev]));
       MPI_Group_free(&subGroup);
