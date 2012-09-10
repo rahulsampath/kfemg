@@ -5,4 +5,5 @@
 -finestNy 17
 -finestNz 17
 -maxNumLevels 10
+-maxCoarseNpes 1
 
