@@ -10,7 +10,7 @@
 #include "petscpc.h"
 #include <vector>
 
-bool foundValidDApart(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int npes);
+void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes, int &pz, int &py, int &px);
 
 void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx);
 
