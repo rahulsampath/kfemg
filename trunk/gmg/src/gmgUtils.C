@@ -45,7 +45,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
   do {
     partChanged = false;
     for(int d = 2; d >= 0; --d) {
-      if( pList[d] < NList[d] ) {
+      if( pList[d] < Nlist[d] ) {
         if( ((pList[d] + 1)*(pList[(d+1)%3])*(pList[(d+2)%3])) <= maxNpes ) {
           ++(pList[d]);
           partChanged = true;
@@ -58,7 +58,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
     if(Nx == Nlist[d]) {
       px = pList[d];
       Nlist.erase(Nlist.begin() + d);
-      plist.erase(plist.begin() + d);
+      pList.erase(pList.begin() + d);
       break;
     }
   }//end d
@@ -67,7 +67,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
     if(Ny == Nlist[d]) {
       py = pList[d];
       Nlist.erase(Nlist.begin() + d);
-      plist.erase(plist.begin() + d);
+      pList.erase(pList.begin() + d);
       break;
     }
   }//end d
