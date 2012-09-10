@@ -7,8 +7,8 @@
 #include "mpi.h"
 #include "gmg/include/gmgUtils.h"
 
-void createComms(std::vector<int>& activeNpes, std::vector<MPI_Comm>& activeComms, int dim,
-    std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm) {
+void createDA(std::vector<DA>& da, int dofsPerNode, int dim, std::vector<PetscInt> & Nz,
+    std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm) {
   int globalRank;
   int globalNpes;
   MPI_Comm_rank(globalComm, &globalRank);
@@ -22,8 +22,8 @@ void createComms(std::vector<int>& activeNpes, std::vector<MPI_Comm>& activeComm
 
   int numLevels = Nx.size();
   assert(numLevels > 0);
-  activeNpes.resize(numLevels);
-  activeComms.resize(numLevels);
+  std::vector<int> activeNpes(numLevels);
+  da.resize(numLevels);
 
   MPI_Group globalGroup;
   MPI_Comm_group(globalComm, &globalGroup);
@@ -48,14 +48,18 @@ void createComms(std::vector<int>& activeNpes, std::vector<MPI_Comm>& activeComm
     if(lev > 0) {
       assert(activeNpes[lev] >= activeNpes[lev - 1]);
     }
+    MPI_Comm activeComm;
     if(globalRank < (activeNpes[lev])) {
       MPI_Group subGroup;
       MPI_Group_incl(globalGroup, (activeNpes[lev]), rankList, &subGroup);
-      MPI_Comm_create(globalComm, subGroup, &(activeComms[lev]));
+      MPI_Comm_create(globalComm, subGroup, &activeComm);
       MPI_Group_free(&subGroup);
+      DACreate(activeComm, dim, DA_NONPERIODIC, DA_STENCIL_BOX, (Nx[lev]), (Ny[lev]), (Nz[lev]),
+          px, py, pz, dofsPerNode, 1, PETSC_NULL, PETSC_NULL, PETSC_NULL, (&(da[lev])));
     } else {
-      MPI_Comm_create(globalComm, MPI_GROUP_EMPTY, &(activeComms[lev]));
-      assert(activeComms[lev] == MPI_COMM_NULL);
+      MPI_Comm_create(globalComm, MPI_GROUP_EMPTY, &activeComm);
+      assert(activeComm == MPI_COMM_NULL);
+      da[lev] = NULL;
     }
   }//end lev
 
