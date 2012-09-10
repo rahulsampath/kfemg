@@ -1,10 +1,87 @@
 
 #include "gmg/include/gmgUtils.h"
 #include <vector>
+#include <cmath>
 #include <cassert>
 #include <iostream>
+#include <algorithm>
 
-bool foundValidDApart(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int npes) {
+void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes, int &pz, int &py, int &px) {
+  if(dim < 3) {
+    assert(Nz == 1);
+  }
+  if(dim < 2) {
+    assert(Ny == 1);
+  }
+  assert(Nx > 0);
+  assert(Ny > 0);
+  assert(Nz > 0);
+  assert(maxNpes > 0);
+
+  std::vector<PetscInt> Nlist;
+  Nlist.push_back(Nx);
+  Nlist.push_back(Ny);
+  Nlist.push_back(Nz);
+
+  std::sort(Nlist.begin(), Nlist.end());
+
+  double tmp = std::pow(((static_cast<double>(Nx*Ny*Nz))/(static_cast<double>(maxNpes))), (1.0/(static_cast<double>(dim))));
+
+  std::vector<int> pList(3, 1);
+  for(int d = 0; d < 3; ++d) {
+    if(Nlist[d] > 1) {
+      pList[d] = static_cast<int>(std::floor((static_cast<double>(Nlist[d]))/tmp));
+      if(pList[d] > Nlist[d]) {
+        pList[d] = Nlist[d];
+      }
+      if(pList[d] < 1) {
+        pList[d] = 1;
+      }
+    }
+  }//end d
+  assert(((pList[0])*(pList[1])*(pList[2])) <= maxNpes);
+
+  bool partChanged;
+  do {
+    partChanged = false;
+    for(int d = 2; d >= 0; --d) {
+      if( pList[d] < NList[d] ) {
+        if( ((pList[d] + 1)*(pList[(d+1)%3])*(pList[(d+2)%3])) <= maxNpes ) {
+          ++(pList[d]);
+          partChanged = true;
+        }
+      }
+    }//end d
+  } while(partChanged);
+
+  for(int d = 0; d < 3; ++d) {
+    if(Nx == Nlist[d]) {
+      px = pList[d];
+      Nlist.erase(Nlist.begin() + d);
+      plist.erase(plist.begin() + d);
+      break;
+    }
+  }//end d
+
+  for(int d = 0; d < 2; ++d) {
+    if(Ny == Nlist[d]) {
+      py = pList[d];
+      Nlist.erase(Nlist.begin() + d);
+      plist.erase(plist.begin() + d);
+      break;
+    }
+  }//end d
+
+  assert(Nz == Nlist[0]);
+  pz = pList[0];
+
+  assert((px*py*pz) <= maxNpes);
+  assert(px >= 1);
+  assert(py >= 1);
+  assert(pz >= 1);
+  assert(px <= Nx);
+  assert(py <= Ny);
+  assert(pz <= Nz);
 }
 
 void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx) {
