@@ -11,6 +11,8 @@
 #include <vector>
 #include "mpi.h"
 
+int getDofsPerNode(int dim, int K);
+
 void createDA(std::vector<DA>& da, int dofsPerNode, int dim, std::vector<PetscInt> & Nz, 
     std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm);
 
