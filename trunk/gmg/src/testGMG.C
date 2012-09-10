@@ -25,6 +25,15 @@ int main(int argc, char *argv[]) {
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
 
+  int dofsPerNode = getDofsPerNode(dim, K);
+
+  std::vector<PetscInt> Nx;
+  std::vector<PetscInt> Ny;
+  std::vector<PetscInt> Nz;
+  createGridSizes(dim, Nz, Ny, Nx);
+
+  std::vector<DA> da;
+  createDA(da, dofsPerNode, dim, Nz, Ny, Nx, MPI_COMM_WORLD);
 
 
   PetscFinalize();
