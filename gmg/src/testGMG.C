@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
   PetscRandomSetSeed(rndCtx, seed);
   PetscRandomSeed(rndCtx);
   VecSetRandom(sol, rndCtx);
-  //ZERO BOUNDARIES ????
   PetscRandomDestroy(rndCtx);
+  zeroBoundaries(da[da.size() - 1], sol);
   assert(Kmat[Kmat.size() - 1] != NULL);
   MatMult(Kmat[Kmat.size() - 1], sol, rhs);
 

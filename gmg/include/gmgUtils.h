@@ -11,6 +11,8 @@
 #include <vector>
 #include "mpi.h"
 
+void zeroBoundaries(DA da, Vec vec);
+
 int getDofsPerNode(int dim, int K);
 
 void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, int dofsPerNode, int dim,
