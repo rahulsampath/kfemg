@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include "mpi.h"
 #include "petsc.h"
+#include "petscmg.h"
 #include "common/include/commonUtils.h"
 #include "gmg/include/gmgUtils.h"
 
@@ -36,7 +37,8 @@ int main(int argc, char *argv[]) {
   createGridSizes(dim, Nz, Ny, Nx);
 
   std::vector<DA> da;
-  createDA(da, dofsPerNode, dim, Nz, Ny, Nx, MPI_COMM_WORLD);
+  std::vector<MPI_Comm> activeComms;
+  createDA(da, activeComms, dofsPerNode, dim, Nz, Ny, Nx, MPI_COMM_WORLD);
 
   std::vector<Mat> Kmat(da.size(), NULL);
   for(int i = 0; i < da.size(); ++i) {
@@ -48,6 +50,19 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Pmat((da.size() - 1), NULL);
 
   KSP ksp;
+  PC pc;
+  KSPCreate(MPI_COMM_WORLD, &ksp);
+  KSPSetType(ksp, KSPCG);
+  KSPGetPC(ksp, &pc);
+  PCSetType(pc, PCMG);
+  PCMGSetLevels(pc, (da.size()), &(activeComms[0]));
+  PCMGSetType(pc, PC_MG_MULTIPLICATIVE);
+  for(int lev = 1; lev < (da.size()); ++lev) {
+    PCMGSetInterpolation(pc, lev, Pmat[lev - 1]);
+  }//end lev
+  KSPSetFromOptions(ksp);
+  KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+
   Vec rhs;
   Vec sol;
 
@@ -80,7 +95,6 @@ int main(int argc, char *argv[]) {
     if(da[i] != NULL) {
       DADestroy(da[i]);
     }
-    da[i] = NULL;
   }//end i
   da.clear();
 
@@ -88,7 +102,6 @@ int main(int argc, char *argv[]) {
     if(Kmat[i] != NULL) {
       MatDestroy(Kmat[i]);
     }
-    Kmat[i] = NULL;
   }//end i
   Kmat.clear();
 
@@ -96,9 +109,15 @@ int main(int argc, char *argv[]) {
     if(Pmat[i] != NULL) {
       MatDestroy(Pmat[i]);
     }
-    Pmat[i] = NULL;
   }//end i
   Pmat.clear();
+
+  for(int i = 0; i < activeComms.size(); ++i) {
+    if(activeComms[i] != MPI_COMM_NULL) {
+      MPI_Comm_free(&(activeComms[i]));
+    }
+  }//end i
+  activeComms.clear();
 
   PetscFinalize();
 
