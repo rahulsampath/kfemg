@@ -7,6 +7,104 @@
 #include "mpi.h"
 #include "gmg/include/gmgUtils.h"
 
+void zeroBoundaries(DA da, Vec vec) {
+  PetscInt dim;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  if(dim == 1) {
+    PetscScalar** arr; 
+    DAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      arr[0][0] = 0.0;
+    }
+    if((xs + nx) == Nx) {
+      arr[Nx - 1][0] = 0.0;
+    }
+    DAVecRestoreArrayDOF(da, vec, &arr);
+  } else if(dim == 2) {
+    PetscScalar*** arr; 
+    DAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      for(int yi = ys; yi < (ys + ny); ++yi) {
+        arr[yi][0][0] = 0.0;
+      }//end yi
+    }
+    if((xs + nx) == Nx) {
+      for(int yi = ys; yi < (ys + ny); ++yi) {
+        arr[yi][Nx - 1][0] = 0.0;
+      }//end yi
+    }
+    if(ys == 0) {
+      for(int xi = xs; xi < (xs + nx); ++xi) {
+        arr[0][xi][0] = 0.0;
+      }//end xi
+    }
+    if((ys + ny) == Ny) {
+      for(int xi = xs; xi < (xs + nx); ++xi) {
+        arr[Ny - 1][xi][0] = 0.0;
+      }//end xi
+    }
+    DAVecRestoreArrayDOF(da, vec, &arr);
+  } else {
+    PetscScalar**** arr; 
+    DAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      for(int zi = zs; zi < (zs + nz); ++zi) {
+        for(int yi = ys; yi < (ys + ny); ++yi) {
+          arr[zi][yi][0][0] = 0.0;
+        }//end yi
+      }//end zi
+    }
+    if((xs + nx) == Nx) {
+      for(int zi = zs; zi < (zs + nz); ++zi) {
+        for(int yi = ys; yi < (ys + ny); ++yi) {
+          arr[zi][yi][Nx - 1][0] = 0.0;
+        }//end yi
+      }//end zi
+    }
+    if(ys == 0) {
+      for(int zi = zs; zi < (zs + nz); ++zi) {
+        for(int xi = xs; xi < (xs + nx); ++xi) {
+          arr[zi][0][xi][0] = 0.0;
+        }//end xi
+      }//end zi
+    }
+    if((ys + ny) == Ny) {
+      for(int zi = zs; zi < (zs + nz); ++zi) {
+        for(int xi = xs; xi < (xs + nx); ++xi) {
+          arr[zi][Ny - 1][xi][0] = 0.0;
+        }//end xi
+      }//end zi
+    }
+    if(zs == 0) {
+      for(int yi = ys; yi < (ys + ny); ++yi) {
+        for(int xi = xs; xi < (xs + nx); ++xi) {
+          arr[0][yi][xi][0] = 0.0;
+        }//end xi
+      }//end yi
+    }
+    if((zs + nz) == Nz) {
+      for(int yi = ys; yi < (ys + ny); ++yi) {
+        for(int xi = xs; xi < (xs + nx); ++xi) {
+          arr[Nz - 1][yi][xi][0] = 0.0;
+        }//end xi
+      }//end yi
+    }
+    DAVecRestoreArrayDOF(da, vec, &arr);
+  }
+}
+
 int getDofsPerNode(int dim, int K) { 
   int dofsPerNode = (K + 1);
   assert(dim > 0);
