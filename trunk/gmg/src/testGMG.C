@@ -6,6 +6,7 @@
 #include "mpi.h"
 #include "petsc.h"
 #include "petscmg.h"
+#include "petscksp.h"
 #include "common/include/commonUtils.h"
 #include "gmg/include/gmgUtils.h"
 
@@ -53,6 +54,7 @@ int main(int argc, char *argv[]) {
   PC pc;
   KSPCreate(MPI_COMM_WORLD, &ksp);
   KSPSetType(ksp, KSPCG);
+  KSPSetPreconditionerSide(ksp, PC_LEFT);
   KSPGetPC(ksp, &pc);
   PCSetType(pc, PCMG);
   PCMGSetLevels(pc, (da.size()), &(activeComms[0]));
@@ -60,8 +62,23 @@ int main(int argc, char *argv[]) {
   for(int lev = 1; lev < (da.size()); ++lev) {
     PCMGSetInterpolation(pc, lev, Pmat[lev - 1]);
   }//end lev
-  KSPSetFromOptions(ksp);
+  KSPSetOperators(ksp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_NONZERO_PATTERN);
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    KSP lksp;
+    PC lpc;
+    PCMGGetSmoother(pc, lev, &lksp);
+    KSPSetType(lksp, KSPRICHARDSON);
+    KSPSetPreconditionerSide(lksp, PC_LEFT);
+    KSPRichardsonSetScale(lksp, 1.0);
+    KSPGetPC(lksp, &lpc);
+    PCSetType(lpc, PCSOR);
+    PCSORSetOmega(lpc, 1.0);
+    PCSORSetSymmetric(lpc, SOR_LOCAL_SYMMETRIC_SWEEP);
+    PCSORSetIterations(lpc, 1, 2);
+    KSPSetOperators(lksp, Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
+  }//end lev
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+  KSPSetFromOptions(ksp);
 
   Vec rhs;
   Vec sol;
