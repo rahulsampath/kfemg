@@ -39,7 +39,8 @@ int main(int argc, char *argv[]) {
 
   std::vector<DA> da;
   std::vector<MPI_Comm> activeComms;
-  createDA(da, activeComms, dofsPerNode, dim, Nz, Ny, Nx, MPI_COMM_WORLD);
+  std::vector<int> activeNpes;
+  createDA(da, activeComms, activeNpes, dofsPerNode, dim, Nz, Ny, Nx, MPI_COMM_WORLD);
 
   std::vector<Mat> Kmat(da.size(), NULL);
   for(int i = 0; i < (da.size()); ++i) {
@@ -51,12 +52,54 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Pmat((da.size() - 1), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
     if(da[lev + 1] != NULL) {
-    PetscInt nxf, nyf, nzf;
-    if(da[lev] != NULL) {
-    PetscInt nxc, nyc, nzc;
-    }
+      PetscInt nxf, nyf, nzf;
+      DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
+      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
+      PetscInt nxc, nyc, nzc;
+      nxc = nyc = nzc = 0;
+      if(da[lev] != NULL) {
+        DAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
+      }
+      if(dim < 3) {
+        nzf = nzc = 1;
+      }
+      if(dim < 2) {
+        nyf = nyc = 1;
+      }
+      PetscInt locRowSz = dofsPerNode*nxf*nyf*nzf;
+      PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
+      MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
+      MatSetType(Pmat[lev], MATAIJ);
+      int dofsPerElem = (1 << dim);
+      //PERFORMANCE IMPROVEMENT: Better PreAllocation.
+      if(activeNpes[lev + 1] > 1) {
+        MatMPIAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL, (dofsPerElem*dofsPerNode), PETSC_NULL);
+      } else {
+        MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
+      }
     }
   }//end lev
+
+  Vec rhs;
+  Vec sol;
+
+  assert(da[da.size() - 1] != NULL);
+  DAGetGlobalVector(da[da.size() - 1], &rhs);
+  DAGetGlobalVector(da[da.size() - 1], &sol);
+
+  const unsigned int seed = (0x3456782  + (54763*globalRank));
+  PetscRandom rndCtx;
+  PetscRandomCreate(MPI_COMM_WORLD, &rndCtx);
+  PetscRandomSetType(rndCtx, PETSCRAND48);
+  PetscRandomSetSeed(rndCtx, seed);
+  PetscRandomSeed(rndCtx);
+  VecSetRandom(sol, rndCtx);
+  PetscRandomDestroy(rndCtx);
+  zeroBoundaries(da[da.size() - 1], sol);
+  assert(Kmat[Kmat.size() - 1] != NULL);
+  MatMult(Kmat[Kmat.size() - 1], sol, rhs);
+
+  VecZeroEntries(sol);
 
   KSP ksp;
   PC pc;
@@ -87,27 +130,6 @@ int main(int argc, char *argv[]) {
   }//end lev
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetFromOptions(ksp);
-
-  Vec rhs;
-  Vec sol;
-
-  assert(da[da.size() - 1] != NULL);
-  DAGetGlobalVector(da[da.size() - 1], &rhs);
-  DAGetGlobalVector(da[da.size() - 1], &sol);
-
-  const unsigned int seed = (0x3456782  + (54763*globalRank));
-  PetscRandom rndCtx;
-  PetscRandomCreate(MPI_COMM_WORLD, &rndCtx);
-  PetscRandomSetType(rndCtx, PETSCRAND48);
-  PetscRandomSetSeed(rndCtx, seed);
-  PetscRandomSeed(rndCtx);
-  VecSetRandom(sol, rndCtx);
-  PetscRandomDestroy(rndCtx);
-  zeroBoundaries(da[da.size() - 1], sol);
-  assert(Kmat[Kmat.size() - 1] != NULL);
-  MatMult(Kmat[Kmat.size() - 1], sol, rhs);
-
-  VecZeroEntries(sol);
 
   KSPSolve(ksp, rhs, sol);
 
