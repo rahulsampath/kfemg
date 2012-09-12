@@ -118,8 +118,8 @@ int getDofsPerNode(int dim, int K) {
   return dofsPerNode;
 }
 
-void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, int dofsPerNode, int dim,
-    std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm) {
+void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
+    int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm) {
   int globalRank;
   int globalNpes;
   MPI_Comm_rank(globalComm, &globalRank);
@@ -130,10 +130,11 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, int dofsP
   if(maxCoarseNpes > globalNpes) {
     maxCoarseNpes = globalNpes;
   }
+  assert(maxCoarseNpes > 0);
 
   int numLevels = Nx.size();
   assert(numLevels > 0);
-  std::vector<int> activeNpes(numLevels);
+  activeNpes.resize(numLevels);
   activeComms.resize(numLevels);
   da.resize(numLevels);
 
@@ -145,7 +146,7 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, int dofsP
     rankList[i] = i;
   }//end for i
 
-  //O is the coarsest level.
+  //0 is the coarsest level.
   for(int lev = 0; lev < numLevels; ++lev) {
     int px, py, pz;
     int maxNpes;
