@@ -16,6 +16,8 @@ struct PmatData {
   Vec pvtCvec;
 };
 
+PetscErrorCode destroyPmat(Mat mat);
+
 void buildPmat(std::vector<Mat>& Pmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode);
 
