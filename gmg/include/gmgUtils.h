@@ -13,8 +13,6 @@
 
 void zeroBoundaries(DA da, Vec vec);
 
-int getDofsPerNode(int dim, int K);
-
 void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
     int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm);
 

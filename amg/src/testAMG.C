@@ -100,10 +100,10 @@ int main(int argc, char *argv[]) {
 
   double assemblyStartTime = MPI_Wtime();
   MyMatrix myMat;
-  assembleMatrix(myMat, elemMat, K, dim, Nx, Ny, Nz);
+  assembleMatrix(myMat, elemMat, K, dim, Nz, Ny, Nx);
   double assemblyEndTime = MPI_Wtime();
   double applyBCstartTime = MPI_Wtime();
-  dirichletMatrixCorrection(myMat, K, dim, Nx, Ny, Nz);
+  dirichletMatrixCorrection(myMat, K, dim, Nz, Ny, Nx);
   double applyBCendTime = MPI_Wtime();
 #ifdef __PRINT_MAT__
   std::cout<<"Assembled Matrix: "<<std::endl;
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
   double* rhsArr = new double[(myMat.vals).size()];
 
   if(useRandomRHS) {
-    computeRandomRHS(rhsArr, myMat);
+    computeRandomRHS(rhsArr, myMat, K, dim, Nz, Ny, Nx);
   } else {
     assert(false);
   }

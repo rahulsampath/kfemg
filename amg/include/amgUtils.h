@@ -10,15 +10,18 @@ struct MyMatrix {
   std::vector<std::vector<double> > vals;
 };
 
+void zeroBoundaries(double* arr, const unsigned int K, const unsigned int dim,
+    const int Nz, const int Ny, const int Nx);
+
 void printMatrix(MyMatrix & myMat);
 
 void getNeighbors(std::vector<int> & nh, int zi, int yi, int xi, int Nz, int Ny, int Nx);
 
 void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
-    const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz);
+    const unsigned int dim, const unsigned int Nz, const unsigned int Ny, const unsigned int Nx);
 
 void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const unsigned int dim,
-    const int Nx, const int Ny, const int Nz);
+    const int Nz, const int Ny, const int Nx);
 
 void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, double val);
 
@@ -34,7 +37,8 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
 
 void destroyMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj);
 
-void computeRandomRHS(double* rhsArr, MyMatrix & myMat);
+void computeRandomRHS(double* rhsArr, MyMatrix & myMat, const unsigned int K, const unsigned int dim,
+    const int Nz, const int Ny, const int Nx);
 
 void createKrylovObject(ML_Krylov*& krylov_obj, ML* ml_obj, const unsigned int maxIters, const double rTol);
 
