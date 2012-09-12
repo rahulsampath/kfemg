@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
-  buildPmat(Pmat, tmpVec, da, activeComms, activeNpes, dim, dofsPerNode);
+  buildPmat(Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode);
 
   assert(da[da.size() - 1] != NULL);
 
