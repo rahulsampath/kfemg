@@ -60,12 +60,16 @@ int main(int argc, char *argv[]) {
   DACreateGlobalVector(da[da.size() - 1], &sol);
   VecZeroEntries(sol);
 
-  KSP ksp;
-  createSolver(ksp, Kmat, Pmat, activeComms);
+  std::vector<KSP> ksp;
+  createKSP(ksp, Kmat, activeComms);
 
-  KSPSolve(ksp, rhs, sol);
 
-  KSPDestroy(ksp);
+  for(int i = 0; i < ksp.size(); ++i) {
+    if(ksp[i] != NULL) {
+      KSPDestroy(ksp[i]);
+    }
+  }//end i
+  ksp.clear();
 
   VecDestroy(rhs);
   VecDestroy(sol);

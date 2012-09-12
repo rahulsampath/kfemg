@@ -18,7 +18,7 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da);
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed);
 
-void createSolver(KSP& ksp, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<MPI_Comm>& activeComms);
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms);
 
 void zeroBoundaries(DA da, Vec vec);
 
@@ -30,4 +30,6 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
 void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx);
 
 #endif
+
+
 

@@ -69,35 +69,30 @@ void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
   VecDestroy(tmpSol);
 }
 
-void createSolver(KSP& ksp, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<MPI_Comm>& activeComms) {
-  PC pc;
-  KSPCreate(MPI_COMM_WORLD, &ksp);
-  KSPSetType(ksp, KSPCG);
-  KSPSetPreconditionerSide(ksp, PC_LEFT);
-  KSPGetPC(ksp, &pc);
-  PCSetType(pc, PCMG);
-  PCMGSetLevels(pc, (Kmat.size()), &(activeComms[0]));
-  PCMGSetType(pc, PC_MG_MULTIPLICATIVE);
-  for(int lev = 0; lev < (Pmat.size()); ++lev) {
-    PCMGSetInterpolation(pc, (lev + 1), Pmat[lev]);
-  }//end lev
-  KSPSetOperators(ksp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_NONZERO_PATTERN);
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms) {
+  ksp.resize((Kmat.size()), NULL);
   for(int lev = 0; lev < (Kmat.size()); ++lev) {
-    KSP lksp;
-    PC lpc;
-    PCMGGetSmoother(pc, lev, &lksp);
-    KSPSetType(lksp, KSPRICHARDSON);
-    KSPSetPreconditionerSide(lksp, PC_LEFT);
-    KSPRichardsonSetScale(lksp, 1.0);
-    KSPGetPC(lksp, &lpc);
-    PCSetType(lpc, PCSOR);
-    PCSORSetOmega(lpc, 1.0);
-    PCSORSetSymmetric(lpc, SOR_LOCAL_SYMMETRIC_SWEEP);
-    PCSORSetIterations(lpc, 1, 2);
-    KSPSetOperators(lksp, Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
+    if(Kmat[lev] != NULL) {
+      PC pc;
+      KSPCreate(activeComms[lev], &(ksp[lev]));
+      KSPGetPC(ksp[lev], &pc);
+      if(lev == 0) {
+        KSPSetType(ksp[lev], KSPPREONLY);
+        PCSetType(pc, PCLU);
+      } else {
+        KSPSetType(ksp[lev], KSPRICHARDSON);
+        KSPRichardsonSetScale(ksp[lev], 1.0);
+        KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
+        PCSetType(pc, PCSOR);
+        PCSORSetOmega(pc, 1.0);
+        PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
+        PCSORSetIterations(pc, 1, 2);
+      }
+      KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
+      KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
+      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+    }
   }//end lev
-  KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
-  KSPSetFromOptions(ksp);
 }
 
 void zeroBoundaries(DA da, Vec vec) {
@@ -105,7 +100,8 @@ void zeroBoundaries(DA da, Vec vec) {
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
   PetscInt ys;
