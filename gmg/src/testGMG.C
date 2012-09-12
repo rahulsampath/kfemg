@@ -45,7 +45,8 @@ int main(int argc, char *argv[]) {
   buildKmat(Kmat, da);
 
   std::vector<Mat> Pmat;
-  buildPmat(Pmat, da, activeComms, activeNpes, dim, dofsPerNode);
+  std::vector<Vec> tmpCvec;
+  buildPmat(Pmat, tmpVec, da, activeComms, activeNpes, dim, dofsPerNode);
 
   assert(da[da.size() - 1] != NULL);
 
@@ -82,6 +83,13 @@ int main(int argc, char *argv[]) {
     }
   }//end i
   Kmat.clear();
+
+  for(int i = 0; i < tmpCvec.size(); ++i) {
+    if(tmpCvec[i] != NULL) {
+      VecDestroy(tmpCvec[i]);
+    }
+  }//end i
+  tmpCvec.clear();
 
   for(int i = 0; i < Pmat.size(); ++i) {
     if(Pmat[i] != NULL) {
