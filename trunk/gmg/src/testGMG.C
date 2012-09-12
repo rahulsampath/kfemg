@@ -50,13 +50,13 @@ int main(int argc, char *argv[]) {
   assert(da[da.size() - 1] != NULL);
 
   Vec rhs;
-  DAGetGlobalVector(da[da.size() - 1], &rhs);
+  DACreateGlobalVector(da[da.size() - 1], &rhs);
 
   const unsigned int seed = (0x3456782  + (54763*globalRank));
   computeRandomRHS(da[da.size() - 1], Kmat[Kmat.size() - 1], rhs, seed);
 
   Vec sol;
-  DAGetGlobalVector(da[da.size() - 1], &sol);
+  DACreateGlobalVector(da[da.size() - 1], &sol);
   VecZeroEntries(sol);
 
   KSP ksp;
@@ -66,8 +66,8 @@ int main(int argc, char *argv[]) {
 
   KSPDestroy(ksp);
 
-  DARestoreGlobalVector(da[da.size() - 1], &rhs);
-  DARestoreGlobalVector(da[da.size() - 1], &sol);
+  VecDestroy(rhs);
+  VecDestroy(sol);
 
   for(int i = 0; i < da.size(); ++i) {
     if(da[i] != NULL) {
