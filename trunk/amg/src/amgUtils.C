@@ -6,6 +6,80 @@
 #include <algorithm>
 #include "ml_include.h"
 #include "amg/include/amgUtils.h"
+#include "common/include/commonUtils.h"
+
+void zeroBoundaries(double* arr, const unsigned int K, const unsigned int dim,
+    const int Nz, const int Ny, const int Nx) {
+  if(dim > 1) {
+    assert(Ny > 1);
+  } else {
+    assert(Ny == 1);
+  }
+  if(dim > 2) {
+    assert(Nz > 1);
+  } else {
+    assert(Nz == 1);
+  }
+  assert(dim > 0);
+  assert(Nx > 1);
+
+  int dofsPerNode = getDofsPerNode(dim, K); 
+
+  std::vector<int> xVec; 
+  xVec.push_back(0);
+  xVec.push_back((Nx - 1));
+
+  std::vector<int> yVec; 
+  if(dim > 1) {
+    yVec.push_back(0);
+    yVec.push_back((Ny - 1));
+  }
+
+  std::vector<int> zVec;
+  if(dim > 2) {
+    zVec.push_back(0);
+    zVec.push_back((Nz - 1));
+  }
+
+  //x
+  for(int c = 0; c < xVec.size(); ++c) {
+    int xi = xVec[c];
+    for(int zi = 0; zi < Nz; ++zi) {
+      for(int yi = 0; yi < Ny; ++yi) {
+        int bnd = (((zi*Ny) + yi)*Nx) + xi;
+        int db = 0;
+        int bid = (bnd*dofsPerNode) + db;
+        arr[bid] = 0.0;
+      }//end yi
+    }//end zi
+  }//end c 
+
+  //y
+  for(int c = 0; c < yVec.size(); ++c) {
+    int yi = yVec[c];
+    for(int zi = 0; zi < Nz; ++zi) {
+      for(int xi = 0; xi < Nx; ++xi) {        
+        int bnd = (((zi*Ny) + yi)*Nx) + xi;
+        int db = 0;
+        int bid = (bnd*dofsPerNode) + db;
+        arr[bid] = 0.0;
+      }//end xi
+    }//end zi
+  }//end c
+
+  //z
+  for(int c = 0; c < zVec.size(); ++c) {
+    int zi = zVec[c];
+    for(int yi = 0; yi < Ny; ++yi) {
+      for(int xi = 0; xi < Nx; ++xi) {
+        int bnd = (((zi*Ny) + yi)*Nx) + xi;
+        int db = 0;
+        int bid = (bnd*dofsPerNode) + db;
+        arr[bid] = 0.0;
+      }//end xi
+    }//end yi
+  }//end c
+}
 
 void printMatrix(MyMatrix & myMat) {
   for(size_t i = 0; i < ((myMat.nzCols).size()); ++i) {
@@ -17,13 +91,11 @@ void printMatrix(MyMatrix & myMat) {
 }
 
 void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
-    const unsigned int dim, const unsigned int Nx, const unsigned int Ny, const unsigned int Nz) {
+    const unsigned int dim, const unsigned int Nz, const unsigned int Ny, const unsigned int Nx) {
   unsigned int ye, ze;
-  size_t dofsPerNode = (K + 1);
   if(dim > 1) {
     assert(Ny > 1);
     ye = Ny - 1;
-    dofsPerNode *= (K + 1);
   } else {
     assert(Ny == 1);
     ye = 1;
@@ -31,13 +103,14 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
   if(dim > 2) {
     assert(Nz > 1);
     ze = Nz - 1;
-    dofsPerNode *= (K + 1);
   } else {
     assert(Nz == 1);
     ze = 1;
   }
   assert(dim > 0);
   assert(Nx > 1);
+
+  size_t dofsPerNode = getDofsPerNode(dim, K); 
   std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
 
   unsigned int xe = Nx - 1;
@@ -86,22 +159,21 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & 
 }
 
 void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const unsigned int dim,
-    const int Nx, const int Ny, const int Nz) {
-  int dofsPerNode = (K + 1);
+    const int Nz, const int Ny, const int Nx) {
   if(dim > 1) {
     assert(Ny > 1);
-    dofsPerNode *= (K + 1);
   } else {
     assert(Ny == 1);
   }
   if(dim > 2) {
     assert(Nz > 1);
-    dofsPerNode *= (K + 1);
   } else {
     assert(Nz == 1);
   }
   assert(dim > 0);
   assert(Nx > 1);
+
+  int dofsPerNode = getDofsPerNode(dim, K); 
 
   std::vector<int> xVec; 
   xVec.push_back(0);
@@ -263,12 +335,14 @@ void destroyMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj) {
   ML_Destroy(&ml_obj);
 }
 
-void computeRandomRHS(double* rhsArr, MyMatrix & myMat) {
+void computeRandomRHS(double* rhsArr, MyMatrix & myMat, const unsigned int K, const unsigned int dim,
+    const int Nz, const int Ny, const int Nx) {
   const unsigned int len = (myMat.vals).size();
   double* tmpSol = new double[len];
   for(unsigned int i = 0; i < len; ++i) {
     tmpSol[i] = (static_cast<double>(rand()))/(static_cast<double>(RAND_MAX));
   }//end for i
+  zeroBoundaries(tmpSol, K, dim, Nz, Ny, Nx);
   myMatVecPrivate(&myMat, len, tmpSol, rhsArr);
   delete [] tmpSol;
 }
@@ -340,4 +414,6 @@ void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, double val) 
   assert((*pos) == col);
   (myMat.vals)[row][(pos - (((myMat.nzCols)[row]).begin()))] = val;
 }
+
+
 

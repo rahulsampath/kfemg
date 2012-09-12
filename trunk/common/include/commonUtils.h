@@ -4,6 +4,8 @@
 
 #include <vector>
 
+int getDofsPerNode(int dim, int K);
+
 double legendrePoly(int n, double x);
 
 double legendrePolyPrime(int n, double x); 

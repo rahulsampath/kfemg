@@ -105,19 +105,6 @@ void zeroBoundaries(DA da, Vec vec) {
   }
 }
 
-int getDofsPerNode(int dim, int K) { 
-  int dofsPerNode = (K + 1);
-  assert(dim > 0);
-  assert(dim <= 3);
-  if(dim > 1) {
-    dofsPerNode *= (K + 1);
-  }
-  if(dim > 2) {
-    dofsPerNode *= (K + 1);
-  }
-  return dofsPerNode;
-}
-
 void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
     int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm) {
   int globalRank;

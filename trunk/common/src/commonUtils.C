@@ -342,5 +342,18 @@ double gaussWeight(int n, double x) {
   return (2.0/((1.0 - (x*x))*polyPrime*polyPrime));
 }
 
+int getDofsPerNode(int dim, int K) { 
+  int dofsPerNode = (K + 1);
+  assert(dim > 0);
+  assert(dim <= 3);
+  if(dim > 1) {
+    dofsPerNode *= (K + 1);
+  }
+  if(dim > 2) {
+    dofsPerNode *= (K + 1);
+  }
+  return dofsPerNode;
+}
+
 
 
