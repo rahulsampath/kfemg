@@ -11,15 +11,8 @@
 #include <vector>
 #include "mpi.h"
 
-struct PmatData {
-  Mat pvtPmat;
-  Vec pvtCvec;
-};
-
-PetscErrorCode destroyPmat(Mat mat);
-
-void buildPmat(std::vector<Mat>& Pmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
-    std::vector<int>& activeNpes, int dim, int dofsPerNode);
+void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
+    std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode);
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da);
 

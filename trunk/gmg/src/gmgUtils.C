@@ -8,9 +8,10 @@
 #include "gmg/include/gmgUtils.h"
 #include "petscmg.h"
 
-void buildPmat(std::vector<Mat>& Pmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms,
+void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms,
     std::vector<int>& activeNpes, int dim, int dofsPerNode) {
   Pmat.resize((da.size() - 1), NULL);
+  tmpCvec.resize(Pmat.size(), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
     if(da[lev + 1] != NULL) {
       PetscInt nxf, nyf, nzf;
@@ -38,6 +39,7 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<DA>& da, std::vector<MPI_Comm
       } else {
         MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
       }
+      MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
     }
   }//end lev
 }
@@ -404,18 +406,6 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
   }
 
   std::cout<<"ActualNumLevels = "<<(Nx.size())<<std::endl;
-}
-
-PetscErrorCode destroyPmat(Mat mat) {
-  PetscFunctionBegin;
-
-  PmatData* data;
-  MatShellGetContext(mat, (void **)(&data));
-  MatDestroy(data->pvtPmat);
-  VecDestroy(data->pvtCvec);   
-  delete data;
-
-  PetscFunctionReturn(0);
 }
 
 
