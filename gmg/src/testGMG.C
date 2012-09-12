@@ -42,13 +42,21 @@ int main(int argc, char *argv[]) {
   createDA(da, activeComms, dofsPerNode, dim, Nz, Ny, Nx, MPI_COMM_WORLD);
 
   std::vector<Mat> Kmat(da.size(), NULL);
-  for(int i = 0; i < da.size(); ++i) {
+  for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
     }
   }//end i
 
   std::vector<Mat> Pmat((da.size() - 1), NULL);
+  for(int lev = 0; lev < (Pmat.size()); ++lev) {
+    if(da[lev + 1] != NULL) {
+    PetscInt nxf, nyf, nzf;
+    if(da[lev] != NULL) {
+    PetscInt nxc, nyc, nzc;
+    }
+    }
+  }//end lev
 
   KSP ksp;
   PC pc;
