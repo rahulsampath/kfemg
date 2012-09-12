@@ -406,5 +406,17 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
   std::cout<<"ActualNumLevels = "<<(Nx.size())<<std::endl;
 }
 
+PetscErrorCode destroyPmat(Mat mat) {
+  PetscFunctionBegin;
+
+  PmatData* data;
+  MatShellGetContext(mat, (void **)(&data));
+  MatDestroy(data->pvtPmat);
+  VecDestroy(data->pvtCvec);   
+  delete data;
+
+  PetscFunctionReturn(0);
+}
+
 
 
