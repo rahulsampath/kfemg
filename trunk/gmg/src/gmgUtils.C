@@ -6,6 +6,97 @@
 #include <algorithm>
 #include "mpi.h"
 #include "gmg/include/gmgUtils.h"
+#include "petscmg.h"
+
+void buildPmat(std::vector<Mat>& Pmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms,
+    std::vector<int>& activeNpes, int dim, int dofsPerNode) {
+  Pmat.resize((da.size() - 1), NULL);
+  for(int lev = 0; lev < (Pmat.size()); ++lev) {
+    if(da[lev + 1] != NULL) {
+      PetscInt nxf, nyf, nzf;
+      DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
+      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
+      PetscInt nxc, nyc, nzc;
+      nxc = nyc = nzc = 0;
+      if(da[lev] != NULL) {
+        DAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
+      }
+      if(dim < 3) {
+        nzf = nzc = 1;
+      }
+      if(dim < 2) {
+        nyf = nyc = 1;
+      }
+      PetscInt locRowSz = dofsPerNode*nxf*nyf*nzf;
+      PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
+      MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
+      MatSetType(Pmat[lev], MATAIJ);
+      int dofsPerElem = (1 << dim);
+      //PERFORMANCE IMPROVEMENT: Better PreAllocation.
+      if(activeNpes[lev + 1] > 1) {
+        MatMPIAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL, (dofsPerElem*dofsPerNode), PETSC_NULL);
+      } else {
+        MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
+      }
+    }
+  }//end lev
+}
+
+void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da) {
+  Kmat.resize(da.size(), NULL);
+  for(int i = 0; i < (da.size()); ++i) {
+    if(da[i] != NULL) {
+      DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
+    }
+  }//end i
+}
+
+void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
+  PetscRandom rndCtx;
+  PetscRandomCreate(MPI_COMM_WORLD, &rndCtx);
+  PetscRandomSetType(rndCtx, PETSCRAND48);
+  PetscRandomSetSeed(rndCtx, seed);
+  PetscRandomSeed(rndCtx);
+  Vec tmpSol;
+  VecDuplicate(rhs, &tmpSol);
+  VecSetRandom(tmpSol, rndCtx);
+  PetscRandomDestroy(rndCtx);
+  zeroBoundaries(da, tmpSol);
+  assert(Kmat != NULL);
+  MatMult(Kmat, tmpSol, rhs);
+  VecDestroy(tmpSol);
+}
+
+void createSolver(KSP& ksp, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<MPI_Comm>& activeComms) {
+  PC pc;
+  KSPCreate(MPI_COMM_WORLD, &ksp);
+  KSPSetType(ksp, KSPCG);
+  KSPSetPreconditionerSide(ksp, PC_LEFT);
+  KSPGetPC(ksp, &pc);
+  PCSetType(pc, PCMG);
+  PCMGSetLevels(pc, (Kmat.size()), &(activeComms[0]));
+  PCMGSetType(pc, PC_MG_MULTIPLICATIVE);
+  for(int lev = 0; lev < (Pmat.size()); ++lev) {
+    PCMGSetInterpolation(pc, (lev + 1), Pmat[lev]);
+  }//end lev
+  KSPSetOperators(ksp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_NONZERO_PATTERN);
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    KSP lksp;
+    PC lpc;
+    PCMGGetSmoother(pc, lev, &lksp);
+    KSPSetType(lksp, KSPRICHARDSON);
+    KSPSetPreconditionerSide(lksp, PC_LEFT);
+    KSPRichardsonSetScale(lksp, 1.0);
+    KSPGetPC(lksp, &lpc);
+    PCSetType(lpc, PCSOR);
+    PCSORSetOmega(lpc, 1.0);
+    PCSORSetSymmetric(lpc, SOR_LOCAL_SYMMETRIC_SWEEP);
+    PCSORSetIterations(lpc, 1, 2);
+    KSPSetOperators(lksp, Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
+  }//end lev
+  KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+  KSPSetFromOptions(ksp);
+}
 
 void zeroBoundaries(DA da, Vec vec) {
   PetscInt dim;
