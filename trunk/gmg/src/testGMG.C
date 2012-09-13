@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   read1DshapeFnCoeffs(K, coeffs);
 
   std::vector<Mat> Kmat;
-  buildKmat(Kmat, da);
+  buildKmat(Kmat, da, coeffs, K);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;

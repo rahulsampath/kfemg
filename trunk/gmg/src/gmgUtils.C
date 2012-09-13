@@ -8,6 +8,59 @@
 #include "gmg/include/gmgUtils.h"
 #include "petscmg.h"
 
+void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K) {
+  Kmat.resize(da.size(), NULL);
+  for(int i = 0; i < (da.size()); ++i) {
+    if(da[i] != NULL) {
+      DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
+      computeKmat(Kmat[i], da[i], coeffs, K);
+      dirichletMatrixCorrection(Kmat[i], da[i], K);
+    }
+  }//end i
+}
+
+void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K) {
+}
+
+void dirichletMatrixCorrection(Mat Kmat, DA da, const unsigned int K) {
+}
+
+void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms,
+    std::vector<int>& activeNpes, int dim, int dofsPerNode) {
+  Pmat.resize((da.size() - 1), NULL);
+  tmpCvec.resize(Pmat.size(), NULL);
+  for(int lev = 0; lev < (Pmat.size()); ++lev) {
+    if(da[lev + 1] != NULL) {
+      PetscInt nxf, nyf, nzf;
+      DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
+      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
+      PetscInt nxc, nyc, nzc;
+      nxc = nyc = nzc = 0;
+      if(da[lev] != NULL) {
+        DAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
+      }
+      if(dim < 3) {
+        nzf = nzc = 1;
+      }
+      if(dim < 2) {
+        nyf = nyc = 1;
+      }
+      PetscInt locRowSz = dofsPerNode*nxf*nyf*nzf;
+      PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
+      MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
+      MatSetType(Pmat[lev], MATAIJ);
+      int dofsPerElem = (1 << dim);
+      //PERFORMANCE IMPROVEMENT: Better PreAllocation.
+      if(activeNpes[lev + 1] > 1) {
+        MatMPIAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL, (dofsPerElem*dofsPerNode), PETSC_NULL);
+      } else {
+        MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
+      }
+      MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
+    }
+  }//end lev
+}
+
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
   assert(ksp[currLev] != NULL);
@@ -82,51 +135,6 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
       KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
     }
   }//end lev
-}
-
-void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms,
-    std::vector<int>& activeNpes, int dim, int dofsPerNode) {
-  Pmat.resize((da.size() - 1), NULL);
-  tmpCvec.resize(Pmat.size(), NULL);
-  for(int lev = 0; lev < (Pmat.size()); ++lev) {
-    if(da[lev + 1] != NULL) {
-      PetscInt nxf, nyf, nzf;
-      DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
-      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
-      PetscInt nxc, nyc, nzc;
-      nxc = nyc = nzc = 0;
-      if(da[lev] != NULL) {
-        DAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
-      }
-      if(dim < 3) {
-        nzf = nzc = 1;
-      }
-      if(dim < 2) {
-        nyf = nyc = 1;
-      }
-      PetscInt locRowSz = dofsPerNode*nxf*nyf*nzf;
-      PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
-      MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
-      MatSetType(Pmat[lev], MATAIJ);
-      int dofsPerElem = (1 << dim);
-      //PERFORMANCE IMPROVEMENT: Better PreAllocation.
-      if(activeNpes[lev + 1] > 1) {
-        MatMPIAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL, (dofsPerElem*dofsPerNode), PETSC_NULL);
-      } else {
-        MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
-      }
-      MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
-    }
-  }//end lev
-}
-
-void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da) {
-  Kmat.resize(da.size(), NULL);
-  for(int i = 0; i < (da.size()); ++i) {
-    if(da[i] != NULL) {
-      DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
-    }
-  }//end i
 }
 
 void zeroBoundaries(DA da, Vec vec) {
