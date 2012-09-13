@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
   Vec res;
   VecDuplicate(rhs, &res);
 
-  computeResidual(Kmat, sol, rhs, res);
+  computeResidual(Kmat[Kmat.size() - 1], sol, rhs, res);
   PetscReal resNorm;
   VecNorm(res, NORM_2, &resNorm);
   std::cout<<"Initial Residual Norm = "<<resNorm<<std::endl;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
   for(int i = 0; i < (Kmat.size() - 1); ++i) {
     if(Kmat[i] != NULL) {
       MatGetVecs(Kmat[i], &(mgSol[i]), &(mgRhs[i]));
-      VecDuplicate(mgRhs[i], mgRes[i]);
+      VecDuplicate(mgRhs[i], &(mgRes[i]));
     }
   }//end i
   mgSol[Kmat.size() - 1] = sol;
