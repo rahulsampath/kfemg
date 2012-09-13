@@ -57,12 +57,51 @@ int main(int argc, char *argv[]) {
   computeRandomRHS(da[da.size() - 1], Kmat[Kmat.size() - 1], rhs, seed);
 
   Vec sol;
-  DACreateGlobalVector(da[da.size() - 1], &sol);
+  VecDuplicate(rhs, &sol);
   VecZeroEntries(sol);
+
+  Vec res;
+  VecDuplicate(rhs, &res);
+
+  computeResidual(Kmat, sol, rhs, res);
+  PetscReal resNorm;
+  VecNorm(res, NORM_2, &resNorm);
+  std::cout<<"Initial Residual Norm = "<<resNorm<<std::endl;
 
   std::vector<KSP> ksp;
   createKSP(ksp, Kmat, activeComms);
 
+  std::vector<Vec> mgSol;
+  std::vector<Vec> mgRhs;
+  std::vector<Vec> mgRes;
+
+  mgSol.resize(Kmat.size(), NULL);
+  mgRhs.resize(Kmat.size(), NULL);
+  mgRes.resize(Kmat.size(), NULL);
+  for(int i = 0; i < (Kmat.size() - 1); ++i) {
+    if(Kmat[i] != NULL) {
+      MatGetVecs(Kmat[i], &(mgSol[i]), &(mgRhs[i]));
+      VecDuplicate(mgRhs[i], mgRes[i]);
+    }
+  }//end i
+  mgSol[Kmat.size() - 1] = sol;
+  mgRhs[Kmat.size() - 1] = rhs;
+  mgRes[Kmat.size() - 1] = res;
+
+  for(int i = 0; i < (mgSol.size() - 1); ++i) {
+    VecDestroy(mgSol[i]);
+  }//end i
+  mgSol.clear();
+
+  for(int i = 0; i < (mgRhs.size() - 1); ++i) {
+    VecDestroy(mgRhs[i]);
+  }//end i
+  mgRhs.clear();
+
+  for(int i = 0; i < (mgRes.size() - 1); ++i) {
+    VecDestroy(mgRes[i]);
+  }//end i
+  mgRes.clear();
 
   for(int i = 0; i < ksp.size(); ++i) {
     if(ksp[i] != NULL) {
@@ -72,6 +111,7 @@ int main(int argc, char *argv[]) {
   ksp.clear();
 
   VecDestroy(rhs);
+  VecDestroy(res);
   VecDestroy(sol);
 
   for(int i = 0; i < da.size(); ++i) {
