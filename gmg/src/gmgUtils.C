@@ -26,12 +26,34 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
 }
 
 void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
-  if(cVec == NULL) {
+  assert(Pmat != NULL);
+  assert(fVec != NULL);
+  assert(tmpCvec != NULL);
+  PetscScalar* arr;
+  if(cVec != NULL) {
+    VecGetArray(cVec, &arr);
+    VecPlaceArray(tmpCvec, arr);
+  }
+  MatMultTranspose(Pmat, fVec, tmpCvec);
+  if(cVec != NULL) {
+    VecResetArray(tmpCvec);
+    VecRestoreArray(cVec, &arr);
   }
 }
 
 void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
-  if(cVec == NULL) {
+  assert(Pmat != NULL);
+  assert(fVec != NULL);
+  assert(tmpCvec != NULL);
+  PetscScalar* arr;
+  if(cVec != NULL) {
+    VecGetArray(cVec, &arr);
+    VecPlaceArray(tmpCvec, arr);
+  }
+  MatMult(Pmat, tmpCvec, fVec);
+  if(cVec != NULL) {
+    VecResetArray(tmpCvec);
+    VecRestoreArray(cVec, &arr);
   }
 }
 
