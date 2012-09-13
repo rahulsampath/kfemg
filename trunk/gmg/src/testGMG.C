@@ -22,6 +22,12 @@ int main(int argc, char *argv[]) {
   PetscTruth useRandomRHS = PETSC_TRUE;
   PetscOptionsGetTruth(PETSC_NULL, "-useRandomRHS", &useRandomRHS, PETSC_NULL);
   std::cout<<"Random-RHS = "<<useRandomRHS<<std::endl;
+  PetscInt maxVcycles = 1;
+  PetscOptionsGetInt(PETSC_NULL, "-maxVcycles", &maxVcycles, PETSC_NULL);
+  PetscReal rTol = 1.0e-12;
+  PetscOptionsGetReal(PETSC_NULL, "-rTol", &rTol, PETSC_NULL);
+  PetscReal aTol = 1.0e-12;
+  PetscOptionsGetReal(PETSC_NULL, "-aTol", &aTol, PETSC_NULL);
 
   int globalRank;
   MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
@@ -63,11 +69,6 @@ int main(int argc, char *argv[]) {
   Vec res;
   VecDuplicate(rhs, &res);
 
-  computeResidual(Kmat[Kmat.size() - 1], sol, rhs, res);
-  PetscReal resNorm;
-  VecNorm(res, NORM_2, &resNorm);
-  std::cout<<"Initial Residual Norm = "<<resNorm<<std::endl;
-
   std::vector<KSP> ksp;
   createKSP(ksp, Kmat, activeComms);
 
@@ -88,66 +89,35 @@ int main(int argc, char *argv[]) {
   mgRhs[Kmat.size() - 1] = rhs;
   mgRes[Kmat.size() - 1] = res;
 
-  for(int i = 0; i < (mgSol.size() - 1); ++i) {
-    VecDestroy(mgSol[i]);
-  }//end i
-  mgSol.clear();
+  computeResidual(Kmat[Kmat.size() - 1], sol, rhs, res);
+  PetscReal initialResNorm;
+  VecNorm(res, NORM_2, &initialResNorm);
+  std::cout<<"Initial Residual Norm = "<<initialResNorm<<std::endl;
 
-  for(int i = 0; i < (mgRhs.size() - 1); ++i) {
-    VecDestroy(mgRhs[i]);
-  }//end i
-  mgRhs.clear();
 
-  for(int i = 0; i < (mgRes.size() - 1); ++i) {
-    VecDestroy(mgRes[i]);
-  }//end i
-  mgRes.clear();
+  mgSol[Kmat.size() - 1] = NULL;
+  mgRhs[Kmat.size() - 1] = NULL;
+  mgRes[Kmat.size() - 1] = NULL;
 
-  for(int i = 0; i < ksp.size(); ++i) {
-    if(ksp[i] != NULL) {
-      KSPDestroy(ksp[i]);
-    }
-  }//end i
-  ksp.clear();
+  destroyVec(mgSol);
+  destroyVec(mgRhs);
+  destroyVec(mgRes);
+
+  destroyKSP(ksp);
 
   VecDestroy(rhs);
   VecDestroy(res);
   VecDestroy(sol);
 
-  for(int i = 0; i < da.size(); ++i) {
-    if(da[i] != NULL) {
-      DADestroy(da[i]);
-    }
-  }//end i
-  da.clear();
+  destroyDA(da);
 
-  for(int i = 0; i < Kmat.size(); ++i) {
-    if(Kmat[i] != NULL) {
-      MatDestroy(Kmat[i]);
-    }
-  }//end i
-  Kmat.clear();
+  destroyVec(tmpCvec);
 
-  for(int i = 0; i < tmpCvec.size(); ++i) {
-    if(tmpCvec[i] != NULL) {
-      VecDestroy(tmpCvec[i]);
-    }
-  }//end i
-  tmpCvec.clear();
+  destroyMat(Pmat);
 
-  for(int i = 0; i < Pmat.size(); ++i) {
-    if(Pmat[i] != NULL) {
-      MatDestroy(Pmat[i]);
-    }
-  }//end i
-  Pmat.clear();
+  destroyMat(Kmat);
 
-  for(int i = 0; i < activeComms.size(); ++i) {
-    if(activeComms[i] != MPI_COMM_NULL) {
-      MPI_Comm_free(&(activeComms[i]));
-    }
-  }//end i
-  activeComms.clear();
+  destroyComms(activeComms);
 
   PetscFinalize();
 

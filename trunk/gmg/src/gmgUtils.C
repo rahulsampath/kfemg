@@ -406,9 +406,54 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
 }
 
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
-  //Res = rhs - (mat*sol)
+  //res = rhs - (mat*sol)
   MatMult(mat, sol, res);
   VecAYPX(res, -1.0, rhs);
+}
+
+void destroyComms(std::vector<MPI_Comm> & activeComms) {
+  for(int i = 0; i < activeComms.size(); ++i) {
+    if(activeComms[i] != MPI_COMM_NULL) {
+      MPI_Comm_free(&(activeComms[i]));
+    }
+  }//end i
+  activeComms.clear();
+}
+
+void destroyVec(std::vector<Vec>& vec) {
+  for(int i = 0; i < vec.size(); ++i) {
+    if(vec[i] != NULL) {
+      VecDestroy(vec[i]);
+    }
+  }//end i
+  vec.clear();
+}
+
+void destroyMat(std::vector<Mat> & mat) {
+  for(int i = 0; i < mat.size(); ++i) {
+    if(mat[i] != NULL) {
+      MatDestroy(mat[i]);
+    }
+  }//end i
+  mat.clear();
+}
+
+void destroyDA(std::vector<DA>& da) {
+  for(int i = 0; i < da.size(); ++i) {
+    if(da[i] != NULL) {
+      DADestroy(da[i]);
+    }
+  }//end i
+  da.clear();
+}
+
+void destroyKSP(std::vector<KSP>& ksp) {
+  for(int i = 0; i < ksp.size(); ++i) {
+    if(ksp[i] != NULL) {
+      KSPDestroy(ksp[i]);
+    }
+  }//end i
+  ksp.clear();
 }
 
 
