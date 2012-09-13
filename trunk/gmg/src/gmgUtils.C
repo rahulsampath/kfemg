@@ -405,6 +405,19 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
   std::cout<<"ActualNumLevels = "<<(Nx.size())<<std::endl;
 }
 
+void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol, 
+    std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
+  mgSol.resize(Kmat.size(), NULL);
+  mgRhs.resize(Kmat.size(), NULL);
+  mgRes.resize(Kmat.size(), NULL);
+  for(int i = 0; i < (Kmat.size() - 1); ++i) {
+    if(Kmat[i] != NULL) {
+      MatGetVecs(Kmat[i], &(mgSol[i]), &(mgRhs[i]));
+      VecDuplicate(mgRhs[i], &(mgRes[i]));
+    }
+  }//end i
+}
+
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
   //res = rhs - (mat*sol)
   MatMult(mat, sol, res);

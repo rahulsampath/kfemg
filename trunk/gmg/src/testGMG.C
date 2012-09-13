@@ -76,15 +76,8 @@ int main(int argc, char *argv[]) {
   std::vector<Vec> mgRhs;
   std::vector<Vec> mgRes;
 
-  mgSol.resize(Kmat.size(), NULL);
-  mgRhs.resize(Kmat.size(), NULL);
-  mgRes.resize(Kmat.size(), NULL);
-  for(int i = 0; i < (Kmat.size() - 1); ++i) {
-    if(Kmat[i] != NULL) {
-      MatGetVecs(Kmat[i], &(mgSol[i]), &(mgRhs[i]));
-      VecDuplicate(mgRhs[i], &(mgRes[i]));
-    }
-  }//end i
+  buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
+
   mgSol[Kmat.size() - 1] = sol;
   mgRhs[Kmat.size() - 1] = rhs;
   mgRes[Kmat.size() - 1] = res;
@@ -94,6 +87,23 @@ int main(int argc, char *argv[]) {
   VecNorm(res, NORM_2, &initialResNorm);
   std::cout<<"Initial Residual Norm = "<<initialResNorm<<std::endl;
 
+  int iter = 0;
+  while(iter < maxVcycles) {
+    ++iter;
+    computeResidual(Kmat[Kmat.size() - 1], sol, rhs, res);
+    PetscReal currResNorm;
+    VecNorm(res, NORM_2, &currResNorm);
+    std::cout<<"Iter = "<<iter<<" ResNorm = "<<currResNorm<<std::endl;
+    if(currResNorm < aTol) {
+      std::cout<<"Converged due to ATOL."<<std::endl;
+      break;
+    }
+    if(currResNorm < (rTol*initialResNorm)) {
+      std::cout<<"Converged due to RTOL."<<std::endl;
+      break;
+    }
+  }
+  std::cout<<"Number of V-cycles = "<<iter<<std::endl;
 
   mgSol[Kmat.size() - 1] = NULL;
   mgRhs[Kmat.size() - 1] = NULL;

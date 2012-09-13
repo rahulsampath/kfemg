@@ -31,6 +31,9 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
 
 void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx);
 
+void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol, 
+    std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
+
 void destroyComms(std::vector<MPI_Comm> & activeComms);
 
 void destroyMat(std::vector<Mat> & mat);
