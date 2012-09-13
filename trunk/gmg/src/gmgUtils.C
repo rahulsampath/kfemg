@@ -78,6 +78,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
       KSPGetPC(ksp[lev], &pc);
       if(lev == 0) {
         KSPSetType(ksp[lev], KSPPREONLY);
+        KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
         PCSetType(pc, PCLU);
       } else {
         KSPSetType(ksp[lev], KSPRICHARDSON);
@@ -87,9 +88,9 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         PCSORSetOmega(pc, 1.0);
         PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
         PCSORSetIterations(pc, 1, 2);
+        KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
-      KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
       KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
     }
   }//end lev
