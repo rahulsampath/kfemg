@@ -27,7 +27,7 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
 
 void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K);
 
-void dirichletMatrixCorrection(Mat Kmat, DA da, const unsigned int K);
+void dirichletMatrixCorrection(Mat Kmat, DA da);
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed);
 
