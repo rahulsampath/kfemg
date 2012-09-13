@@ -405,5 +405,11 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
   std::cout<<"ActualNumLevels = "<<(Nx.size())<<std::endl;
 }
 
+void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
+  //Res = rhs - (mat*sol)
+  MatMult(mat, sol, res);
+  VecAYPX(res, -1.0, rhs);
+}
+
 
 

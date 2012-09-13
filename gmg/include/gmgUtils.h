@@ -11,6 +11,8 @@
 #include <vector>
 #include "mpi.h"
 
+void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
+
 void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
     std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode);
 
