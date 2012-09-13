@@ -44,6 +44,8 @@ int main(int argc, char *argv[]) {
   std::vector<int> activeNpes;
   createDA(da, activeComms, activeNpes, dofsPerNode, dim, Nz, Ny, Nx, MPI_COMM_WORLD);
 
+  assert(da[da.size() - 1] != NULL);
+
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
 
@@ -54,7 +56,8 @@ int main(int argc, char *argv[]) {
   std::vector<Vec> tmpCvec;
   buildPmat(Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode);
 
-  assert(da[da.size() - 1] != NULL);
+  std::vector<KSP> ksp;
+  createKSP(ksp, Kmat, activeComms);
 
   Vec rhs;
   DACreateGlobalVector(da[da.size() - 1], &rhs);
@@ -64,13 +67,9 @@ int main(int argc, char *argv[]) {
 
   Vec sol;
   VecDuplicate(rhs, &sol);
-  VecZeroEntries(sol);
 
   Vec res;
   VecDuplicate(rhs, &res);
-
-  std::vector<KSP> ksp;
-  createKSP(ksp, Kmat, activeComms);
 
   std::vector<Vec> mgSol;
   std::vector<Vec> mgRhs;
@@ -82,6 +81,8 @@ int main(int argc, char *argv[]) {
   mgRhs[Kmat.size() - 1] = rhs;
   mgRes[Kmat.size() - 1] = res;
 
+  VecZeroEntries(sol);
+
   computeResidual(Kmat[Kmat.size() - 1], sol, rhs, res);
   PetscReal initialResNorm;
   VecNorm(res, NORM_2, &initialResNorm);
@@ -89,6 +90,7 @@ int main(int argc, char *argv[]) {
 
   int iter = 0;
   while(iter < maxVcycles) {
+    applyVcycle((Kmat.size() - 1), Kmat, Pmat, tmpCvec, ksp, mgSol, mgRhs, mgRes);
     ++iter;
     computeResidual(Kmat[Kmat.size() - 1], sol, rhs, res);
     PetscReal currResNorm;

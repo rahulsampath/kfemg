@@ -11,6 +11,13 @@
 #include <vector>
 #include "mpi.h"
 
+void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
+    std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
+
+void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec);
+
+void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
+
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
 
 void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
