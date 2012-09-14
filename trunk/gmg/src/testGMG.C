@@ -10,7 +10,7 @@
 #include "gmg/include/gmgUtils.h"
 
 int main(int argc, char *argv[]) {
-  PetscInitialize(&argc, &argv, "options", PETSC_NULL);
+  PetscInitialize(&argc, &argv, "optionsTestGMG", PETSC_NULL);
   PetscInt dim = 1; 
   PetscOptionsGetInt(PETSC_NULL, "-dim", &dim, PETSC_NULL);
   assert(dim > 0);
