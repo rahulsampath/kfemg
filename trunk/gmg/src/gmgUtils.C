@@ -607,19 +607,19 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
       MPI_Group_free(&subGroup);
       PetscInt avgX = (Nx[lev])/px;
       PetscInt extraX = (Nx[lev])%px; 
-      PetscInt avgY = (Ny[lev])/py;
-      PetscInt extraY = (Ny[lev])%py; 
-      PetscInt avgZ = (Nz[lev])/pz;
-      PetscInt extraZ = (Nz[lev])%pz; 
       std::vector<PetscInt> lx(px, avgX);
-      std::vector<PetscInt> ly(py, avgY);
-      std::vector<PetscInt> lz(pz, avgZ);
       for(int cnt = 0; cnt < extraX; ++cnt) {
         ++(lx[cnt]);
       }//end cnt
+      PetscInt avgY = (Ny[lev])/py;
+      PetscInt extraY = (Ny[lev])%py; 
+      std::vector<PetscInt> ly(py, avgY);
       for(int cnt = 0; cnt < extraY; ++cnt) {
         ++(ly[cnt]);
       }//end cnt
+      PetscInt avgZ = (Nz[lev])/pz;
+      PetscInt extraZ = (Nz[lev])%pz; 
+      std::vector<PetscInt> lz(pz, avgZ);
       for(int cnt = 0; cnt < extraZ; ++cnt) {
         ++(lz[cnt]);
       }//end cnt
