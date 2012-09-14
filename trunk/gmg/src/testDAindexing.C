@@ -83,15 +83,13 @@ int main(int argc, char *argv[]) {
   assert(pk < pz);
   assert(((((pk*py)+ pj)*px) + pi) == rank);
 
-  PetscInt const * lx = NULL; 
-  PetscInt const * ly = NULL; 
-  PetscInt const * lz = NULL; 
-  if(dim == 1) {
-  DAGetOwnershipRanges(da, &lx, PETSC_NULL, PETSC_NULL);
-  } else if(dim == 2) {
-  DAGetOwnershipRanges(da, &lx, &ly, PETSC_NULL);
-  } else {
-  DAGetOwnershipRanges(da, &lx, &ly, &lz);
+  const PetscInt * lx; 
+  const PetscInt * ly; 
+  const PetscInt * lz; 
+  if(dim == 2) {
+    DAGetOwnershipRanges(da, &lx, &ly, PETSC_NULL);
+  } else if(dim == 3) {
+    DAGetOwnershipRanges(da, &lx, &ly, &lz);
   }
 
   PetscInt xs;
@@ -115,12 +113,14 @@ int main(int argc, char *argv[]) {
   assert(ny > 0);
   assert(nz > 0);
 
-  assert(lx[rank] == nx);
   if(dim > 1) {
-    assert(ly[rank] == ny);
+    assert(lx[pi] == nx);
+  }
+  if(dim > 1) {
+    assert(ly[pj] == ny);
   }
   if(dim > 2) {
-    assert(lz[rank] == nz);
+    assert(lz[pk] == nz);
   }
 
   DADestroy(da);
