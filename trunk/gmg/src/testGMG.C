@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
-  buildPmat(Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode);
+  buildPmat(Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K);
 
   std::vector<KSP> ksp;
   createKSP(ksp, Kmat, activeComms);

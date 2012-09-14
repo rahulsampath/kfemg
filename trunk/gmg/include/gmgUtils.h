@@ -21,7 +21,10 @@ void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
 
 void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
-    std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode);
+    std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode,
+    std::vector<long long int>& coeffs, const unsigned int K);
+
+void computePmat(Mat Pmat, DA dac, DA daf, std::vector<long long int>& coeffs, const unsigned int K); 
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K);
 
