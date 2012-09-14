@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "mpi.h"
 #include "gmg/include/gmgUtils.h"
+#include "common/include/commonUtils.h"
 #include "petscmg.h"
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K) {
@@ -20,7 +21,105 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
 }
 
 void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K) {
+  PetscInt dim;
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  if(dim < 2) {
+    Ny = 1;
+    ys = 0;
+    ny = 1;
+  }
+  if(dim < 3) {
+    Nz = 1; 
+    zs = 0;
+    nz = 1;
+  }
+
+  PetscInt nxe = nx;
+  PetscInt nye = ny;
+  PetscInt nze = nz;
+
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
+  if(dim > 1) {
+    if((ys + ny) == Ny) {
+      nye = ny - 1;
+    }
+  }
+  if(dim > 2) {
+    if((zs + nz) == Nz) {
+      nze = nz - 1;
+    }
+  }
+
+  double hx, hy, hz;
+  hx = 1.0/(static_cast<double>(Nx - 1));
+  if(dim > 1) {
+    hy = 1.0/(static_cast<double>(Ny - 1));
+  }
+  if(dim > 2) {
+    hz = 1.0/(static_cast<double>(Nz - 1));
+  }
+
+  std::vector<std::vector<double> > elemMat;
+  if(dim == 1) {
+    createPoisson1DelementMatrix(K, coeffs, hx, elemMat);
+  } else if(dim == 2) {
+    createPoisson2DelementMatrix(K, coeffs, hy, hx, elemMat);
+  } else {
+    createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat);
+  }
+
+  unsigned int nodesPerElem = (1 << dim);
+
   MatZeroEntries(Kmat);
+
+  MatStencil row;
+  MatStencil col;
+  for(unsigned int zi = zs; zi < (zs + nze); ++zi) {
+    for(unsigned int yi = ys; yi < (ys + nye); ++yi) {
+      for(unsigned int xi = xs; xi < (xs + nxe); ++xi) {
+        for(unsigned int nr = 0, r = 0; nr < nodesPerElem; ++nr) {
+          unsigned int zr = (nr/4);
+          unsigned int yr = ((nr/2)%2);
+          unsigned int xr = (nr%2);
+          for(unsigned int dr = 0; dr < dofsPerNode; ++r, ++dr) {
+            row.k = zi + zr;
+            row.j = yi + yr; 
+            row.i = xi + xr;
+            row.c = dr; 
+            for(unsigned int nc = 0, c = 0; nc < nodesPerElem; ++nc) {
+              unsigned int zc = (nc/4);
+              unsigned int yc = ((nc/2)%2);
+              unsigned int xc = (nc%2);
+              for(unsigned int dc = 0; dc < dofsPerNode; ++c, ++dc) {
+                col.k = zi + zc;
+                col.j = yi + yc;
+                col.i = xi + xc;
+                col.c = dc;
+                PetscScalar val = elemMat[r][c];
+                MatSetValuesStencil(Kmat, 1, &row, 1, &col, &val, ADD_VALUES);
+              }//end dc
+            }//end nc
+          }//end dr
+        }//end nr
+      }//end xi
+    }//end yi
+  }//end zi
 
   MatAssemblyBegin(Kmat, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
