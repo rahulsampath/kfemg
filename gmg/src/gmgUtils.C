@@ -9,6 +9,47 @@
 #include "common/include/commonUtils.h"
 #include "petscmg.h"
 
+void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
+    std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode,
+    std::vector<long long int>& coeffs, const unsigned int K) {
+  Pmat.resize((da.size() - 1), NULL);
+  tmpCvec.resize(Pmat.size(), NULL);
+  for(int lev = 0; lev < (Pmat.size()); ++lev) {
+    if(da[lev + 1] != NULL) {
+      PetscInt nxf, nyf, nzf;
+      DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
+      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
+      PetscInt nxc, nyc, nzc;
+      nxc = nyc = nzc = 0;
+      if(da[lev] != NULL) {
+        DAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
+      }
+      if(dim < 3) {
+        nzf = nzc = 1;
+      }
+      if(dim < 2) {
+        nyf = nyc = 1;
+      }
+      PetscInt locRowSz = dofsPerNode*nxf*nyf*nzf;
+      PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
+      MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
+      MatSetType(Pmat[lev], MATAIJ);
+      int dofsPerElem = (1 << dim);
+      //PERFORMANCE IMPROVEMENT: Better PreAllocation.
+      if(activeNpes[lev + 1] > 1) {
+        MatMPIAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL, (dofsPerElem*dofsPerNode), PETSC_NULL);
+      } else {
+        MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
+      }
+      MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
+      computePmat(Pmat[lev], da[lev], da[lev + 1], coeffs, K);
+    }
+  }//end lev
+}
+
+void computePmat(Mat Pmat, DA dac, DA daf, std::vector<long long int>& coeffs, const unsigned int K) {
+}
+
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K) {
   Kmat.resize(da.size(), NULL);
   for(int i = 0; i < (da.size()); ++i) {
@@ -121,8 +162,8 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
     }//end yi
   }//end zi
 
-  MatAssemblyBegin(Kmat, MAT_FINAL_ASSEMBLY);
-  MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
+  MatAssemblyBegin(Kmat, MAT_FLUSH_ASSEMBLY);
+  MatAssemblyEnd(Kmat, MAT_FLUSH_ASSEMBLY);
 }
 
 void dirichletMatrixCorrection(Mat Kmat, DA da) {
@@ -298,116 +339,20 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
 }
 
-void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms,
-    std::vector<int>& activeNpes, int dim, int dofsPerNode) {
-  Pmat.resize((da.size() - 1), NULL);
-  tmpCvec.resize(Pmat.size(), NULL);
-  for(int lev = 0; lev < (Pmat.size()); ++lev) {
-    if(da[lev + 1] != NULL) {
-      PetscInt nxf, nyf, nzf;
-      DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
-      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
-      PetscInt nxc, nyc, nzc;
-      nxc = nyc = nzc = 0;
-      if(da[lev] != NULL) {
-        DAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
-      }
-      if(dim < 3) {
-        nzf = nzc = 1;
-      }
-      if(dim < 2) {
-        nyf = nyc = 1;
-      }
-      PetscInt locRowSz = dofsPerNode*nxf*nyf*nzf;
-      PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
-      MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
-      MatSetType(Pmat[lev], MATAIJ);
-      int dofsPerElem = (1 << dim);
-      //PERFORMANCE IMPROVEMENT: Better PreAllocation.
-      if(activeNpes[lev + 1] > 1) {
-        MatMPIAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL, (dofsPerElem*dofsPerNode), PETSC_NULL);
-      } else {
-        MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
-      }
-      MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
-    }
-  }//end lev
-}
-
-void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
-    std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
-  assert(ksp[currLev] != NULL);
-  KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
-  if(currLev > 0) {
-    computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
-    applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], mgRes[currLev], mgRhs[currLev - 1]);
-    if(ksp[currLev - 1] != NULL) {
-      VecZeroEntries(mgSol[currLev - 1]);
-      applyVcycle((currLev - 1), Kmat, Pmat, tmpCvec, ksp, mgSol, mgRhs, mgRes);
-    }
-    applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], mgSol[currLev - 1], mgRes[currLev]);
-    VecAXPY(mgSol[currLev], 1.0, mgRes[currLev]);
-    KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
-  }
-}
-
-void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
-  assert(Pmat != NULL);
-  assert(fVec != NULL);
-  assert(tmpCvec != NULL);
-  PetscScalar* arr;
-  if(cVec != NULL) {
-    VecGetArray(cVec, &arr);
-    VecPlaceArray(tmpCvec, arr);
-  }
-  MatMultTranspose(Pmat, fVec, tmpCvec);
-  if(cVec != NULL) {
-    VecResetArray(tmpCvec);
-    VecRestoreArray(cVec, &arr);
-  }
-}
-
-void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
-  assert(Pmat != NULL);
-  assert(fVec != NULL);
-  assert(tmpCvec != NULL);
-  PetscScalar* arr;
-  if(cVec != NULL) {
-    VecGetArray(cVec, &arr);
-    VecPlaceArray(tmpCvec, arr);
-  }
-  MatMult(Pmat, tmpCvec, fVec);
-  if(cVec != NULL) {
-    VecResetArray(tmpCvec);
-    VecRestoreArray(cVec, &arr);
-  }
-}
-
-void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms) {
-  ksp.resize((Kmat.size()), NULL);
-  for(int lev = 0; lev < (Kmat.size()); ++lev) {
-    if(Kmat[lev] != NULL) {
-      PC pc;
-      KSPCreate(activeComms[lev], &(ksp[lev]));
-      KSPGetPC(ksp[lev], &pc);
-      if(lev == 0) {
-        KSPSetType(ksp[lev], KSPPREONLY);
-        KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
-        PCSetType(pc, PCLU);
-      } else {
-        KSPSetType(ksp[lev], KSPRICHARDSON);
-        KSPRichardsonSetScale(ksp[lev], 1.0);
-        KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
-        PCSetType(pc, PCSOR);
-        PCSORSetOmega(pc, 1.0);
-        PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
-        PCSORSetIterations(pc, 1, 1);
-        KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
-      }
-      KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
-      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
-    }
-  }//end lev
+void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
+  PetscRandom rndCtx;
+  PetscRandomCreate(MPI_COMM_WORLD, &rndCtx);
+  PetscRandomSetType(rndCtx, PETSCRAND48);
+  PetscRandomSetSeed(rndCtx, seed);
+  PetscRandomSeed(rndCtx);
+  Vec tmpSol;
+  VecDuplicate(rhs, &tmpSol);
+  VecSetRandom(tmpSol, rndCtx);
+  PetscRandomDestroy(rndCtx);
+  zeroBoundaries(da, tmpSol);
+  assert(Kmat != NULL);
+  MatMult(Kmat, tmpSol, rhs);
+  VecDestroy(tmpSol);
 }
 
 void zeroBoundaries(DA da, Vec vec) {
@@ -507,6 +452,88 @@ void zeroBoundaries(DA da, Vec vec) {
     }
     DAVecRestoreArrayDOF(da, vec, &arr);
   }
+}
+
+void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
+    std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
+  assert(ksp[currLev] != NULL);
+  KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+  if(currLev > 0) {
+    computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
+    applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], mgRes[currLev], mgRhs[currLev - 1]);
+    if(ksp[currLev - 1] != NULL) {
+      VecZeroEntries(mgSol[currLev - 1]);
+      applyVcycle((currLev - 1), Kmat, Pmat, tmpCvec, ksp, mgSol, mgRhs, mgRes);
+    }
+    applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], mgSol[currLev - 1], mgRes[currLev]);
+    VecAXPY(mgSol[currLev], 1.0, mgRes[currLev]);
+    KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+  }
+}
+
+void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
+  assert(Pmat != NULL);
+  assert(fVec != NULL);
+  assert(tmpCvec != NULL);
+  PetscScalar* arr;
+  if(cVec != NULL) {
+    VecGetArray(cVec, &arr);
+    VecPlaceArray(tmpCvec, arr);
+  }
+  MatMultTranspose(Pmat, fVec, tmpCvec);
+  if(cVec != NULL) {
+    VecResetArray(tmpCvec);
+    VecRestoreArray(cVec, &arr);
+  }
+}
+
+void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
+  assert(Pmat != NULL);
+  assert(fVec != NULL);
+  assert(tmpCvec != NULL);
+  PetscScalar* arr;
+  if(cVec != NULL) {
+    VecGetArray(cVec, &arr);
+    VecPlaceArray(tmpCvec, arr);
+  }
+  MatMult(Pmat, tmpCvec, fVec);
+  if(cVec != NULL) {
+    VecResetArray(tmpCvec);
+    VecRestoreArray(cVec, &arr);
+  }
+}
+
+void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
+  //res = rhs - (mat*sol)
+  MatMult(mat, sol, res);
+  VecAYPX(res, -1.0, rhs);
+}
+
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms) {
+  ksp.resize((Kmat.size()), NULL);
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    if(Kmat[lev] != NULL) {
+      PC pc;
+      KSPCreate(activeComms[lev], &(ksp[lev]));
+      KSPGetPC(ksp[lev], &pc);
+      if(lev == 0) {
+        KSPSetType(ksp[lev], KSPPREONLY);
+        KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
+        PCSetType(pc, PCLU);
+      } else {
+        KSPSetType(ksp[lev], KSPRICHARDSON);
+        KSPRichardsonSetScale(ksp[lev], 1.0);
+        KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
+        PCSetType(pc, PCSOR);
+        PCSORSetOmega(pc, 1.0);
+        PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
+        PCSORSetIterations(pc, 1, 1);
+        KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
+      }
+      KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
+      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+    }
+  }//end lev
 }
 
 void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
@@ -719,22 +746,6 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
   std::cout<<"ActualNumLevels = "<<(Nx.size())<<std::endl;
 }
 
-void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
-  PetscRandom rndCtx;
-  PetscRandomCreate(MPI_COMM_WORLD, &rndCtx);
-  PetscRandomSetType(rndCtx, PETSCRAND48);
-  PetscRandomSetSeed(rndCtx, seed);
-  PetscRandomSeed(rndCtx);
-  Vec tmpSol;
-  VecDuplicate(rhs, &tmpSol);
-  VecSetRandom(tmpSol, rndCtx);
-  PetscRandomDestroy(rndCtx);
-  zeroBoundaries(da, tmpSol);
-  assert(Kmat != NULL);
-  MatMult(Kmat, tmpSol, rhs);
-  VecDestroy(tmpSol);
-}
-
 void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol, 
     std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
   mgSol.resize(Kmat.size(), NULL);
@@ -746,12 +757,6 @@ void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol,
       VecDuplicate(mgRhs[i], &(mgRes[i]));
     }
   }//end i
-}
-
-void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
-  //res = rhs - (mat*sol)
-  MatMult(mat, sol, res);
-  VecAYPX(res, -1.0, rhs);
 }
 
 void destroyComms(std::vector<MPI_Comm> & activeComms) {
