@@ -48,6 +48,27 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
 }
 
 void computePmat(Mat Pmat, DA dac, DA daf, std::vector<long long int>& coeffs, const unsigned int K) {
+  PetscInt dim;
+  PetscInt dofsPerNode;
+  PetscInt fNx;
+  PetscInt fNy;
+  PetscInt fNz;
+  DAGetInfo(daf, &dim, &fNx, &fNy, &fNz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt fxs;
+  PetscInt fys;
+  PetscInt fzs;
+  PetscInt fnx;
+  PetscInt fny;
+  PetscInt fnz;
+  DAGetCorners(daf, &fxs, &fys, &fzs, &fnx, &fny, &fnz);
+
+  MatZeroEntries(Pmat);
+
+
+  MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(Pmat, MAT_FINAL_ASSEMBLY);
 }
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K) {
