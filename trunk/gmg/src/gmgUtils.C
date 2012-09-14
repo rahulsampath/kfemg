@@ -587,14 +587,19 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
 
   //0 is the coarsest level.
   for(int lev = 0; lev < numLevels; ++lev) {
-    int px, py, pz;
     int maxNpes;
     if(lev == 0) {
       maxNpes = maxCoarseNpes;
     } else {
       maxNpes = globalNpes;
     }
-    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], maxNpes, pz, py, px);
+    std::vector<PetscInt> lx;
+    std::vector<PetscInt> ly;
+    std::vector<PetscInt> lz;
+    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], maxNpes, lz, ly, lx);
+    PetscInt px = lx.size();
+    PetscInt py = ly.size();
+    PetscInt pz = lz.size();
     activeNpes[lev] = (px*py*pz);
     std::cout<<"Active Npes for Level "<<lev<<" = "<<(activeNpes[lev])<<std::endl;
     if(lev > 0) {
@@ -605,24 +610,6 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
       MPI_Group_incl(globalGroup, (activeNpes[lev]), rankList, &subGroup);
       MPI_Comm_create(globalComm, subGroup, &(activeComms[lev]));
       MPI_Group_free(&subGroup);
-      PetscInt avgX = (Nx[lev])/px;
-      PetscInt extraX = (Nx[lev])%px; 
-      std::vector<PetscInt> lx(px, avgX);
-      for(int cnt = 0; cnt < extraX; ++cnt) {
-        ++(lx[cnt]);
-      }//end cnt
-      PetscInt avgY = (Ny[lev])/py;
-      PetscInt extraY = (Ny[lev])%py; 
-      std::vector<PetscInt> ly(py, avgY);
-      for(int cnt = 0; cnt < extraY; ++cnt) {
-        ++(ly[cnt]);
-      }//end cnt
-      PetscInt avgZ = (Nz[lev])/pz;
-      PetscInt extraZ = (Nz[lev])%pz; 
-      std::vector<PetscInt> lz(pz, avgZ);
-      for(int cnt = 0; cnt < extraZ; ++cnt) {
-        ++(lz[cnt]);
-      }//end cnt
       DACreate(activeComms[lev], dim, DA_NONPERIODIC, DA_STENCIL_BOX, (Nx[lev]), (Ny[lev]), (Nz[lev]),
           px, py, pz, dofsPerNode, 1, &(lx[0]), &(ly[0]), &(lz[0]), (&(da[lev])));
     } else {
@@ -636,7 +623,8 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
   MPI_Group_free(&globalGroup);
 }
 
-void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes, int &pz, int &py, int &px) {
+void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
+    std::vector<PetscInt> &lz, std::vector<PetscInt> &ly, std::vector<PetscInt> &lx) {
   if(dim < 3) {
     assert(Nz == 1);
   }
@@ -684,6 +672,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
     }//end d
   } while(partChanged);
 
+  int px;
   for(int d = 0; d < 3; ++d) {
     if(Nx == Nlist[d]) {
       px = pList[d];
@@ -693,6 +682,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
     }
   }//end d
 
+  int py;
   for(int d = 0; d < 2; ++d) {
     if(Ny == Nlist[d]) {
       py = pList[d];
@@ -702,6 +692,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
     }
   }//end d
 
+  int pz;
   assert(Nz == Nlist[0]);
   pz = pList[0];
 
@@ -712,6 +703,27 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
   assert(px <= Nx);
   assert(py <= Ny);
   assert(pz <= Nz);
+
+  PetscInt avgX = Nx/px;
+  PetscInt extraX = Nx%px; 
+  lx.resize(px, avgX);
+  for(int cnt = 0; cnt < extraX; ++cnt) {
+    ++(lx[cnt]);
+  }//end cnt
+
+  PetscInt avgY = Ny/py;
+  PetscInt extraY = Ny%py; 
+  ly.resize(py, avgY);
+  for(int cnt = 0; cnt < extraY; ++cnt) {
+    ++(ly[cnt]);
+  }//end cnt
+
+  PetscInt avgZ = Nz/pz;
+  PetscInt extraZ = Nz%pz; 
+  lz.resize(pz, avgZ);
+  for(int cnt = 0; cnt < extraZ; ++cnt) {
+    ++(lz[cnt]);
+  }//end cnt
 }
 
 void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx) {
