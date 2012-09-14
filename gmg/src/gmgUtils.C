@@ -48,24 +48,6 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
     nz = 1;
   }
 
-  PetscInt nxe = nx;
-  PetscInt nye = ny;
-  PetscInt nze = nz;
-
-  if((xs + nx) == Nx) {
-    nxe = nx - 1;
-  }
-  if(dim > 1) {
-    if((ys + ny) == Ny) {
-      nye = ny - 1;
-    }
-  }
-  if(dim > 2) {
-    if((zs + nz) == Nz) {
-      nze = nz - 1;
-    }
-  }
-
   double hx, hy, hz;
   hx = 1.0/(static_cast<double>(Nx - 1));
   if(dim > 1) {
@@ -82,6 +64,24 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
     createPoisson2DelementMatrix(K, coeffs, hy, hx, elemMat);
   } else {
     createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat);
+  }
+
+  PetscInt nxe = nx;
+  PetscInt nye = ny;
+  PetscInt nze = nz;
+
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
+  if(dim > 1) {
+    if((ys + ny) == Ny) {
+      nye = ny - 1;
+    }
+  }
+  if(dim > 2) {
+    if((zs + nz) == Nz) {
+      nze = nz - 1;
+    }
   }
 
   unsigned int nodesPerElem = (1 << dim);
@@ -142,349 +142,157 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
   PetscInt nz;
   DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
+  if(dim < 2) {
+    Ny = 1;
+    ys = 0;
+    ny = 1;
+  }
+  if(dim < 3) {
+    Nz = 1; 
+    zs = 0;
+    nz = 1;
+  }
+
+  std::vector<PetscInt> xvec;
+  if(xs == 0) {
+    xvec.push_back(0);
+  }
+  if((xs + nx) == Nx) {
+    xvec.push_back((Nx - 1));
+  }
+
+  std::vector<PetscInt> yvec;
+  if(dim > 1) {
+    if(ys == 0) {
+      yvec.push_back(0);
+    }
+    if((ys + ny) == Ny) {
+      yvec.push_back((Ny - 1));
+    }
+  }
+
+  std::vector<PetscInt> zvec;
+  if(dim > 2) {
+    if(zs == 0) {
+      zvec.push_back(0);
+    }
+    if((zs + nz) == Nz) {
+      zvec.push_back((Nz - 1));
+    }
+  }
+
   PetscScalar one = 1.0;
   PetscScalar zero = 0.0;
 
   MatStencil bnd;
+  bnd.c = 0;
+
   MatStencil oth;
 
-  bnd.c = 0;
-  if(dim == 1) {
-    if(xs == 0) {
-      bnd.i = 0;
-      for(int i = -1; i < 2; ++i) {
-        oth.i = (bnd.i) + i;
-        if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-          for(int d = 0; d < dofsPerNode; ++d) {
-            oth.c = d;
-            if(i || d) {
-              MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-              MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-            } else {
-              MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-            }
-          }//end d
-        }
-      }//end i
-    }
-    if((xs + nx) == Nx) {
-      bnd.i = Nx - 1;
-      for(int i = -1; i < 2; ++i) {
-        oth.i = (bnd.i) + i;
-        if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-          for(int d = 0; d < dofsPerNode; ++d) {
-            oth.c = d;
-            if(i || d) {
-              MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-              MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-            } else {
-              MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-            }
-          }//end d
-        }
-      }//end i
-    }
-  } else if(dim == 2) {
-    if(xs == 0) {
-      bnd.i = 0;
+  //x
+  for(int b = 0; b < xvec.size(); ++b) {
+    bnd.i = xvec[b];
+    for(int zi = zs; zi < (zs + nz); ++zi) {
+      bnd.k = zi;
       for(int yi = ys; yi < (ys + ny); ++yi) {
         bnd.j = yi;
-        for(int j = -1; j < 2; ++j) {
-          oth.j = (bnd.j) + j;
-          if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-            for(int i = -1; i < 2; ++i) {
-              oth.i = (bnd.i) + i;
-              if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                for(int d = 0; d < dofsPerNode; ++d) {
-                  oth.c = d;
-                  if(j || i || d) {
-                    MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                    MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                  } else {
-                    MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+        for(int k = -1; k < 2; ++k) {
+          oth.k = (bnd.k) + k;
+          if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
+            for(int j = -1; j < 2; ++j) {
+              oth.j = (bnd.j) + j;
+              if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
+                for(int i = -1; i < 2; ++i) {
+                  oth.i = (bnd.i) + i;
+                  if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
+                    for(int d = 0; d < dofsPerNode; ++d) {
+                      oth.c = d;
+                      if(k || j || i || d) {
+                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                        MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+                      } else {
+                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+                      }
+                    }//end d
                   }
-                }//end d
+                }//end i
               }
-            }//end i
+            }//end j
           }
-        }//end j
+        }//end k
       }//end yi
-    }
-    if((xs + nx) == Nx) {
-      bnd.i = Nx - 1;
-      for(int yi = ys; yi < (ys + ny); ++yi) {
-        bnd.j = yi;
-        for(int j = -1; j < 2; ++j) {
-          oth.j = (bnd.j) + j;
-          if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-            for(int i = -1; i < 2; ++i) {
-              oth.i = (bnd.i) + i;
-              if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                for(int d = 0; d < dofsPerNode; ++d) {
-                  oth.c = d;
-                  if(j || i || d) {
-                    MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                    MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                  } else {
-                    MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-                  }
-                }//end d
-              }
-            }//end i
-          }
-        }//end j
-      }//end yi
-    }
-    if(ys == 0) {
-      bnd.j = 0;
+    }//end zi
+  }//end b
+
+  //y
+  for(int b = 0; b < yvec.size(); ++b) {
+    bnd.j = yvec[b];
+    for(int zi = zs; zi < (zs + nz); ++zi) {
+      bnd.k = zi;
       for(int xi = xs; xi < (xs + nx); ++xi) {
         bnd.i = xi; 
-        for(int j = -1; j < 2; ++j) {
-          oth.j = (bnd.j) + j;
-          if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-            for(int i = -1; i < 2; ++i) {
-              oth.i = (bnd.i) + i;
-              if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                for(int d = 0; d < dofsPerNode; ++d) {
-                  oth.c = d;
-                  if(j || i || d) {
-                    MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                    MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                  } else {
-                    MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+        for(int k = -1; k < 2; ++k) {
+          oth.k = (bnd.k) + k;
+          if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
+            for(int j = -1; j < 2; ++j) {
+              oth.j = (bnd.j) + j;
+              if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
+                for(int i = -1; i < 2; ++i) {
+                  oth.i = (bnd.i) + i;
+                  if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
+                    for(int d = 0; d < dofsPerNode; ++d) {
+                      oth.c = d;
+                      if(k || j || i || d) {
+                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                        MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+                      } else {
+                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+                      }
+                    }//end d
                   }
-                }//end d
+                }//end i
               }
-            }//end i
+            }//end j
           }
-        }//end j
+        }//end k
       }//end xi
-    }
-    if((ys + ny) == Ny) {
-      bnd.j = Ny - 1;
+    }//end zi
+  }//end b
+
+  //z
+  for(int b = 0; b < zvec.size(); ++b) {
+    bnd.k = zvec[b];
+    for(int yi = ys; yi < (ys + ny); ++yi) {
+      bnd.j = yi;
       for(int xi = xs; xi < (xs + nx); ++xi) {
-        bnd.i = xi;
-        for(int j = -1; j < 2; ++j) {
-          oth.j = (bnd.j) + j;
-          if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-            for(int i = -1; i < 2; ++i) {
-              oth.i = (bnd.i) + i;
-              if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                for(int d = 0; d < dofsPerNode; ++d) {
-                  oth.c = d;
-                  if(j || i || d) {
-                    MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                    MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                  } else {
-                    MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+        bnd.i = xi; 
+        for(int k = -1; k < 2; ++k) {
+          oth.k = (bnd.k) + k;
+          if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
+            for(int j = -1; j < 2; ++j) {
+              oth.j = (bnd.j) + j;
+              if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
+                for(int i = -1; i < 2; ++i) {
+                  oth.i = (bnd.i) + i;
+                  if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
+                    for(int d = 0; d < dofsPerNode; ++d) {
+                      oth.c = d;
+                      if(k || j || i || d) {
+                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                        MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+                      } else {
+                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+                      }
+                    }//end d
                   }
-                }//end d
+                }//end i
               }
-            }//end i
+            }//end j
           }
-        }//end j
+        }//end k
       }//end xi
-    }
-  } else {
-    if(xs == 0) {
-      bnd.i = 0;
-      for(int zi = zs; zi < (zs + nz); ++zi) {
-        bnd.k = zi;
-        for(int yi = ys; yi < (ys + ny); ++yi) {
-          bnd.j = yi;
-          for(int k = -1; k < 2; ++k) {
-            oth.k = (bnd.k) + k;
-            if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
-              for(int j = -1; j < 2; ++j) {
-                oth.j = (bnd.j) + j;
-                if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-                  for(int i = -1; i < 2; ++i) {
-                    oth.i = (bnd.i) + i;
-                    if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                      for(int d = 0; d < dofsPerNode; ++d) {
-                        oth.c = d;
-                        if(k || j || i || d) {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                          MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                        } else {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-                        }
-                      }//end d
-                    }
-                  }//end i
-                }
-              }//end j
-            }
-          }//end k
-        }//end yi
-      }//end zi
-    }
-    if((xs + nx) == Nx) {
-      bnd.i = Nx - 1;
-      for(int zi = zs; zi < (zs + nz); ++zi) {
-        bnd.k = zi;
-        for(int yi = ys; yi < (ys + ny); ++yi) {
-          bnd.j = yi;
-          for(int k = -1; k < 2; ++k) {
-            oth.k = (bnd.k) + k;
-            if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
-              for(int j = -1; j < 2; ++j) {
-                oth.j = (bnd.j) + j;
-                if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-                  for(int i = -1; i < 2; ++i) {
-                    oth.i = (bnd.i) + i;
-                    if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                      for(int d = 0; d < dofsPerNode; ++d) {
-                        oth.c = d;
-                        if(k || j || i || d) {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                          MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                        } else {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-                        }
-                      }//end d
-                    }
-                  }//end i
-                }
-              }//end j
-            }
-          }//end k
-        }//end yi
-      }//end zi
-    }
-    if(ys == 0) {
-      bnd.j = 0;
-      for(int zi = zs; zi < (zs + nz); ++zi) {
-        bnd.k = zi;
-        for(int xi = xs; xi < (xs + nx); ++xi) {
-          bnd.i = xi; 
-          for(int k = -1; k < 2; ++k) {
-            oth.k = (bnd.k) + k;
-            if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
-              for(int j = -1; j < 2; ++j) {
-                oth.j = (bnd.j) + j;
-                if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-                  for(int i = -1; i < 2; ++i) {
-                    oth.i = (bnd.i) + i;
-                    if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                      for(int d = 0; d < dofsPerNode; ++d) {
-                        oth.c = d;
-                        if(k || j || i || d) {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                          MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                        } else {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-                        }
-                      }//end d
-                    }
-                  }//end i
-                }
-              }//end j
-            }
-          }//end k
-        }//end xi
-      }//end zi
-    }
-    if((ys + ny) == Ny) {
-      bnd.j = Ny - 1;
-      for(int zi = zs; zi < (zs + nz); ++zi) {
-        bnd.k = zi;
-        for(int xi = xs; xi < (xs + nx); ++xi) {
-          bnd.i = xi; 
-          for(int k = -1; k < 2; ++k) {
-            oth.k = (bnd.k) + k;
-            if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
-              for(int j = -1; j < 2; ++j) {
-                oth.j = (bnd.j) + j;
-                if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-                  for(int i = -1; i < 2; ++i) {
-                    oth.i = (bnd.i) + i;
-                    if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                      for(int d = 0; d < dofsPerNode; ++d) {
-                        oth.c = d;
-                        if(k || j || i || d) {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                          MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                        } else {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-                        }
-                      }//end d
-                    }
-                  }//end i
-                }
-              }//end j
-            }
-          }//end k
-        }//end xi
-      }//end zi
-    }
-    if(zs == 0) {
-      bnd.k = 0;
-      for(int yi = ys; yi < (ys + ny); ++yi) {
-        bnd.j = yi;
-        for(int xi = xs; xi < (xs + nx); ++xi) {
-          bnd.i = xi; 
-          for(int k = -1; k < 2; ++k) {
-            oth.k = (bnd.k) + k;
-            if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
-              for(int j = -1; j < 2; ++j) {
-                oth.j = (bnd.j) + j;
-                if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-                  for(int i = -1; i < 2; ++i) {
-                    oth.i = (bnd.i) + i;
-                    if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                      for(int d = 0; d < dofsPerNode; ++d) {
-                        oth.c = d;
-                        if(k || j || i || d) {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                          MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                        } else {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-                        }
-                      }//end d
-                    }
-                  }//end i
-                }
-              }//end j
-            }
-          }//end k
-        }//end xi
-      }//end yi
-    }
-    if((zs + nz) == Nz) {
-      bnd.k = Nz - 1;
-      for(int yi = ys; yi < (ys + ny); ++yi) {
-        bnd.j = yi;
-        for(int xi = xs; xi < (xs + nx); ++xi) {
-          bnd.i = xi;
-          for(int k = -1; k < 2; ++k) {
-            oth.k = (bnd.k) + k;
-            if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
-              for(int j = -1; j < 2; ++j) {
-                oth.j = (bnd.j) + j;
-                if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
-                  for(int i = -1; i < 2; ++i) {
-                    oth.i = (bnd.i) + i;
-                    if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
-                      for(int d = 0; d < dofsPerNode; ++d) {
-                        oth.c = d;
-                        if(k || j || i || d) {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                          MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-                        } else {
-                          MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-                        }
-                      }//end d
-                    }
-                  }//end i
-                }
-              }//end j
-            }
-          }//end k
-        }//end xi
-      }//end yi
-    }
-  }
+    }//end yi
+  }//end b
 
   MatAssemblyBegin(Kmat, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
