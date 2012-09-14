@@ -605,8 +605,26 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
       MPI_Group_incl(globalGroup, (activeNpes[lev]), rankList, &subGroup);
       MPI_Comm_create(globalComm, subGroup, &(activeComms[lev]));
       MPI_Group_free(&subGroup);
+      PetscInt avgX = (Nx[lev])/px;
+      PetscInt extraX = (Nx[lev])%px; 
+      PetscInt avgY = (Ny[lev])/py;
+      PetscInt extraY = (Ny[lev])%py; 
+      PetscInt avgZ = (Nz[lev])/pz;
+      PetscInt extraZ = (Nz[lev])%pz; 
+      std::vector<PetscInt> lx(px, avgX);
+      std::vector<PetscInt> ly(py, avgY);
+      std::vector<PetscInt> lz(pz, avgZ);
+      for(int cnt = 0; cnt < extraX; ++cnt) {
+        ++(lx[cnt]);
+      }//end cnt
+      for(int cnt = 0; cnt < extraY; ++cnt) {
+        ++(ly[cnt]);
+      }//end cnt
+      for(int cnt = 0; cnt < extraZ; ++cnt) {
+        ++(lz[cnt]);
+      }//end cnt
       DACreate(activeComms[lev], dim, DA_NONPERIODIC, DA_STENCIL_BOX, (Nx[lev]), (Ny[lev]), (Nz[lev]),
-          px, py, pz, dofsPerNode, 1, PETSC_NULL, PETSC_NULL, PETSC_NULL, (&(da[lev])));
+          px, py, pz, dofsPerNode, 1, &(lx[0]), &(ly[0]), &(lz[0]), (&(da[lev])));
     } else {
       MPI_Comm_create(globalComm, MPI_GROUP_EMPTY, &(activeComms[lev]));
       assert(activeComms[lev] == MPI_COMM_NULL);
