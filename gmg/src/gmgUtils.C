@@ -90,6 +90,14 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     fxs += lxf[i];
   }//end i
 
+  int fOffset = 0;
+  for(int p = 0; p < rank; ++p) {
+    int k = p/(fpx*fpy);
+    int j = (p/fpx)%fpy;
+    int i = p%fpx;
+    fOffset += (lzf[k]*lyf[j]*lxf[i]);
+  }//end p
+
   MatZeroEntries(Pmat);
 
 
