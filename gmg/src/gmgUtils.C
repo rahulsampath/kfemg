@@ -42,12 +42,12 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
         MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
       }
       MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
-      computePmat(Pmat[lev], da[lev], da[lev + 1], coeffs, K);
+      computePmat(Pmat[lev], da[lev], da[lev + 1], coeffs, K, activeComms[lev + 1]);
     }
   }//end lev
 }
 
-void computePmat(Mat Pmat, DA dac, DA daf, std::vector<long long int>& coeffs, const unsigned int K) {
+void computePmat(Mat Pmat, DA dac, DA daf, std::vector<long long int>& coeffs, const unsigned int K, MPI_Comm comm) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt fNx;
@@ -63,6 +63,21 @@ void computePmat(Mat Pmat, DA dac, DA daf, std::vector<long long int>& coeffs, c
   PetscInt fny;
   PetscInt fnz;
   DAGetCorners(daf, &fxs, &fys, &fzs, &fnx, &fny, &fnz);
+
+  int rank;
+  int npes;
+  MPI_Comm_rank(comm, &rank);
+  MPI_Comm_size(comm, &npes);
+
+  int fLocSz = (fnx*fny*fnz);
+
+  std::vector<int> allFlocSz(npes);
+  MPI_Allgather(&fLocSz, 1, MPI_INT, &(allFlocSz[0]), 1, MPI_INT, comm);
+
+  int fOffset = 0;
+  for(int i = 0; i < rank; ++i) {
+    fOffset += allFlocSz[i];
+  }//end i
 
   MatZeroEntries(Pmat);
 
