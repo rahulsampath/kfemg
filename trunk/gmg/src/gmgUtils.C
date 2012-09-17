@@ -67,6 +67,29 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
   int cpy = lyc.size();
   int cpz = lzc.size();
 
+  int fpk = rank/(fpx*fpy);
+  int fpj = (rank/fpx)%fpy;
+  int fpi = rank%fpx;
+
+  int fnz = lzf[fpk];
+  int fny = lyf[fpj];
+  int fnx = lxf[fpi];
+
+  int fzs = 0;
+  for(int k = 0; k < fpk; ++k) {
+    fzs += lzf[k];
+  }//end k
+
+  int fys = 0;
+  for(int j = 0; j < fpj; ++j) {
+    fys += lyf[j];
+  }//end j
+
+  int fxs = 0;
+  for(int i = 0; i < fpi; ++i) {
+    fxs += lxf[i];
+  }//end i
+
   MatZeroEntries(Pmat);
 
 
