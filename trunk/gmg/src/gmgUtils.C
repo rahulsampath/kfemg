@@ -64,34 +64,6 @@ void computePmat(Mat Pmat, DA dac, DA daf, std::vector<long long int>& coeffs, c
   int fnz;
   DAGetCorners(daf, &fxs, &fys, &fzs, &fnx, &fny, &fnz);
 
-  MPI_Comm commf;
-  PetscObjectGetComm(((PetscObject)daf), &commf);
-
-  int rank;
-  int npes;
-  MPI_Comm_rank(commf, &rank);
-  MPI_Comm_size(commf, &npes);
-
-  int fLocSz = (fnx*fny*fnz);
-
-  std::vector<int> allFlocSz(npes);
-  MPI_Allgather(&fLocSz, 1, MPI_INT, &(allFlocSz[0]), 1, MPI_INT, commf);
-
-  int fOffset = 0;
-  for(int i = 0; i < rank; ++i) {
-    fOffset += allFlocSz[i];
-  }//end i
-
-  if(dac) {
-    int cnx;
-    int cny;
-    int cnz;
-    DAGetCorners(dac, PETSC_NULL, PETSC_NULL, PETSC_NULL, &cnx, &cny, &cnz);
-
-    MPI_Comm commc;
-    PetscObjectGetComm(((PetscObject)dac), &commc);
-  }
-
   MatZeroEntries(Pmat);
 
 
