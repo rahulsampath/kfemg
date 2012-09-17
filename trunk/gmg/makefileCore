@@ -3,7 +3,7 @@ INCLUDE = -I.. ${PETSC_INCLUDE}
 
 LIBS = -L../common/lib -lcommon ${PETSC_LIB}
 
-EXEC = bin/testGMG bin/testDAindexing
+EXEC = bin/testGMG 
 
 all : $(EXEC)
 
@@ -13,14 +13,8 @@ all : $(EXEC)
 ./src/testGMG.o: ./src/testGMG.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-./src/testDAindexing.o: ./src/testDAindexing.C
-	$(PCC) -c $(CFLAGS) $(PETSC_INCLUDE) $< -o $@
-
 bin/testGMG : ./src/testGMG.o ./src/gmgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
-
-bin/testDAindexing : ./src/testDAindexing.o  
-	$(PCC) $(CFLAGS) $^ -o $@ $(PETSC_LIB) 
 
 clean :
 	rm -rf ./src/*~ ./src/*.o  
