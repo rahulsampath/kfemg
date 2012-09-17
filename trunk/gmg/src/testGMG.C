@@ -42,7 +42,10 @@ int main(int argc, char *argv[]) {
   std::vector<DA> da;
   std::vector<MPI_Comm> activeComms;
   std::vector<int> activeNpes;
-  createDA(da, activeComms, activeNpes, dofsPerNode, dim, Nz, Ny, Nx, MPI_COMM_WORLD);
+  std::vector<std::vector<PetscInt> > partZ;
+  std::vector<std::vector<PetscInt> > partY;
+  std::vector<std::vector<PetscInt> > partX;
+  createDA(da, activeComms, activeNpes, dofsPerNode, dim, Nz, Ny, Nx, partZ, partY, partX, MPI_COMM_WORLD);
 
   assert(da[da.size() - 1] != NULL);
 

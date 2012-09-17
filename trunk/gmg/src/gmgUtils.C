@@ -558,7 +558,9 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
 }
 
 void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
-    int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, MPI_Comm globalComm) {
+    int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
+    std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
+    std::vector<std::vector<PetscInt> >& partX, MPI_Comm globalComm) {
   int globalRank;
   int globalNpes;
   MPI_Comm_rank(globalComm, &globalRank);
@@ -576,6 +578,9 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
   activeNpes.resize(numLevels);
   activeComms.resize(numLevels);
   da.resize(numLevels);
+  partZ.resize(numLevels);
+  partY.resize(numLevels);
+  partX.resize(numLevels);
 
   MPI_Group globalGroup;
   MPI_Comm_group(globalComm, &globalGroup);
@@ -593,13 +598,10 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
     } else {
       maxNpes = globalNpes;
     }
-    std::vector<PetscInt> lx;
-    std::vector<PetscInt> ly;
-    std::vector<PetscInt> lz;
-    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], maxNpes, lz, ly, lx);
-    PetscInt px = lx.size();
-    PetscInt py = ly.size();
-    PetscInt pz = lz.size();
+    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], maxNpes, partZ[lev], partY[lev], partX[lev]);
+    PetscInt pz = (partZ[lev]).size();
+    PetscInt py = (partY[lev]).size();
+    PetscInt px = (partX[lev]).size();
     activeNpes[lev] = (px*py*pz);
     std::cout<<"Active Npes for Level "<<lev<<" = "<<(activeNpes[lev])<<std::endl;
     if(lev > 0) {
@@ -611,7 +613,7 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
       MPI_Comm_create(globalComm, subGroup, &(activeComms[lev]));
       MPI_Group_free(&subGroup);
       DACreate(activeComms[lev], dim, DA_NONPERIODIC, DA_STENCIL_BOX, (Nx[lev]), (Ny[lev]), (Nz[lev]),
-          px, py, pz, dofsPerNode, 1, &(lx[0]), &(ly[0]), &(lz[0]), (&(da[lev])));
+          px, py, pz, dofsPerNode, 1, &(partX[lev][0]), &(partY[lev][0]), &(partZ[lev][0]), (&(da[lev])));
     } else {
       MPI_Comm_create(globalComm, MPI_GROUP_EMPTY, &(activeComms[lev]));
       assert(activeComms[lev] == MPI_COMM_NULL);
