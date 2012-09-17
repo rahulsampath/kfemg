@@ -56,6 +56,17 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf,
     int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
 
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int fpx = lxf.size();
+  int fpy = lyf.size();
+  int fpz = lzf.size();
+
+  int cpx = lxc.size();
+  int cpy = lyc.size();
+  int cpz = lzc.size();
+
   MatZeroEntries(Pmat);
 
 
