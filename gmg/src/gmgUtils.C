@@ -55,17 +55,12 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     std::vector<PetscInt>& lzc, std::vector<PetscInt>& lyc, std::vector<PetscInt>& lxc,
     std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf,
     int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
-
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   int fpx = lxf.size();
   int fpy = lyf.size();
   int fpz = lzf.size();
-
-  int cpx = lxc.size();
-  int cpy = lyc.size();
-  int cpz = lzc.size();
 
   int fpk = rank/(fpx*fpy);
   int fpj = (rank/fpx)%fpy;
@@ -97,6 +92,39 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     int i = p%fpx;
     fOffset += (lzf[k]*lyf[j]*lxf[i]);
   }//end p
+
+  int cpx = lxc.size();
+  int cpy = lyc.size();
+  int cpz = lzc.size();
+
+  int cNpes = cpx*cpy*cpz;
+
+  std::vector<int> cOffsets(cNpes);
+  cOffsets[0] = 0;
+  for(int p = 1; p < cNpes; ++p) {
+    int k = (p - 1)/(cpx*cpy);
+    int j = ((p - 1)/cpx)%cpy;
+    int i = (p - 1)%cpx;
+    cOffsets[p] = cOffsets[p - 1] + (lzc[k]*lyc[j]*lxc[i]);
+  }//end p
+
+  std::vector<int> scanClx(cpx);
+  scanClx[0] = lxc[0] - 1;
+  for(int i = 1; i < cpx; ++i) {
+    scanClx[i] = scanClx[i - 1] + lxc[i];
+  }//end i
+
+  std::vector<int> scanCly(cpy);
+  scanCly[0] = lyc[0] - 1;
+  for(int i = 1; i < cpy; ++i) {
+    scanCly[i] = scanCly[i - 1] + lyc[i];
+  }//end i
+
+  std::vector<int> scanClz(cpz);
+  scanClz[0] = lzc[0] - 1;
+  for(int i = 1; i < cpz; ++i) {
+    scanClz[i] = scanClz[i - 1] + lzc[i];
+  }//end i
 
   MatZeroEntries(Pmat);
 
