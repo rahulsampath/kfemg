@@ -11,7 +11,9 @@
 
 void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
     std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode,
-    std::vector<long long int>& coeffs, const unsigned int K) {
+    std::vector<long long int>& coeffs, const unsigned int K, std::vector<PetscInt> & Nz, 
+    std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, std::vector<std::vector<PetscInt> >& partZ,
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX) {
   Pmat.resize((da.size() - 1), NULL);
   tmpCvec.resize(Pmat.size(), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
@@ -42,12 +44,12 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
         MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
       }
       MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
-      computePmat(Pmat[lev], da[lev], da[lev + 1], coeffs, K);
+      computePmat(Pmat[lev], da[lev + 1], coeffs, K);
     }
   }//end lev
 }
 
-void computePmat(Mat Pmat, DA dac, DA daf, std::vector<long long int>& coeffs, const unsigned int K) {
+void computePmat(Mat Pmat, DA daf, std::vector<long long int>& coeffs, const unsigned int K) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt fNx;
