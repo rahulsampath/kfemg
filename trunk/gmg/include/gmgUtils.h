@@ -26,7 +26,10 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
     std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, std::vector<std::vector<PetscInt> >& partZ,
     std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX);
 
-void computePmat(Mat Pmat, DA daf, std::vector<long long int>& coeffs, const unsigned int K); 
+void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
+    std::vector<PetscInt>& lzc, std::vector<PetscInt>& lyc, std::vector<PetscInt>& lxc,
+    std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf, int dim,
+    int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K);
 
