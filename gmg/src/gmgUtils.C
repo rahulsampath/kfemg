@@ -44,27 +44,17 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
         MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
       }
       MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
-      computePmat(Pmat[lev], da[lev + 1], coeffs, K);
+      computePmat(Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
+          partZ[lev], partY[lev], partX[lev], partZ[lev + 1], partY[lev + 1], partX[lev + 1],
+          dim, dofsPerNode, coeffs, K);
     }
   }//end lev
 }
 
-void computePmat(Mat Pmat, DA daf, std::vector<long long int>& coeffs, const unsigned int K) {
-  PetscInt dim;
-  PetscInt dofsPerNode;
-  PetscInt fNx;
-  PetscInt fNy;
-  PetscInt fNz;
-  DAGetInfo(daf, &dim, &fNx, &fNy, &fNz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
-
-  PetscInt fxs;
-  PetscInt fys;
-  PetscInt fzs;
-  int fnx;
-  int fny;
-  int fnz;
-  DAGetCorners(daf, &fxs, &fys, &fzs, &fnx, &fny, &fnz);
+void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
+    std::vector<PetscInt>& lzc, std::vector<PetscInt>& lyc, std::vector<PetscInt>& lxc,
+    std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf,
+    int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
 
   MatZeroEntries(Pmat);
 
