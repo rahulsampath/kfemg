@@ -92,9 +92,9 @@ int main(int argc, char *argv[]) {
   PetscInt xs;
   PetscInt ys;
   PetscInt zs;
-  PetscInt nx;
-  PetscInt ny;
-  PetscInt nz;
+  int nx;
+  int ny;
+  int nz;
   DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   if(dim < 2) {
@@ -110,6 +110,48 @@ int main(int argc, char *argv[]) {
   assert(ny > 0);
   assert(nz > 0);
 
+  Vec g;
+  Vec n;
+  DACreateGlobalVector(da, &g);
+  DACreateNaturalVector(da, &n);
+
+  PetscInt locSz;
+
+  VecGetLocalSize(g, &locSz);
+  assert(locSz == (nx*ny*nz*dofsPerNode));
+
+  VecGetLocalSize(n, &locSz);
+  assert(locSz == (nx*ny*nz*dofsPerNode));
+
+  std::vector<int> allNx(npes);
+  std::vector<int> allNy(npes);
+  std::vector<int> allNz(npes);
+
+  MPI_Allgather(&nx, 1, MPI_INT, &(allNx[0]), 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Allgather(&ny, 1, MPI_INT, &(allNy[0]), 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Allgather(&nz, 1, MPI_INT, &(allNz[0]), 1, MPI_INT, MPI_COMM_WORLD);
+
+  std::vector<int> scanNx(px);
+  std::vector<int> scanNy(py);
+  std::vector<int> scanNz(pz);
+
+  scanNx[0] = allNx[0];
+  for(int i = 1; i < px; ++i) {
+    scanNx[i] = scanNx[i - 1] + allNx[i];
+  }//end i
+
+  scanNy[0] = allNy[0];
+  for(int i = 1; i < py; ++i) {
+    scanNy[i] = scanNy[i - 1] + allNy[i*px];
+  }//end i
+
+  scanNz[0] = allNz[0];
+  for(int i = 1; i < pz; ++i) {
+    scanNz[i] = scanNz[i - 1] + allNz[i*px*py];
+  }//end i
+
+  VecDestroy(g);
+  VecDestroy(n);
   DADestroy(da);
 
   PetscFinalize();
