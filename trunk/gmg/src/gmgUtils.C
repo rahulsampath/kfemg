@@ -128,6 +128,24 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
 
   MatZeroEntries(Pmat);
 
+  for(int fzi = fzs, f = 0; fzi < (fzs + fnz); ++fzi) {
+    int czi = fzi/2;
+    bool oddZ = ((fzi%2) != 0);
+    for(int fyi = fys; fyi < (fys + fny); ++fyi) {
+      int cyi = fyi/2;
+      bool oddY = ((fyi%2) != 0);
+      for(int fxi = fxs; fxi < (fxs + fnx); ++fxi, ++f) {
+        int cxi = fxi/2;
+        bool oddX = ((fxi%2) != 0);
+        for(int fd = 0; fd < dofsPerNode; ++fd) {
+          int zfd = fd/((K + 1)*(K + 1));
+          int yfd = (fd/(K + 1))%(K + 1);
+          int xfd = fd%(K + 1);
+          int rowId = ((fOffset + f)*dofsPerNode) + fd;
+        }//end fd
+      }//end fxi
+    }//end fyi
+  }//end fzi
 
   MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Pmat, MAT_FINAL_ASSEMBLY);
