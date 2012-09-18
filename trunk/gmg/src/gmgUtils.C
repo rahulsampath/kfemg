@@ -126,6 +126,19 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     scanClz[i] = scanClz[i - 1] + lzc[i];
   }//end i
 
+  double hxf, hyf, hzf;
+  double hxc, hyc, hzc;
+  hxf = 1.0/(static_cast<double>(Nxf - 1));
+  hxc = 1.0/(static_cast<double>(Nxc - 1));
+  if(dim > 1) {
+    hyf = 1.0/(static_cast<double>(Nyf - 1));
+    hyc = 1.0/(static_cast<double>(Nyc - 1));
+  }
+  if(dim > 2) {
+    hzf = 1.0/(static_cast<double>(Nzf - 1));
+    hzc = 1.0/(static_cast<double>(Nzc - 1));
+  }
+
   MatZeroEntries(Pmat);
 
   for(int fzi = fzs, f = 0; fzi < (fzs + fnz); ++fzi) {
@@ -207,6 +220,9 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                 }
                 int cPid = (((zPid[k]*cpy) + yPid[j])*cpx) + xPid[i];
                 int loc = (((zLoc*lyc[yPid[j]]) + yLoc)*lxc[xPid[i]]) + xLoc;
+                for(int d = 0; d < dofsPerNode; ++d) {
+                  int colId = ((cOffsets[cPid] + loc)*dofsPerNode) + d;
+                }//end d
               }//end i
             }//end j
           }//end k
