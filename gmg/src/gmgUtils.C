@@ -131,12 +131,54 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
   for(int fzi = fzs, f = 0; fzi < (fzs + fnz); ++fzi) {
     int czi = fzi/2;
     bool oddZ = ((fzi%2) != 0);
+    std::vector<int>::iterator zIt = std::lower_bound(scanClz.begin(), scanClz.end(), czi);
+    assert(zIt != scanClz.end());
+    std::vector<int> zVec;
+    std::vector<int> zPid;
+    zVec.push_back(czi);
+    zPid.push_back((zIt - scanClz.begin()));
+    if(oddZ) {
+      zVec.push_back(czi + 1);
+      if((*zIt) == czi) {
+        zPid.push_back((zIt - scanClz.begin() + 1));
+      } else {
+        zPid.push_back((zIt - scanClz.begin()));
+      }
+    }
     for(int fyi = fys; fyi < (fys + fny); ++fyi) {
       int cyi = fyi/2;
       bool oddY = ((fyi%2) != 0);
+      std::vector<int>::iterator yIt = std::lower_bound(scanCly.begin(), scanCly.end(), cyi);
+      assert(yIt != scanCly.end());
+      std::vector<int> yVec;
+      std::vector<int> yPid;
+      yVec.push_back(cyi);
+      yPid.push_back((yIt - scanCly.begin()));
+      if(oddY) {
+        yVec.push_back(cyi + 1);
+        if((*yIt) == cyi) {
+          yPid.push_back((yIt - scanCly.begin() + 1));
+        } else {
+          yPid.push_back((yIt - scanCly.begin()));
+        }
+      }
       for(int fxi = fxs; fxi < (fxs + fnx); ++fxi, ++f) {
         int cxi = fxi/2;
         bool oddX = ((fxi%2) != 0);
+        std::vector<int>::iterator xIt = std::lower_bound(scanClx.begin(), scanClx.end(), cxi);
+        assert(xIt != scanClx.end());
+        std::vector<int> xVec;
+        std::vector<int> xPid;
+        xVec.push_back(cxi);
+        xPid.push_back((xIt - scanClx.begin()));
+        if(oddX) {
+          xVec.push_back(cxi + 1);
+          if((*xIt) == cxi) {
+            xPid.push_back((xIt - scanClx.begin() + 1));
+          } else {
+            xPid.push_back((xIt - scanClx.begin()));
+          }
+        }
         for(int fd = 0; fd < dofsPerNode; ++fd) {
           int zfd = fd/((K + 1)*(K + 1));
           int yfd = (fd/(K + 1))%(K + 1);
