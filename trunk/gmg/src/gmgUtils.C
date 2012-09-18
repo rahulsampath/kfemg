@@ -133,15 +133,21 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
   if(dim > 1) {
     hyf = 1.0/(static_cast<double>(Nyf - 1));
     hyc = 1.0/(static_cast<double>(Nyc - 1));
+  } else {
+    hyf = 1.0;
+    hyc = 1.0;
   }
   if(dim > 2) {
     hzf = 1.0/(static_cast<double>(Nzf - 1));
     hzc = 1.0/(static_cast<double>(Nzc - 1));
+  } else {
+    hzf = 1.0;
+    hzc = 1.0;
   }
 
   MatZeroEntries(Pmat);
 
-  for(int fzi = fzs, f = 0; fzi < (fzs + fnz); ++fzi) {
+  for(int fzi = fzs; fzi < (fzs + fnz); ++fzi) {
     int czi = fzi/2;
     bool oddZ = ((fzi%2) != 0);
     std::vector<int>::iterator zIt = std::lower_bound(scanClz.begin(), scanClz.end(), czi);
@@ -175,7 +181,7 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
           yPid.push_back((yIt - scanCly.begin()));
         }
       }
-      for(int fxi = fxs; fxi < (fxs + fnx); ++fxi, ++f) {
+      for(int fxi = fxs; fxi < (fxs + fnx); ++fxi) {
         int cxi = fxi/2;
         bool oddX = ((fxi%2) != 0);
         std::vector<int>::iterator xIt = std::lower_bound(scanClx.begin(), scanClx.end(), cxi);
@@ -192,11 +198,28 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
             xPid.push_back((xIt - scanClx.begin()));
           }
         }
+        int fLoc = ((((fzi - fzs)*fny) + (fyi - fys))*fnx) + (fxi - fxs);
         for(int fd = 0; fd < dofsPerNode; ++fd) {
+          bool isFineBoundary = false;
+          if(fd == 0) {
+            if( (fxi == 0) || (fxi == (Nxf - 1)) ) {
+              isFineBoundary = true;
+            }
+            if( (dim > 1) && ( (fyi == 0) || (fyi == (Nyf - 1)) ) ) {
+              isFineBoundary = true;
+            }
+            if( (dim > 2) && ( (fzi == 0) || (fzi == (Nzf - 1)) ) ) {
+              isFineBoundary = true;
+            }
+          }
+          if(isFineBoundary) {
+            continue;
+          }
           int zfd = fd/((K + 1)*(K + 1));
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
-          int rowId = ((fOffset + f)*dofsPerNode) + fd;
+          double factor = (std::pow((0.5*hzf), zfd))*(std::pow((0.5*hyf), yfd))*(std::pow((0.5*hxf), xfd));
+          int rowId = ((fOffset + fLoc)*dofsPerNode) + fd;
           for(int k = 0; k < zVec.size(); ++k) {
             int zLoc;
             if(zPid[k] > 0) {
@@ -219,9 +242,24 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                   xLoc = xVec[i];
                 }
                 int cPid = (((zPid[k]*cpy) + yPid[j])*cpx) + xPid[i];
-                int loc = (((zLoc*lyc[yPid[j]]) + yLoc)*lxc[xPid[i]]) + xLoc;
+                int cLoc = (((zLoc*lyc[yPid[j]]) + yLoc)*lxc[xPid[i]]) + xLoc;
                 for(int d = 0; d < dofsPerNode; ++d) {
-                  int colId = ((cOffsets[cPid] + loc)*dofsPerNode) + d;
+                  bool isCoarseBoundary = false;
+                  if(d == 0) {
+                    if( (xVec[i] == 0) || (xVec[i] == (Nxc - 1)) ) {
+                      isCoarseBoundary = true;
+                    }
+                    if( (dim > 1) && ( (yVec[j] == 0) || (yVec[j] == (Nyc - 1)) ) ) {
+                      isCoarseBoundary = true;
+                    }
+                    if( (dim > 2) && ( (zVec[k] == 0) || (zVec[k] == (Nzc - 1)) ) ) {
+                      isCoarseBoundary = true;
+                    }
+                  }
+                  if(isCoarseBoundary) {
+                    continue;
+                  }
+                  int colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
                 }//end d
               }//end i
             }//end j
