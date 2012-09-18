@@ -184,6 +184,32 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
           int rowId = ((fOffset + f)*dofsPerNode) + fd;
+          for(int k = 0; k < zVec.size(); ++k) {
+            int zLoc;
+            if(zPid[k] > 0) {
+              zLoc = zVec[k] - (1 + scanClz[zPid[k] - 1]);
+            } else {
+              zLoc = zVec[k];
+            }
+            for(int j = 0; j < yVec.size(); ++j) {
+              int yLoc;
+              if(yPid[j] > 0) {
+                yLoc = yVec[j] - (1 + scanCly[yPid[j] - 1]);
+              } else {
+                yLoc = yVec[j];
+              }
+              for(int i = 0; i < xVec.size(); ++i) {
+                int xLoc;
+                if(xPid[i] > 0) {
+                  xLoc = xVec[i] - (1 + scanClx[xPid[i] - 1]);
+                } else {
+                  xLoc = xVec[i];
+                }
+                int cPid = (((zPid[k]*cpy) + yPid[j])*cpx) + xPid[i];
+                int loc = (((zLoc*lyc[yPid[j]]) + yLoc)*lxc[xPid[i]]) + xLoc;
+              }//end i
+            }//end j
+          }//end k
         }//end fd
       }//end fxi
     }//end fyi
