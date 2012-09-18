@@ -264,15 +264,63 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                   int xcd = d%(K + 1);
                   int colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
                   double val;
-                  if(dim == 1) {
-                    val = eval1DshFnGderivative(unsigned int xNodeId, xcd, K, 
-                        coeffs, double xi, xfd, hxc);
-                  } else if(dim == 2) {
-                    val = eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, ycd, 
-                        xcd, K, coeffs, double yi, double xi, yfd, xfd, hyc, hxc);
+                  int xNodeId;
+                  if( (xVec[i] == (Nxc - 1)) || i ) {
+                    xNodeId = 1;
                   } else {
-                    val = eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
-                        zcd, ycd, xcd, K, coeffs, double zi, double yi, double xi, 
+                    xNodeId = 0;
+                  }
+                  int yNodeId;
+                  if( (yVec[i] == (Nyc - 1)) || j ) {
+                    yNodeId = 1;
+                  } else {
+                    yNodeId = 0;
+                  }
+                  int zNodeId;
+                  if( (zVec[i] == (Nzc - 1)) || k ) {
+                    zNodeId = 1;
+                  } else {
+                    zNodeId = 0;
+                  }
+                  double xPt;
+                  if(oddX) {
+                    xPt = 0.0;
+                  } else {
+                    if(xNodeId == 0) {
+                      xPt = -1.0;
+                    } else {
+                      xPt = 1.0;
+                    }
+                  }
+                  double yPt;
+                  if(oddY) {
+                    yPt = 0.0;
+                  } else {
+                    if(yNodeId == 0) {
+                      yPt = -1.0;
+                    } else {
+                      yPt = 1.0;
+                    }
+                  }
+                  double zPt;
+                  if(oddZ) {
+                    zPt = 0.0;
+                  } else {
+                    if(zNodeId == 0) {
+                      zPt = -1.0;
+                    } else {
+                      zPt = 1.0;
+                    }
+                  }
+                  if(dim == 1) {
+                    val = eval1DshFnGderivative(xNodeId, xcd, K, 
+                        coeffs, xPt, xfd, hxc);
+                  } else if(dim == 2) {
+                    val = eval2DshFnGderivative(yNodeId, xNodeId, ycd, 
+                        xcd, K, coeffs, yPt, xPt, yfd, xfd, hyc, hxc);
+                  } else {
+                    val = eval3DshFnGderivative(zNodeId, yNodeId, xNodeId,
+                        zcd, ycd, xcd, K, coeffs, zPt, yPt, xPt, 
                         zfd, yfd, xfd, hzc, hyc, hxc);
                   }
                   val *= factor;
