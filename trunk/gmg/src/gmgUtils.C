@@ -265,8 +265,15 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                   int colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
                   double val;
                   if(dim == 1) {
+                    val = eval1DshFnGderivative(unsigned int xNodeId, xcd, K, 
+                        coeffs, double xi, xfd, hxc);
                   } else if(dim == 2) {
+                    val = eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, ycd, 
+                        xcd, K, coeffs, double yi, double xi, yfd, xfd, hyc, hxc);
                   } else {
+                    val = eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
+                        zcd, ycd, xcd, K, coeffs, double zi, double yi, double xi, 
+                        zfd, yfd, xfd, hzc, hyc, hxc);
                   }
                   val *= factor;
                   MatSetValues(Pmat, 1, &rowId, 1, &colId, &val, INSERT_VALUES);
