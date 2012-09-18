@@ -259,7 +259,17 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                   if(isCoarseBoundary) {
                     continue;
                   }
+                  int zcd = d/((K + 1)*(K + 1));
+                  int ycd = (d/(K + 1))%(K + 1);
+                  int xcd = d%(K + 1);
                   int colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
+                  double val;
+                  if(dim == 1) {
+                  } else if(dim == 2) {
+                  } else {
+                  }
+                  val *= factor;
+                  MatSetValues(Pmat, 1, &rowId, 1, &colId, &val, INSERT_VALUES);
                 }//end d
               }//end i
             }//end j
