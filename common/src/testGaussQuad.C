@@ -12,9 +12,11 @@ int main(int argc, char**argv) {
   int n = atoi(argv[1]);
 
   std::cout<<"Testing "<<n<<" Point Rule."<<std::endl;
+  std::cout<<"Sizeof(double) = "<<(sizeof(double))<<std::endl;
+  std::cout<<"Sizeof(long double) = "<<(sizeof(long double))<<std::endl;
 
-  std::vector<double> gPt(n);
-  std::vector<double> gWt(n);
+  std::vector<long double> gPt(n);
+  std::vector<long double> gWt(n);
   gaussQuad(gPt, gWt);
 
   for(int i = 0; i < n; ++i) {
