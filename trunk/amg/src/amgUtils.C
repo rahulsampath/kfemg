@@ -340,7 +340,8 @@ void computeRandomRHS(double* rhsArr, MyMatrix & myMat, const unsigned int K, co
   const unsigned int len = (myMat.vals).size();
   double* tmpSol = new double[len];
   for(unsigned int i = 0; i < len; ++i) {
-    tmpSol[i] = (static_cast<double>(rand()))/(static_cast<double>(RAND_MAX));
+    //tmpSol[i] = (static_cast<double>(rand()))/(static_cast<double>(RAND_MAX));
+    tmpSol[i] = 10.0;
   }//end for i
   zeroBoundaries(tmpSol, K, dim, Nz, Ny, Nx);
   myMatVecPrivate(&myMat, len, tmpSol, rhsArr);

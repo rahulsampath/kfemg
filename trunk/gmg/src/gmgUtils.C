@@ -9,11 +9,17 @@
 #include "common/include/commonUtils.h"
 #include "petscmg.h"
 
+extern PetscLogEvent buildPmatEvent;
+extern PetscLogEvent buildKmatEvent;
+extern PetscLogEvent vCycleEvent;
+
 void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
     std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode,
     std::vector<long long int>& coeffs, const unsigned int K, std::vector<PetscInt> & Nz, 
     std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, std::vector<std::vector<PetscInt> >& partZ,
     std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, bool print) {
+  PetscLogEventBegin(buildPmatEvent, 0, 0, 0, 0);
+
   Pmat.resize((da.size() - 1), NULL);
   tmpCvec.resize(Pmat.size(), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
@@ -52,6 +58,8 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
       std::cout<<"Built Pmat for level = "<<lev<<std::endl;
     }
   }//end lev
+
+  PetscLogEventEnd(buildPmatEvent, 0, 0, 0, 0);
 }
 
 void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
@@ -344,6 +352,8 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
 }
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
+  PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
+
   Kmat.resize(da.size(), NULL);
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
@@ -359,6 +369,8 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
       std::cout<<"Built Kmat for level = "<<i<<std::endl;
     }
   }//end i
+
+  PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 }
 
 void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
@@ -757,6 +769,8 @@ void zeroBoundaries(DA da, Vec vec) {
 
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
+  PetscLogEventBegin(vCycleEvent, 0, 0, 0, 0);
+
   assert(ksp[currLev] != NULL);
   KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
   if(currLev > 0) {
@@ -770,6 +784,8 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
     VecAXPY(mgSol[currLev], 1.0, mgRes[currLev]);
     KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
   }
+
+  PetscLogEventEnd(vCycleEvent, 0, 0, 0, 0);
 }
 
 void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
@@ -832,19 +848,19 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
         PCSetType(pc, PCLU);
       } else {
-        //KSPSetType(ksp[lev], KSPRICHARDSON);
-        KSPSetType(ksp[lev], KSPCG);
+        KSPSetType(ksp[lev], KSPRICHARDSON);
+        //KSPSetType(ksp[lev], KSPCG);
         KSPRichardsonSetScale(ksp[lev], 1.0);
         KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
-        PCSetType(pc, PCJACOBI);
-        //PCSetType(pc, PCSOR);
-        //PCSORSetOmega(pc, 1.0);
-        //PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
-        //PCSORSetIterations(pc, 1, 1);
+        //PCSetType(pc, PCJACOBI);
+        PCSetType(pc, PCSOR);
+        PCSORSetOmega(pc, 1.0);
+        PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
+        PCSORSetIterations(pc, 1, 1);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
-      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, numSmoothIters);
+      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
     }
   }//end lev
 }

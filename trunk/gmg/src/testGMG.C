@@ -9,8 +9,19 @@
 #include "common/include/commonUtils.h"
 #include "gmg/include/gmgUtils.h"
 
+PetscCookie gmgCookie;
+PetscLogEvent buildPmatEvent;
+PetscLogEvent buildKmatEvent;
+PetscLogEvent vCycleEvent;
+
 int main(int argc, char *argv[]) {
   PetscInitialize(&argc, &argv, "optionsTestGMG", PETSC_NULL);
+  
+  PetscCookieRegister("GMG", &gmgCookie);
+  PetscLogEventRegister("Pmat", gmgCookie, &buildPmatEvent);
+  PetscLogEventRegister("Kmat", gmgCookie, &buildKmatEvent);
+  PetscLogEventRegister("Vcycle", gmgCookie, &vCycleEvent);
+
   PetscInt dim = 1; 
   PetscOptionsGetInt(PETSC_NULL, "-dim", &dim, PETSC_NULL);
   assert(dim > 0);
