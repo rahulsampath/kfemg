@@ -90,7 +90,7 @@ void printMatrix(MyMatrix & myMat) {
   }//end i
 }
 
-void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<double> > const & elemMat, const unsigned int K, 
+void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<long double> > const & elemMat, const unsigned int K, 
     const unsigned int dim, const unsigned int Nz, const unsigned int Ny, const unsigned int Nx) {
   unsigned int ye, ze;
   if(dim > 1) {
@@ -408,7 +408,7 @@ void getNeighbors(std::vector<int> & nh, int zi, int yi, int xi, int Nz, int Ny,
   }//end k
 }
 
-void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, double val) {
+void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, long double val) {
   std::vector<unsigned int>::iterator pos = std::lower_bound(((myMat.nzCols)[row]).begin(),
       ((myMat.nzCols)[row]).end(), col);
   assert(pos != (((myMat.nzCols)[row]).end()));
