@@ -65,20 +65,20 @@ int main(int argc, char *argv[]) {
   }
   std::cout<<"R-Tol = "<<rTol<<std::endl;
 
-  double hx = 1.0/(static_cast<double>(Nx - 1));
-  double hy, hz;
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  long double hy, hz;
   if(dim > 1) {
-    hy = 1.0/(static_cast<double>(Ny - 1));
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
   }
   if(dim > 2) {
-    hz = 1.0/(static_cast<double>(Nz - 1));
+    hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
 
   double createElemMatStartTime = MPI_Wtime();
-  std::vector<std::vector<double> > elemMat;
+  std::vector<std::vector<long double> > elemMat;
   if(dim == 1) {
     createPoisson1DelementMatrix(K, coeffs, hx, elemMat, true);
   } else if(dim == 2) {
