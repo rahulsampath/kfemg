@@ -446,35 +446,24 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
 
   MatZeroEntries(Kmat);
 
-  MatStencil row;
-  MatStencil col;
+  std::vector<MatStencil> indices(nodesPerElem*dofsPerNode);
   for(unsigned int zi = zs; zi < (zs + nze); ++zi) {
     for(unsigned int yi = ys; yi < (ys + nye); ++yi) {
       for(unsigned int xi = xs; xi < (xs + nxe); ++xi) {
-        for(unsigned int nr = 0, r = 0; nr < nodesPerElem; ++nr) {
-          unsigned int zr = (nr/4);
-          unsigned int yr = ((nr/2)%2);
-          unsigned int xr = (nr%2);
-          for(unsigned int dr = 0; dr < dofsPerNode; ++r, ++dr) {
-            row.k = zi + zr;
-            row.j = yi + yr; 
-            row.i = xi + xr;
-            row.c = dr; 
-            for(unsigned int nc = 0, c = 0; nc < nodesPerElem; ++nc) {
-              unsigned int zc = (nc/4);
-              unsigned int yc = ((nc/2)%2);
-              unsigned int xc = (nc%2);
-              for(unsigned int dc = 0; dc < dofsPerNode; ++c, ++dc) {
-                col.k = zi + zc;
-                col.j = yi + yc;
-                col.i = xi + xc;
-                col.c = dc;
-                PetscScalar val = elemMat[r][c];
-                MatSetValuesStencil(Kmat, 1, &row, 1, &col, &val, ADD_VALUES);
-              }//end dc
-            }//end nc
-          }//end dr
-        }//end nr
+        for(unsigned int n = 0, i = 0; n < nodesPerElem; ++n) {
+          unsigned int z = (n/4);
+          unsigned int y = ((n/2)%2);
+          unsigned int x = (n%2);
+          for(unsigned int d = 0; d < dofsPerNode; ++i, ++d) {
+            (indices[i]).k = zi + z;
+            (indices[i]).j = yi + y;
+            (indices[i]).i = xi + x;
+            (indices[i]).c = d;
+          }//end d
+        }//end n
+        for(size_t r = 0; r < (indices.size()); ++r) {
+          MatSetValuesStencil(Kmat, 1, &(indices[r]), (nodesPerElem*dofsPerNode), &(indices[0]), &(elemMat[r][0]), ADD_VALUES);
+        }//end r
       }//end xi
     }//end yi
   }//end zi
