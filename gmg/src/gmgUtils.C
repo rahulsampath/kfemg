@@ -13,7 +13,7 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
     std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode,
     std::vector<long long int>& coeffs, const unsigned int K, std::vector<PetscInt> & Nz, 
     std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, std::vector<std::vector<PetscInt> >& partZ,
-    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX) {
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, bool print) {
   Pmat.resize((da.size() - 1), NULL);
   tmpCvec.resize(Pmat.size(), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
@@ -47,6 +47,9 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
       computePmat(Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
           partZ[lev], partY[lev], partX[lev], partZ[lev + 1], partY[lev + 1], partX[lev + 1],
           dim, dofsPerNode, coeffs, K);
+    }
+    if(print) {
+      std::cout<<"Built Pmat for level = "<<lev<<std::endl;
     }
   }//end lev
 }
@@ -352,6 +355,9 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
       }
       dirichletMatrixCorrection(Kmat[i], da[i]);
     }
+    if(print) {
+      std::cout<<"Built Kmat for level = "<<i<<std::endl;
+    }
   }//end i
 }
 
@@ -642,6 +648,7 @@ void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
   Vec tmpSol;
   VecDuplicate(rhs, &tmpSol);
   VecSetRandom(tmpSol, rndCtx);
+  //VecSet(tmpSol, 10.0);
   PetscRandomDestroy(rndCtx);
   zeroBoundaries(da, tmpSol);
   assert(Kmat != NULL);
@@ -829,10 +836,11 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetType(ksp[lev], KSPCG);
         KSPRichardsonSetScale(ksp[lev], 1.0);
         KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
-        PCSetType(pc, PCSOR);
-        PCSORSetOmega(pc, 1.0);
-        PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
-        PCSORSetIterations(pc, 1, 1);
+        PCSetType(pc, PCJACOBI);
+        //PCSetType(pc, PCSOR);
+        //PCSORSetOmega(pc, 1.0);
+        //PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
+        //PCSORSetIterations(pc, 1, 1);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
@@ -888,7 +896,8 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
     PetscInt px = (partX[lev]).size();
     activeNpes[lev] = (px*py*pz);
     if(print) {
-      std::cout<<"Active Npes for Level "<<lev<<" = "<<(activeNpes[lev])<<std::endl;
+      std::cout<<"Active Npes for Level "<<lev<<" = "<<(activeNpes[lev])
+        <<" : (px, py, pz) = ("<<px<<", "<<py<<", "<<pz<<")"<<std::endl;
     }
     if(lev > 0) {
       assert(activeNpes[lev] >= activeNpes[lev - 1]);
