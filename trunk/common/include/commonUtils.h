@@ -6,63 +6,63 @@
 
 int getDofsPerNode(int dim, int K);
 
-double legendrePoly(int n, double x);
+long double legendrePoly(int n, long double x);
 
-double legendrePolyPrime(int n, double x); 
+long double legendrePolyPrime(int n, long double x); 
 
-double gaussWeight(int n, double x); 
+long double gaussWeight(int n, long double x); 
 
-void gaussQuad(std::vector<double> & x, std::vector<double> & w);
+void gaussQuad(std::vector<long double> & x, std::vector<long double> & w);
 
-bool softEquals(double a, double b);
+bool softEquals(long double a, long double b);
 
 void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs);
 
 void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
-    double hx, std::vector<std::vector<double> >& mat, bool print);
+    long double hx, std::vector<std::vector<long double> >& mat, bool print);
 
 void createPoisson2DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
-    double hy, double hx, std::vector<std::vector<double> >& mat, bool print);
+    long double hy, long double hx, std::vector<std::vector<long double> >& mat, bool print);
 
 void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
-    double hz, double hy, double hx, std::vector<std::vector<double> >& mat, bool print);
+    long double hz, long double hy, long double hx, std::vector<std::vector<long double> >& mat, bool print);
 
-double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
+long double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
-    std::vector<long long int> & coeffs, double zi, double yi, double xi,
-    unsigned int zl, unsigned int yl, unsigned int xl, double hz, double hy, double hx);
+    std::vector<long long int> & coeffs, long double zi, long double yi, long double xi,
+    unsigned int zl, unsigned int yl, unsigned int xl, long double hz, long double hy, long double hx);
 
-double eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, 
-    unsigned int xDofId, unsigned int K, std::vector<long long int> & coeffs, double yi, double xi,
-    unsigned int yl, unsigned int xl, double hy, double hx);
+long double eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, 
+    unsigned int xDofId, unsigned int K, std::vector<long long int> & coeffs, long double yi, long double xi,
+    unsigned int yl, unsigned int xl, long double hy, long double hx);
 
-double eval1DshFnGderivative(unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
-    std::vector<long long int> & coeffs, double xi, unsigned int xl, double hx);
+long double eval1DshFnGderivative(unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
+    std::vector<long long int> & coeffs, long double xi, unsigned int xl, long double hx);
 
-double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
+long double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
-    std::vector<long long int> & coeffs, double zi, double yi, double xi);
+    std::vector<long long int> & coeffs, long double zi, long double yi, long double xi);
 
-double eval2DshFn(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, unsigned int xDofId, 
-    unsigned int K, std::vector<long long int> & coeffs, double yi, double xi);
+long double eval2DshFn(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, unsigned int xDofId, 
+    unsigned int K, std::vector<long long int> & coeffs, long double yi, long double xi);
 
-double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K, 
-    std::vector<long long int> & coeffs, double xi);
+long double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K, 
+    std::vector<long long int> & coeffs, long double xi);
 
-double eval1DshFnLderivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
-    std::vector<long long int> & coeffs, double xi, unsigned int l);
+long double eval1DshFnLderivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
+    std::vector<long long int> & coeffs, long double xi, unsigned int l);
 
-double powDerivative(double x, unsigned int i, unsigned int l);
+long double powDerivative(long double x, unsigned int i, unsigned int l);
 
 inline unsigned long long int factorial(unsigned long long int n) {
   return ( (n <= 1) ? 1 : (n*factorial(n - 1)) );
 }
 
-inline double coordGlobalToLocal(double xg, double xa, double hx) {
+inline long double coordGlobalToLocal(long double xg, long double xa, long double hx) {
   return ( ((xg - xa)*2.0/hx) - 1.0 );
 }
 
-inline double coordLocalToGlobal(double xi, double xa, double hx) {
+inline long double coordLocalToGlobal(long double xi, long double xa, long double hx) {
   return ( xa + (hx*(1 + xi)/2.0) );
 }
 
