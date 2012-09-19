@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
-  buildPmat(Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, Nz, Ny, Nx, partZ, partY, partX);
+  buildPmat(Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, Nz, Ny, Nx, partZ, partY, partX, print);
 
   std::vector<KSP> ksp;
   createKSP(ksp, Kmat, activeComms, dim, dofsPerNode, print);
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
   PetscReal initialResNorm;
   VecNorm(res, NORM_2, &initialResNorm);
   if(print) {
-    std::cout<<"Initial Residual Norm = "<<initialResNorm<<std::endl;
+    std::cout<<"Initial Residual Norm = "<<std::setprecision(15)<<initialResNorm<<std::endl;
   }
 
   int iter = 0;
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     PetscReal currResNorm;
     VecNorm(res, NORM_2, &currResNorm);
     if(print) {
-      std::cout<<"Iter = "<<iter<<" ResNorm = "<<currResNorm<<std::endl;
+      std::cout<<"Iter = "<<iter<<" ResNorm = "<<std::setprecision(15)<<currResNorm<<std::endl;
     }
     if(currResNorm < aTol) {
       if(print) {

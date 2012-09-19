@@ -1,4 +1,4 @@
--dim 3
+-dim 2
 -K 2
 -useRandomRHS true
 -finestNx 33
