@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
     std::cout<<"K = "<<K<<std::endl;
     std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
     std::cout<<"Random-RHS = "<<useRandomRHS<<std::endl;
+    std::cout<<"sizeof(long double) = "<<(sizeof(long double))<<std::endl;
   }
 
   std::vector<PetscInt> Nx;
