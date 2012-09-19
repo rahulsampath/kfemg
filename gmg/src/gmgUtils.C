@@ -358,6 +358,11 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
+      PetscInt sz;
+      MatGetSize(Kmat[i], &sz, PETSC_NULL);
+      if(print) {
+        std::cout<<"Kmat Size for level "<<i<<" = "<<sz<<std::endl;
+      }
       if(i == 0) {
         computeKmat(Kmat[i], da[i], coeffs, K, print);
       } else {
