@@ -647,8 +647,8 @@ void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
   PetscRandomSeed(rndCtx);
   Vec tmpSol;
   VecDuplicate(rhs, &tmpSol);
-  VecSetRandom(tmpSol, rndCtx);
-  //VecSet(tmpSol, 10.0);
+  //VecSetRandom(tmpSol, rndCtx);
+  VecSet(tmpSol, 10.0);
   PetscRandomDestroy(rndCtx);
   zeroBoundaries(da, tmpSol);
   assert(Kmat != NULL);
