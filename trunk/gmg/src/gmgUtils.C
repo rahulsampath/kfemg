@@ -218,6 +218,7 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
           int zfd = fd/((K + 1)*(K + 1));
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
+          //PERFORMANCE IMPROVEMENT: Pre-Compute 
           double factor = (std::pow((0.5*hzf), zfd))*(std::pow((0.5*hyf), yfd))*(std::pow((0.5*hxf), xfd));
           int rowId = ((fOffset + fLoc)*dofsPerNode) + fd;
           for(int k = 0; k < zVec.size(); ++k) {
@@ -312,6 +313,7 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                       zPt = 1.0;
                     }
                   }
+                  //PERFORMANCE IMPROVEMENT: Pre-Compute 
                   if(dim == 1) {
                     val = eval1DshFnGderivative(xNodeId, xcd, K, 
                         coeffs, xPt, xfd, hxc);
@@ -338,18 +340,22 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
   MatAssemblyEnd(Pmat, MAT_FINAL_ASSEMBLY);
 }
 
-void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K) {
+void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
   Kmat.resize(da.size(), NULL);
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
-      computeKmat(Kmat[i], da[i], coeffs, K);
+      if(i == 0) {
+        computeKmat(Kmat[i], da[i], coeffs, K, print);
+      } else {
+        computeKmat(Kmat[i], da[i], coeffs, K, false);
+      }
       dirichletMatrixCorrection(Kmat[i], da[i]);
     }
   }//end i
 }
 
-void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K) {
+void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -388,11 +394,11 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
 
   std::vector<std::vector<double> > elemMat;
   if(dim == 1) {
-    createPoisson1DelementMatrix(K, coeffs, hx, elemMat);
+    createPoisson1DelementMatrix(K, coeffs, hx, elemMat, print);
   } else if(dim == 2) {
-    createPoisson2DelementMatrix(K, coeffs, hy, hx, elemMat);
+    createPoisson2DelementMatrix(K, coeffs, hy, hx, elemMat, print);
   } else {
-    createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat);
+    createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat, print);
   }
 
   PetscInt nxe = nx;
@@ -797,7 +803,7 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
   VecAYPX(res, -1.0, rhs);
 }
 
-void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode) {
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode, bool print) {
   int numSmoothIters = 2*dofsPerNode;
   if(dim > 1) {
     numSmoothIters *= 2;
@@ -805,7 +811,9 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
   if(dim > 2) {
     numSmoothIters *= 2;
   }
-  std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
+  if(print) {
+    std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
+  }
   ksp.resize((Kmat.size()), NULL);
   for(int lev = 0; lev < (Kmat.size()); ++lev) {
     if(Kmat[lev] != NULL) {
@@ -836,7 +844,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
 void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
     int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
-    std::vector<std::vector<PetscInt> >& partX, MPI_Comm globalComm) {
+    std::vector<std::vector<PetscInt> >& partX, MPI_Comm globalComm, bool print) {
   int globalRank;
   int globalNpes;
   MPI_Comm_rank(globalComm, &globalRank);
@@ -879,7 +887,9 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
     PetscInt py = (partY[lev]).size();
     PetscInt px = (partX[lev]).size();
     activeNpes[lev] = (px*py*pz);
-    std::cout<<"Active Npes for Level "<<lev<<" = "<<(activeNpes[lev])<<std::endl;
+    if(print) {
+      std::cout<<"Active Npes for Level "<<lev<<" = "<<(activeNpes[lev])<<std::endl;
+    }
     if(lev > 0) {
       assert(activeNpes[lev] >= activeNpes[lev - 1]);
     }
@@ -1004,7 +1014,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
   }//end cnt
 }
 
-void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx) {
+void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, bool print) {
   PetscInt currNx = 17;
   PetscInt currNy = 1;
   PetscInt currNz = 1;
@@ -1013,19 +1023,27 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
   assert(dim <= 3);
 
   PetscOptionsGetInt(PETSC_NULL, "-finestNx", &currNx, PETSC_NULL);
-  std::cout<<"Nx (Finest) = "<<currNx<<std::endl;
+  if(print) {
+    std::cout<<"Nx (Finest) = "<<currNx<<std::endl;
+  }
   if(dim > 1) {
     PetscOptionsGetInt(PETSC_NULL, "-finestNy", &currNy, PETSC_NULL);
-    std::cout<<"Ny (Finest) = "<<currNy<<std::endl;
+    if(print) {
+      std::cout<<"Ny (Finest) = "<<currNy<<std::endl;
+    }
   }
   if(dim > 2) {
     PetscOptionsGetInt(PETSC_NULL, "-finestNz", &currNz, PETSC_NULL);
-    std::cout<<"Nz (Finest) = "<<currNz<<std::endl;
+    if(print) {
+      std::cout<<"Nz (Finest) = "<<currNz<<std::endl;
+    }
   }
 
   PetscInt maxNumLevels = 20;
   PetscOptionsGetInt(PETSC_NULL, "-maxNumLevels", &maxNumLevels, PETSC_NULL);
-  std::cout<<"MaxNumLevels = "<<maxNumLevels<<std::endl;
+  if(print) {
+    std::cout<<"MaxNumLevels = "<<maxNumLevels<<std::endl;
+  }
 
   Nx.clear();
   Ny.clear();
@@ -1072,7 +1090,9 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
     assert( (Nz.size()) == (Nx.size()) );
   }
 
-  std::cout<<"ActualNumLevels = "<<(Nx.size())<<std::endl;
+  if(print) {
+    std::cout<<"ActualNumLevels = "<<(Nx.size())<<std::endl;
+  }
 }
 
 void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol, 

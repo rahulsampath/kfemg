@@ -19,13 +19,13 @@ bool softEquals(double a, double b);
 void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs);
 
 void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
-    double hx, std::vector<std::vector<double> >& mat);
+    double hx, std::vector<std::vector<double> >& mat, bool print);
 
 void createPoisson2DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
-    double hy, double hx, std::vector<std::vector<double> >& mat);
+    double hy, double hx, std::vector<std::vector<double> >& mat, bool print);
 
 void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
-    double hz, double hy, double hx, std::vector<std::vector<double> >& mat);
+    double hz, double hy, double hx, std::vector<std::vector<double> >& mat, bool print);
 
 double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
