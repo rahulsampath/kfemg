@@ -30,14 +30,14 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
 long double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
     std::vector<long long int> & coeffs, long double zi, long double yi, long double xi,
-    unsigned int zl, unsigned int yl, unsigned int xl, long double hz, long double hy, long double hx);
+    int zl, int yl, int xl, long double hz, long double hy, long double hx);
 
 long double eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, 
     unsigned int xDofId, unsigned int K, std::vector<long long int> & coeffs, long double yi, long double xi,
-    unsigned int yl, unsigned int xl, long double hy, long double hx);
+    int yl, int xl, long double hy, long double hx);
 
 long double eval1DshFnGderivative(unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
-    std::vector<long long int> & coeffs, long double xi, unsigned int xl, long double hx);
+    std::vector<long long int> & coeffs, long double xi, int xl, long double hx);
 
 long double eval3DshFn(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
@@ -59,11 +59,11 @@ inline unsigned long long int factorial(unsigned long long int n) {
 }
 
 inline long double coordGlobalToLocal(long double xg, long double xa, long double hx) {
-  return ( ((xg - xa)*2.0/hx) - 1.0 );
+  return ( ((xg - xa)*2.0L/hx) - 1.0L );
 }
 
 inline long double coordLocalToGlobal(long double xi, long double xa, long double hx) {
-  return ( xa + (hx*(1 + xi)/2.0) );
+  return ( xa + (hx*(1.0L + xi)/2.0L) );
 }
 
 #endif

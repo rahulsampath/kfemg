@@ -73,7 +73,7 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
 
   for(unsigned int i = 0; i < matSz; ++i) {
     for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= (hx*hy*hz/8.0);
+      mat[i][j] *= (hx*hy*hz/8.0L);
     }//end j
   }//end i
 }
@@ -130,7 +130,7 @@ void createPoisson2DelementMatrix(unsigned int K, std::vector<long long int> & c
 
   for(unsigned int i = 0; i < matSz; ++i) {
     for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= (hx*hy/4.0);
+      mat[i][j] *= (hx*hy/4.0L);
     }//end j
   }//end i
 }
@@ -170,7 +170,7 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
 
   for(unsigned int i = 0; i < matSz; ++i) {
     for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= (hx/2.0);
+      mat[i][j] *= (hx/2.0L);
     }//end j
   }//end i
 }
@@ -178,9 +178,9 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
 long double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
     std::vector<long long int> & coeffs, long double zi, long double yi, long double xi,
-    unsigned int zl, unsigned int yl, unsigned int xl, long double hz, long double hy, long double hx) {
+    int zl, int yl, int xl, long double hz, long double hy, long double hx) {
 
-  long double result = ( std::pow((2.0/hz), zl) * std::pow((2.0/hy), yl) * std::pow((2.0/hx), xl) * 
+  long double result = ( std::pow((2.0L/hz), zl) * std::pow((2.0L/hy), yl) * std::pow((2.0L/hx), xl) * 
       eval1DshFnLderivative(zNodeId, zDofId, K, coeffs, zi, zl) *
       eval1DshFnLderivative(yNodeId, yDofId, K, coeffs, yi, yl) *
       eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
@@ -190,9 +190,9 @@ long double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, un
 
 long double eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, 
     unsigned int xDofId, unsigned int K, std::vector<long long int> & coeffs, long double yi,
-    long double xi, unsigned int yl, unsigned int xl, long double hy, long double hx) {
+    long double xi, int yl, int xl, long double hy, long double hx) {
 
-  long double result = ( std::pow((2.0/hy), yl) * std::pow((2.0/hx), xl) * 
+  long double result = ( std::pow((2.0L/hy), yl) * std::pow((2.0L/hx), xl) * 
       eval1DshFnLderivative(yNodeId, yDofId, K, coeffs, yi, yl) *
       eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
 
@@ -200,9 +200,9 @@ long double eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, un
 }
 
 long double eval1DshFnGderivative(unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
-    std::vector<long long int> & coeffs, long double xi, unsigned int xl, long double hx) {
+    std::vector<long long int> & coeffs, long double xi, int xl, long double hx) {
 
-  long double result = ( std::pow((2.0/hx), xl) * eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
+  long double result = ( std::pow((2.0L/hx), xl) * eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
 
   return result;
 }
@@ -233,8 +233,8 @@ long double eval1DshFnLderivative(unsigned int nodeId, unsigned int dofId, unsig
   assert(dofId <= K);
   assert(K <= 10);
   //xi is the coordinate in the reference element.
-  assert(xi >= -1.0);
-  assert(xi <= 1.0);
+  assert(xi >= -1.0L);
+  assert(xi <= 1.0L);
   assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
 
   unsigned int P = (2*K) + 1;
@@ -259,8 +259,8 @@ long double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K,
   assert(dofId <= K);
   assert(K <= 10);
   //xi is the coordinate in the reference element.
-  assert(xi >= -1.0);
-  assert(xi <= 1.0);
+  assert(xi >= -1.0L);
+  assert(xi <= 1.0L);
   assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
 
   unsigned int P = (2*K) + 1;
@@ -318,7 +318,7 @@ long double powDerivative(long double x, unsigned int i, unsigned int l) {
 
 bool softEquals(long double a, long double b) {
   long double diff = a - b;
-  return ((fabs(diff)) < 1.0e-18L);
+  return ((fabs(diff)) < 1.0e-15L);
 }
 
 long double legendrePoly(int n, long double x) {
@@ -352,7 +352,7 @@ long double legendrePolyPrime(int n, long double x) {
 
 long double gaussWeight(int n, long double x) {
   long double polyPrime = legendrePolyPrime(n, x);
-  return (2.0/((1.0 - (x*x))*polyPrime*polyPrime));
+  return (2.0L/((1.0L - (x*x))*polyPrime*polyPrime));
 }
 
 int getDofsPerNode(int dim, int K) { 
