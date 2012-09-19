@@ -39,7 +39,7 @@ void dirichletMatrixCorrection(Mat Kmat, DA da);
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed);
 
-void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms);
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode);
 
 void zeroBoundaries(DA da, Vec vec);
 

@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
 
   int dofsPerNode = getDofsPerNode(dim, K);
+  std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
 
   std::vector<PetscInt> Nx;
   std::vector<PetscInt> Ny;
@@ -60,7 +61,7 @@ int main(int argc, char *argv[]) {
   buildPmat(Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, Nz, Ny, Nx, partZ, partY, partX);
 
   std::vector<KSP> ksp;
-  createKSP(ksp, Kmat, activeComms);
+  createKSP(ksp, Kmat, activeComms, dim, dofsPerNode);
 
   Vec rhs;
   DACreateGlobalVector(da[da.size() - 1], &rhs);

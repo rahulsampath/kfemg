@@ -797,7 +797,15 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
   VecAYPX(res, -1.0, rhs);
 }
 
-void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms) {
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode) {
+  int numSmoothIters = 2*dofsPerNode;
+  if(dim > 1) {
+    numSmoothIters *= 2;
+  }
+  if(dim > 2) {
+    numSmoothIters *= 2;
+  }
+  std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
   ksp.resize((Kmat.size()), NULL);
   for(int lev = 0; lev < (Kmat.size()); ++lev) {
     if(Kmat[lev] != NULL) {
@@ -809,7 +817,8 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
         PCSetType(pc, PCLU);
       } else {
-        KSPSetType(ksp[lev], KSPRICHARDSON);
+        //KSPSetType(ksp[lev], KSPRICHARDSON);
+        KSPSetType(ksp[lev], KSPCG);
         KSPRichardsonSetScale(ksp[lev], 1.0);
         KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
         PCSetType(pc, PCSOR);
@@ -819,7 +828,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
-      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, numSmoothIters);
     }
   }//end lev
 }
@@ -1031,18 +1040,18 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
     if(dim > 2) {
       Nz.insert(Nz.begin(), currNz);
     }
-    if( (currNx < 3) || ((currNx%2) == 0) ) {
+    if( (currNx < 9) || ((currNx%2) == 0) ) {
       break;
     }
     currNx = 1 + ((currNx - 1)/2); 
     if(dim > 1) {
-      if( (currNy < 3) || ((currNy%2) == 0) ) {
+      if( (currNy < 9) || ((currNy%2) == 0) ) {
         break;
       }
       currNy = 1 + ((currNy - 1)/2); 
     }
     if(dim > 2) {
-      if( (currNz < 3) || ((currNz%2) == 0) ) {
+      if( (currNz < 9) || ((currNz%2) == 0) ) {
         break;
       }
       currNz = 1 + ((currNz - 1)/2); 

@@ -1,12 +1,12 @@
--dim 1
--K 0
+-dim 3
+-K 2
 -useRandomRHS true
--finestNx 17
--finestNy 17
--finestNz 17
+-finestNx 33
+-finestNy 33
+-finestNz 33
 -maxNumLevels 10
 -maxCoarseNpes 1
--maxVcycles 1
+-maxVcycles 500
 -rTol 1.0e-12
 -aTol 1.0e-12
 
