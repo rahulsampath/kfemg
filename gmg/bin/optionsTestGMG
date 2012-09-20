@@ -1,5 +1,5 @@
--dim 3
--K 1
+-dim 1
+-K 3
 -useRandomRHS true
 -finestNx 33
 -finestNy 33
