@@ -137,23 +137,23 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     scanClz[i] = scanClz[i - 1] + lzc[i];
   }//end i
 
-  double hxf, hyf, hzf;
-  double hxc, hyc, hzc;
-  hxf = 1.0/(static_cast<double>(Nxf - 1));
-  hxc = 1.0/(static_cast<double>(Nxc - 1));
+  long double hxf, hyf, hzf;
+  long double hxc, hyc, hzc;
+  hxf = 1.0L/(static_cast<long double>(Nxf - 1));
+  hxc = 1.0L/(static_cast<long double>(Nxc - 1));
   if(dim > 1) {
-    hyf = 1.0/(static_cast<double>(Nyf - 1));
-    hyc = 1.0/(static_cast<double>(Nyc - 1));
+    hyf = 1.0L/(static_cast<long double>(Nyf - 1));
+    hyc = 1.0L/(static_cast<long double>(Nyc - 1));
   } else {
-    hyf = 1.0;
-    hyc = 1.0;
+    hyf = 1.0L;
+    hyc = 1.0L;
   }
   if(dim > 2) {
-    hzf = 1.0/(static_cast<double>(Nzf - 1));
-    hzc = 1.0/(static_cast<double>(Nzc - 1));
+    hzf = 1.0L/(static_cast<long double>(Nzf - 1));
+    hzc = 1.0L/(static_cast<long double>(Nzc - 1));
   } else {
-    hzf = 1.0;
-    hzc = 1.0;
+    hzf = 1.0L;
+    hzc = 1.0L;
   }
 
   MatZeroEntries(Pmat);
@@ -230,7 +230,7 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
           //PERFORMANCE IMPROVEMENT: Pre-Compute 
-          double factor = (std::pow((0.5*hzf), zfd))*(std::pow((0.5*hyf), yfd))*(std::pow((0.5*hxf), xfd));
+          long double factor = (std::pow((0.5L*hzf), zfd))*(std::pow((0.5L*hyf), yfd))*(std::pow((0.5L*hxf), xfd));
           int rowId = ((fOffset + fLoc)*dofsPerNode) + fd;
           for(int k = 0; k < zVec.size(); ++k) {
             int zLoc;
@@ -275,7 +275,7 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                   int ycd = (d/(K + 1))%(K + 1);
                   int xcd = d%(K + 1);
                   int colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
-                  double val;
+                  long double val;
                   int xNodeId;
                   if( (xVec[i] == (Nxc - 1)) || i ) {
                     xNodeId = 1;
@@ -337,7 +337,8 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                         zfd, yfd, xfd, hzc, hyc, hxc);
                   }
                   val *= factor;
-                  MatSetValues(Pmat, 1, &rowId, 1, &colId, &val, INSERT_VALUES);
+                  double val2 = val;
+                  MatSetValues(Pmat, 1, &rowId, 1, &colId, &val2, INSERT_VALUES);
                 }//end d
               }//end i
             }//end j
