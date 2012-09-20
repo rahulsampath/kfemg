@@ -406,16 +406,16 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
     nz = 1;
   }
 
-  double hx, hy, hz;
-  hx = 1.0/(static_cast<double>(Nx - 1));
+  long double hx, hy, hz;
+  hx = 1.0L/(static_cast<long double>(Nx - 1));
   if(dim > 1) {
-    hy = 1.0/(static_cast<double>(Ny - 1));
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
   }
   if(dim > 2) {
-    hz = 1.0/(static_cast<double>(Nz - 1));
+    hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
-  std::vector<std::vector<double> > elemMat;
+  std::vector<std::vector<long double> > elemMat;
   if(dim == 1) {
     createPoisson1DelementMatrix(K, coeffs, hx, elemMat, print);
   } else if(dim == 2) {
@@ -462,7 +462,10 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
           }//end d
         }//end n
         for(size_t r = 0; r < (indices.size()); ++r) {
-          MatSetValuesStencil(Kmat, 1, &(indices[r]), (nodesPerElem*dofsPerNode), &(indices[0]), &(elemMat[r][0]), ADD_VALUES);
+          for(size_t c = 0; c < (indices.size()); ++c) {
+            PetscScalar val = elemMat[r][c];
+            MatSetValuesStencil(Kmat, 1, &(indices[r]), 1, &(indices[c]), &val, ADD_VALUES);
+          }//end c
         }//end r
       }//end xi
     }//end yi
