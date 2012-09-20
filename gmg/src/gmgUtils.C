@@ -337,7 +337,7 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                         zfd, yfd, xfd, hzc, hyc, hxc);
                   }
                   val *= factor;
-                  double val2 = val;
+                  PetscScalar val2 = val;
                   MatSetValues(Pmat, 1, &rowId, 1, &colId, &val2, INSERT_VALUES);
                 }//end d
               }//end i
@@ -657,8 +657,8 @@ void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
   PetscRandomSeed(rndCtx);
   Vec tmpSol;
   VecDuplicate(rhs, &tmpSol);
-  //VecSetRandom(tmpSol, rndCtx);
-  VecSet(tmpSol, 10.0);
+  VecSetRandom(tmpSol, rndCtx);
+  //VecSet(tmpSol, 10.0);
   PetscRandomDestroy(rndCtx);
   zeroBoundaries(da, tmpSol);
   assert(Kmat != NULL);
@@ -846,11 +846,9 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
         PCSetType(pc, PCLU);
       } else {
-        KSPSetType(ksp[lev], KSPRICHARDSON);
-        //KSPSetType(ksp[lev], KSPCG);
-        KSPRichardsonSetScale(ksp[lev], 1.0);
+        KSPSetType(ksp[lev], KSPCG);
+        //KSPRichardsonSetScale(ksp[lev], 1.0);
         KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
-        //PCSetType(pc, PCJACOBI);
         PCSetType(pc, PCSOR);
         PCSORSetOmega(pc, 1.0);
         PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
