@@ -6,6 +6,8 @@
 int main() {
   std::vector<long long int> coeffs;
 
+  std::cout<<"sizeof(long long int) = "<<(sizeof(long long int))<<std::endl;
+
   read1DshapeFnCoeffs(1, coeffs);
   assert(coeffs.size() == 32);
   assert(coeffs[0] == 1LL);
