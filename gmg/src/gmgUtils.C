@@ -821,12 +821,12 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
 }
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode, bool print) {
-  int numSmoothIters = 2*dofsPerNode;
+  int numSmoothIters = 3*dofsPerNode;
   if(dim > 1) {
-    numSmoothIters *= 2;
+    numSmoothIters *= 3;
   }
   if(dim > 2) {
-    numSmoothIters *= 2;
+    numSmoothIters *= 3;
   }
   if(print) {
     std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
@@ -854,7 +854,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
-      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, numSmoothIters);
     }
   }//end lev
 }
