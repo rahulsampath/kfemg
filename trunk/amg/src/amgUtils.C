@@ -299,19 +299,14 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
   ML_Set_PrintLevel(10);
   ML_Set_OutputLevel(ml_obj, 10);
 
-  unsigned int numPDEs = (K + 1); //DOFs per node;
+  unsigned int numPDEs = getDofsPerNode(dim, K);
+
+  unsigned int coarseSize = 9*numPDEs; //8 Elements per dim;
   if(dim > 1) {
-    numPDEs *= (K + 1);
+    coarseSize *= 9;
   } 
   if(dim > 2) {
-    numPDEs *= (K + 1);
-  }
-  unsigned int coarseSize = 3*numPDEs; //2 Elements per dim;
-  if(dim > 1) {
-    coarseSize *= 3;
-  } 
-  if(dim > 2) {
-    coarseSize *= 3;
+    coarseSize *= 9;
   }
 
   ML_Aggregate_Create(&agg_obj);
@@ -322,8 +317,17 @@ void createMLobjects(ML*& ml_obj, ML_Aggregate*& agg_obj, const unsigned int num
   const unsigned int nlevels = ML_Gen_MGHierarchy_UsingAggregation(ml_obj, 0, ML_INCREASING, agg_obj);
   std::cout<<"Number of actual MG levels: "<<nlevels<<std::endl;
 
+  int numSmoothIters = 3*numPDEs;
+  if(dim > 1) {
+    numSmoothIters *= 3;
+  }
+  if(dim > 2) {
+    numSmoothIters *= 3;
+  }
+  std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
+
   for(int lev = 0; lev < (nlevels - 1); ++lev) {
-    ML_Gen_Smoother_SymGaussSeidel(ml_obj, lev, ML_BOTH, 2, 1.0);
+    ML_Gen_Smoother_SymGaussSeidel(ml_obj, lev, ML_BOTH, numSmoothIters, 1.0);
   }
   ML_Gen_Smoother_Amesos(ml_obj, (nlevels - 1), ML_AMESOS_KLU, -1, 0.0);
 
