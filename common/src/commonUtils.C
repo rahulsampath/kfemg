@@ -368,5 +368,13 @@ int getDofsPerNode(int dim, int K) {
   return dofsPerNode;
 }
 
+long long int myIntPow(long long int base, unsigned int exp) {
+  long long int res = 1;
+  for(int i = 0; i < exp; ++i) {
+    res *= base;
+  }//end i
+  return res;
+}
+
 
 

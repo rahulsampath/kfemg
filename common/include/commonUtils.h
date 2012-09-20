@@ -4,6 +4,8 @@
 
 #include <vector>
 
+long long int myIntPow(long long int base, unsigned int exp);
+
 int getDofsPerNode(int dim, int K);
 
 long double legendrePoly(int n, long double x);
