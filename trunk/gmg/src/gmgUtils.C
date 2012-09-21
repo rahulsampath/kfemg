@@ -448,6 +448,14 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
   MatZeroEntries(Kmat);
 
   std::vector<MatStencil> indices(nodesPerElem*dofsPerNode);
+
+  std::vector<PetscScalar> vals((indices.size())*(indices.size()));
+  for(size_t r = 0, i = 0; r < (indices.size()); ++r) {
+    for(size_t c = 0; c < (indices.size()); ++c, ++i) {
+      vals[i] = elemMat[r][c];
+    }//end c
+  }//end r
+
   for(unsigned int zi = zs; zi < (zs + nze); ++zi) {
     for(unsigned int yi = ys; yi < (ys + nye); ++yi) {
       for(unsigned int xi = xs; xi < (xs + nxe); ++xi) {
@@ -462,12 +470,8 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
             (indices[i]).c = d;
           }//end d
         }//end n
-        for(size_t r = 0; r < (indices.size()); ++r) {
-          for(size_t c = 0; c < (indices.size()); ++c) {
-            PetscScalar val = elemMat[r][c];
-            MatSetValuesStencil(Kmat, 1, &(indices[r]), 1, &(indices[c]), &val, ADD_VALUES);
-          }//end c
-        }//end r
+        MatSetValuesStencil(Kmat, (indices.size()), &(indices[0]),
+            (indices.size()), &(indices[0]), &(vals[0]), ADD_VALUES);
       }//end xi
     }//end yi
   }//end zi
