@@ -27,41 +27,42 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       PetscLogEventBegin(KmemEvent, 0, 0, 0, 0);
-      /*
-         PetscInt nx, ny, nz;
-         PetscInt dofsPerNode;
-         PetscInt dim;
-         DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
-         DAGetInfo(da[i], &dim, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-         &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
-         if(dim < 2) {
-         ny = 1;
-         }
-         if(dim < 3) {
-         nz = 1;
-         }
-         MPI_Comm comm;
-         PetscObjectGetComm((PetscObject)(da[i]), &comm);
-         int npes;
-         MPI_Comm_size(comm, &npes);
-         PetscInt locSz = (nx*ny*nz*dofsPerNode);
-         MatCreate(comm, &(Kmat[i]));
-         MatSetSizes(Kmat[i], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
-         MatSetType(Kmat[i], MATAIJ);
-         int factor = 3;
-         if(dim > 1) {
-         factor *= 3;
-         }
-         if(dim > 2) {
-         factor *= 3;
-         }
-         if(npes > 1) {
-         MatMPIAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL, (factor*dofsPerNode), PETSC_NULL);
-         } else {
-         MatSeqAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL);
-         }
-         */
+#ifdef USE_STENCIL
       DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
+#else
+      PetscInt nx, ny, nz;
+      PetscInt dofsPerNode;
+      PetscInt dim;
+      DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
+      DAGetInfo(da[i], &dim, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+          &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+      if(dim < 2) {
+        ny = 1;
+      }
+      if(dim < 3) {
+        nz = 1;
+      }
+      MPI_Comm comm;
+      PetscObjectGetComm((PetscObject)(da[i]), &comm);
+      int npes;
+      MPI_Comm_size(comm, &npes);
+      PetscInt locSz = (nx*ny*nz*dofsPerNode);
+      MatCreate(comm, &(Kmat[i]));
+      MatSetSizes(Kmat[i], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
+      MatSetType(Kmat[i], MATAIJ);
+      int factor = 3;
+      if(dim > 1) {
+        factor *= 3;
+      }
+      if(dim > 2) {
+        factor *= 3;
+      }
+      if(npes > 1) {
+        MatMPIAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL, (factor*dofsPerNode), PETSC_NULL);
+      } else {
+        MatSeqAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL);
+      }
+#endif
       PetscLogEventEnd(KmemEvent, 0, 0, 0, 0);
       PetscInt sz;
       MatGetSize(Kmat[i], &sz, PETSC_NULL);
@@ -523,8 +524,11 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
             (indices[i]).c = d;
           }//end d
         }//end n
+#ifdef USE_STENCIL
         MatSetValuesStencil(Kmat, (indices.size()), &(indices[0]),
             (indices.size()), &(indices[0]), &(vals[0]), ADD_VALUES);
+#else
+#endif
       }//end xi
     }//end yi
   }//end zi
@@ -620,10 +624,16 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
                     for(int d = 0; d < dofsPerNode; ++d) {
                       oth.c = d;
                       if(k || j || i || d) {
+#ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+#else
+#endif
                       } else {
+#ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+#else
+#endif
                       }
                     }//end d
                   }
@@ -655,10 +665,16 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
                     for(int d = 0; d < dofsPerNode; ++d) {
                       oth.c = d;
                       if(k || j || i || d) {
+#ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+#else
+#endif
                       } else {
+#ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+#else
+#endif
                       }
                     }//end d
                   }
@@ -690,10 +706,16 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
                     for(int d = 0; d < dofsPerNode; ++d) {
                       oth.c = d;
                       if(k || j || i || d) {
+#ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+#else
+#endif
                       } else {
+#ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+#else
+#endif
                       }
                     }//end d
                   }
