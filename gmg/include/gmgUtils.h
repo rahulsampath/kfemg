@@ -46,10 +46,13 @@ void zeroBoundaries(DA da, Vec vec);
 void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
     int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, 
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
-    std::vector<std::vector<PetscInt> >& partX, MPI_Comm globalComm, bool print);
+    std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
+    std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy,
+    std::vector<std::vector<int> >& scanLx, MPI_Comm globalComm, bool print);
 
 void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
-    std::vector<PetscInt> & lz, std::vector<PetscInt> & ly, std::vector<PetscInt> & lx);
+    std::vector<PetscInt> & lz, std::vector<PetscInt> & ly, std::vector<PetscInt> & lx,
+    std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx);
 
 void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, bool print);
 

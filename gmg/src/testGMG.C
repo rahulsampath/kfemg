@@ -10,11 +10,14 @@
 #include "gmg/include/gmgUtils.h"
 
 PetscCookie gmgCookie;
+PetscLogEvent createDAevent;
 PetscLogEvent buildPmatEvent;
+PetscLogEvent PmemEvent;
 PetscLogEvent fillPmatEvent;
 PetscLogEvent buildKmatEvent;
-PetscLogEvent assemblyEvent;
-PetscLogEvent elemMatEvent;
+PetscLogEvent KmemEvent;
+PetscLogEvent fillKmatEvent;
+PetscLogEvent elemKmatEvent;
 PetscLogEvent dirichletMatCorrectionEvent;
 PetscLogEvent vCycleEvent;
 
@@ -22,12 +25,15 @@ int main(int argc, char *argv[]) {
   PetscInitialize(&argc, &argv, "optionsTestGMG", PETSC_NULL);
 
   PetscCookieRegister("GMG", &gmgCookie);
+  PetscLogEventRegister("DA", gmgCookie, &createDAevent);
   PetscLogEventRegister("Pmat", gmgCookie, &buildPmatEvent);
+  PetscLogEventRegister("Pmem", gmgCookie, &PmemEvent);
   PetscLogEventRegister("fillP", gmgCookie, &fillPmatEvent);
   PetscLogEventRegister("Kmat", gmgCookie, &buildKmatEvent);
+  PetscLogEventRegister("Kmem", gmgCookie, &KmemEvent);
+  PetscLogEventRegister("ElemKmat", gmgCookie, &elemKmatEvent);
+  PetscLogEventRegister("fillK", gmgCookie, &fillKmatEvent);
   PetscLogEventRegister("DMC", gmgCookie, &dirichletMatCorrectionEvent);
-  PetscLogEventRegister("Assembly", gmgCookie, &assemblyEvent);
-  PetscLogEventRegister("ElemMat", gmgCookie, &elemMatEvent);
   PetscLogEventRegister("Vcycle", gmgCookie, &vCycleEvent);
 
   PetscInt dim = 1; 
@@ -62,18 +68,21 @@ int main(int argc, char *argv[]) {
     std::cout<<"sizeof(PetscScalar) = "<<(sizeof(PetscScalar))<<std::endl;
   }
 
+  std::vector<DA> da;
   std::vector<PetscInt> Nx;
   std::vector<PetscInt> Ny;
   std::vector<PetscInt> Nz;
-  createGridSizes(dim, Nz, Ny, Nx, print);
-
-  std::vector<DA> da;
   std::vector<MPI_Comm> activeComms;
   std::vector<int> activeNpes;
   std::vector<std::vector<PetscInt> > partZ;
   std::vector<std::vector<PetscInt> > partY;
   std::vector<std::vector<PetscInt> > partX;
-  createDA(da, activeComms, activeNpes, dofsPerNode, dim, Nz, Ny, Nx, partZ, partY, partX, MPI_COMM_WORLD, print);
+  std::vector<std::vector<int> > offsets;
+  std::vector<std::vector<int> > scanLz;
+  std::vector<std::vector<int> > scanLy;
+  std::vector<std::vector<int> > scanLx;
+  createDA(da, activeComms, activeNpes, dofsPerNode, dim, Nz, Ny, Nx, partZ, partY, partX,
+      offsets, scanLz, scanLy, scanLx, MPI_COMM_WORLD, print);
 
   assert(da[da.size() - 1] != NULL);
 
