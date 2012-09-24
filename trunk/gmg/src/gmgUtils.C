@@ -10,7 +10,11 @@
 #include "petscmg.h"
 
 extern PetscLogEvent buildPmatEvent;
+extern PetscLogEvent fillPmatEvent;
 extern PetscLogEvent buildKmatEvent;
+extern PetscLogEvent assemblyEvent;
+extern PetscLogEvent elemMatEvent;
+extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
 
 void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
@@ -66,6 +70,8 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     std::vector<PetscInt>& lzc, std::vector<PetscInt>& lyc, std::vector<PetscInt>& lxc,
     std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf,
     int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
+  PetscLogEventBegin(fillPmatEvent, 0, 0, 0, 0);
+
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -350,6 +356,8 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
 
   MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Pmat, MAT_FINAL_ASSEMBLY);
+  
+  PetscLogEventEnd(fillPmatEvent, 0, 0, 0, 0);
 }
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
@@ -380,6 +388,8 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
 }
 
 void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
+  PetscLogEventBegin(assemblyEvent, 0, 0, 0, 0);
+
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -416,6 +426,7 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
+  PetscLogEventBegin(elemMatEvent, 0, 0, 0, 0);
   std::vector<std::vector<long double> > elemMat;
   if(dim == 1) {
     createPoisson1DelementMatrix(K, coeffs, hx, elemMat, print);
@@ -424,6 +435,7 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
   } else {
     createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat, print);
   }
+  PetscLogEventEnd(elemMatEvent, 0, 0, 0, 0);
 
   PetscInt nxe = nx;
   PetscInt nye = ny;
@@ -478,9 +490,13 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
 
   MatAssemblyBegin(Kmat, MAT_FLUSH_ASSEMBLY);
   MatAssemblyEnd(Kmat, MAT_FLUSH_ASSEMBLY);
+  
+  PetscLogEventEnd(assemblyEvent, 0, 0, 0, 0);
 }
 
 void dirichletMatrixCorrection(Mat Kmat, DA da) {
+  PetscLogEventBegin(dirichletMatCorrectionEvent, 0, 0, 0, 0);
+
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -651,6 +667,8 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
 
   MatAssemblyBegin(Kmat, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
+
+  PetscLogEventEnd(dirichletMatCorrectionEvent, 0, 0, 0, 0);
 }
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {

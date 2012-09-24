@@ -11,15 +11,23 @@
 
 PetscCookie gmgCookie;
 PetscLogEvent buildPmatEvent;
+PetscLogEvent fillPmatEvent;
 PetscLogEvent buildKmatEvent;
+PetscLogEvent assemblyEvent;
+PetscLogEvent elemMatEvent;
+PetscLogEvent dirichletMatCorrectionEvent;
 PetscLogEvent vCycleEvent;
 
 int main(int argc, char *argv[]) {
   PetscInitialize(&argc, &argv, "optionsTestGMG", PETSC_NULL);
-  
+
   PetscCookieRegister("GMG", &gmgCookie);
   PetscLogEventRegister("Pmat", gmgCookie, &buildPmatEvent);
+  PetscLogEventRegister("fillP", gmgCookie, &fillPmatEvent);
   PetscLogEventRegister("Kmat", gmgCookie, &buildKmatEvent);
+  PetscLogEventRegister("DMC", gmgCookie, &dirichletMatCorrectionEvent);
+  PetscLogEventRegister("Assembly", gmgCookie, &assemblyEvent);
+  PetscLogEventRegister("ElemMat", gmgCookie, &elemMatEvent);
   PetscLogEventRegister("Vcycle", gmgCookie, &vCycleEvent);
 
   PetscInt dim = 1; 
