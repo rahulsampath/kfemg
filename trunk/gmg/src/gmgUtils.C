@@ -9,11 +9,14 @@
 #include "common/include/commonUtils.h"
 #include "petscmg.h"
 
+extern PetscLogEvent createDAevent;
 extern PetscLogEvent buildPmatEvent;
+extern PetscLogEvent PmemEvent;
 extern PetscLogEvent fillPmatEvent;
 extern PetscLogEvent buildKmatEvent;
-extern PetscLogEvent assemblyEvent;
-extern PetscLogEvent elemMatEvent;
+extern PetscLogEvent KmemEvent;
+extern PetscLogEvent fillKmatEvent;
+extern PetscLogEvent elemKmatEvent;
 extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
 
@@ -23,6 +26,7 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
   Kmat.resize(da.size(), NULL);
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
+      PetscLogEventBegin(KmemEvent, 0, 0, 0, 0);
       /*
          PetscInt nx, ny, nz;
          PetscInt dofsPerNode;
@@ -58,6 +62,7 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
          }
          */
       DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
+      PetscLogEventEnd(KmemEvent, 0, 0, 0, 0);
       PetscInt sz;
       MatGetSize(Kmat[i], &sz, PETSC_NULL);
       if(print) {
@@ -89,6 +94,7 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
   tmpCvec.resize(Pmat.size(), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
     if(da[lev + 1] != NULL) {
+      PetscLogEventBegin(PmemEvent, 0, 0, 0, 0);
       PetscInt nxf, nyf, nzf;
       DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
       MatCreate(activeComms[lev + 1], &(Pmat[lev]));
@@ -115,6 +121,7 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
         MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
       }
       MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
+      PetscLogEventEnd(PmemEvent, 0, 0, 0, 0);
       computePmat(Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
           partZ[lev], partY[lev], partX[lev], partZ[lev + 1], partY[lev + 1], partX[lev + 1],
           dim, dofsPerNode, coeffs, K);
@@ -422,7 +429,7 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
 }
 
 void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
-  PetscLogEventBegin(assemblyEvent, 0, 0, 0, 0);
+  PetscLogEventBegin(fillKmatEvent, 0, 0, 0, 0);
 
   PetscInt dim;
   PetscInt dofsPerNode;
@@ -460,7 +467,7 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
-  PetscLogEventBegin(elemMatEvent, 0, 0, 0, 0);
+  PetscLogEventBegin(elemKmatEvent, 0, 0, 0, 0);
   std::vector<std::vector<long double> > elemMat;
   if(dim == 1) {
     createPoisson1DelementMatrix(K, coeffs, hx, elemMat, print);
@@ -469,7 +476,7 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
   } else {
     createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat, print);
   }
-  PetscLogEventEnd(elemMatEvent, 0, 0, 0, 0);
+  PetscLogEventEnd(elemKmatEvent, 0, 0, 0, 0);
 
   PetscInt nxe = nx;
   PetscInt nye = ny;
@@ -525,7 +532,7 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
   MatAssemblyBegin(Kmat, MAT_FLUSH_ASSEMBLY);
   MatAssemblyEnd(Kmat, MAT_FLUSH_ASSEMBLY);
 
-  PetscLogEventEnd(assemblyEvent, 0, 0, 0, 0);
+  PetscLogEventEnd(fillKmatEvent, 0, 0, 0, 0);
 }
 
 void dirichletMatrixCorrection(Mat Kmat, DA da) {
@@ -920,7 +927,13 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
 void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
     int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
-    std::vector<std::vector<PetscInt> >& partX, MPI_Comm globalComm, bool print) {
+    std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
+    std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, 
+    std::vector<std::vector<int> >& scanLx, MPI_Comm globalComm, bool print) {
+  PetscLogEventBegin(createDAevent, 0, 0, 0, 0);
+
+  createGridSizes(dim, Nz, Ny, Nx, print);
+
   int globalRank;
   int globalNpes;
   MPI_Comm_rank(globalComm, &globalRank);
@@ -941,6 +954,10 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
   partZ.resize(numLevels);
   partY.resize(numLevels);
   partX.resize(numLevels);
+  offsets.resize(numLevels);
+  scanLz.resize(numLevels);
+  scanLy.resize(numLevels);
+  scanLx.resize(numLevels);
 
   MPI_Group globalGroup;
   MPI_Comm_group(globalComm, &globalGroup);
@@ -958,7 +975,8 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
     } else {
       maxNpes = globalNpes;
     }
-    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], maxNpes, partZ[lev], partY[lev], partX[lev]);
+    computePartition(dim, Nz[lev], Ny[lev], Nx[lev], maxNpes, partZ[lev], partY[lev], partX[lev],
+        offsets[lev], scanLz[lev], scanLy[lev], scanLx[lev]);
     PetscInt pz = (partZ[lev]).size();
     PetscInt py = (partY[lev]).size();
     PetscInt px = (partX[lev]).size();
@@ -986,10 +1004,13 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
 
   delete [] rankList;
   MPI_Group_free(&globalGroup);
+
+  PetscLogEventEnd(createDAevent, 0, 0, 0, 0);
 }
 
 void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
-    std::vector<PetscInt> &lz, std::vector<PetscInt> &ly, std::vector<PetscInt> &lx) {
+    std::vector<PetscInt> &lz, std::vector<PetscInt> &ly, std::vector<PetscInt> &lx,
+    std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx) {
   if(dim < 3) {
     assert(Nz == 1);
   }
@@ -1089,6 +1110,35 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
   for(int cnt = 0; cnt < extraZ; ++cnt) {
     ++(lz[cnt]);
   }//end cnt
+
+  int npes = px*py*pz;
+
+  offsets.resize(npes);
+  offsets[0] = 0;
+  for(int p = 1; p < npes; ++p) {
+    int k = (p - 1)/(px*py);
+    int j = ((p - 1)/px)%py;
+    int i = (p - 1)%px;
+    offsets[p] = offsets[p - 1] + (lz[k]*ly[j]*lx[i]);
+  }//end p
+
+  scanLx.resize(px);
+  scanLx[0] = lx[0] - 1;
+  for(int i = 1; i < px; ++i) {
+    scanLx[i] = scanLx[i - 1] + lx[i];
+  }//end i
+
+  scanLy.resize(py);
+  scanLy[0] = ly[0] - 1;
+  for(int i = 1; i < py; ++i) {
+    scanLy[i] = scanLy[i - 1] + ly[i];
+  }//end i
+
+  scanLz.resize(pz);
+  scanLz[0] = lz[0] - 1;
+  for(int i = 1; i < pz; ++i) {
+    scanLz[i] = scanLz[i - 1] + lz[i];
+  }//end i
 }
 
 void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, bool print) {
