@@ -17,6 +17,67 @@ extern PetscLogEvent elemMatEvent;
 extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
 
+void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
+  PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
+
+  Kmat.resize(da.size(), NULL);
+  for(int i = 0; i < (da.size()); ++i) {
+    if(da[i] != NULL) {
+      /*
+         PetscInt nx, ny, nz;
+         PetscInt dofsPerNode;
+         PetscInt dim;
+         DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
+         DAGetInfo(da[i], &dim, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+         &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+         if(dim < 2) {
+         ny = 1;
+         }
+         if(dim < 3) {
+         nz = 1;
+         }
+         MPI_Comm comm;
+         PetscObjectGetComm((PetscObject)(da[i]), &comm);
+         int npes;
+         MPI_Comm_size(comm, &npes);
+         PetscInt locSz = (nx*ny*nz*dofsPerNode);
+         MatCreate(comm, &(Kmat[i]));
+         MatSetSizes(Kmat[i], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
+         MatSetType(Kmat[i], MATAIJ);
+         int factor = 3;
+         if(dim > 1) {
+         factor *= 3;
+         }
+         if(dim > 2) {
+         factor *= 3;
+         }
+         if(npes > 1) {
+         MatMPIAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL, (factor*dofsPerNode), PETSC_NULL);
+         } else {
+         MatSeqAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL);
+         }
+         */
+      DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
+      PetscInt sz;
+      MatGetSize(Kmat[i], &sz, PETSC_NULL);
+      if(print) {
+        std::cout<<"Kmat Size for level "<<i<<" = "<<sz<<std::endl;
+      }
+      if(i == 0) {
+        computeKmat(Kmat[i], da[i], coeffs, K, print);
+      } else {
+        computeKmat(Kmat[i], da[i], coeffs, K, false);
+      }
+      dirichletMatrixCorrection(Kmat[i], da[i]);
+    }
+    if(print) {
+      std::cout<<"Built Kmat for level = "<<i<<std::endl;
+    }
+  }//end i
+
+  PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
+}
+
 void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
     std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode,
     std::vector<long long int>& coeffs, const unsigned int K, std::vector<PetscInt> & Nz, 
@@ -356,35 +417,8 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
 
   MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Pmat, MAT_FINAL_ASSEMBLY);
-  
+
   PetscLogEventEnd(fillPmatEvent, 0, 0, 0, 0);
-}
-
-void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
-  PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
-
-  Kmat.resize(da.size(), NULL);
-  for(int i = 0; i < (da.size()); ++i) {
-    if(da[i] != NULL) {
-      DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
-      PetscInt sz;
-      MatGetSize(Kmat[i], &sz, PETSC_NULL);
-      if(print) {
-        std::cout<<"Kmat Size for level "<<i<<" = "<<sz<<std::endl;
-      }
-      if(i == 0) {
-        computeKmat(Kmat[i], da[i], coeffs, K, print);
-      } else {
-        computeKmat(Kmat[i], da[i], coeffs, K, false);
-      }
-      dirichletMatrixCorrection(Kmat[i], da[i]);
-    }
-    if(print) {
-      std::cout<<"Built Kmat for level = "<<i<<std::endl;
-    }
-  }//end i
-
-  PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 }
 
 void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
@@ -490,7 +524,7 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
 
   MatAssemblyBegin(Kmat, MAT_FLUSH_ASSEMBLY);
   MatAssemblyEnd(Kmat, MAT_FLUSH_ASSEMBLY);
-  
+
   PetscLogEventEnd(assemblyEvent, 0, 0, 0, 0);
 }
 
