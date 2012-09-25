@@ -21,7 +21,10 @@ extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
-    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
+    std::vector<std::vector<int> >& offsets, std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, 
+    std::vector<std::vector<int> >& scanLx, bool print) {
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
   Kmat.resize(da.size(), NULL);
@@ -62,11 +65,12 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm
       if(print) {
         std::cout<<"Kmat Size for level "<<i<<" = "<<sz<<std::endl;
       }
-      if(i == 0) {
-        computeKmat(Kmat[i], da[i], coeffs, K, print);
-      } else {
-        computeKmat(Kmat[i], da[i], coeffs, K, false);
+      bool printInt = print;
+      if(i > 0) {
+        printInt = false;
       }
+      computeKmat(Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i], 
+          scanLz[i], scanLy[i], scanLx[i], coeffs, K, printInt);
       dirichletMatrixCorrection(Kmat[i], da[i]);
     }
     if(print) {
@@ -108,7 +112,6 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
       MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
       MatSetType(Pmat[lev], MATAIJ);
       int dofsPerElem = (1 << dim);
-      //PERFORMANCE IMPROVEMENT: Better PreAllocation.
       if(activeNpes[lev + 1] > 1) {
         MatMPIAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL, (dofsPerElem*dofsPerNode), PETSC_NULL);
       } else {
@@ -391,7 +394,9 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
   PetscLogEventEnd(fillPmatEvent, 0, 0, 0, 0);
 }
 
-void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
+void computeKmat(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx,
+    std::vector<long long int>& coeffs, const unsigned int K, bool print) {
   PetscLogEventBegin(fillKmatEvent, 0, 0, 0, 0);
 
   PetscInt dim;
@@ -463,7 +468,14 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
 
   MatZeroEntries(Kmat);
 
+#ifdef USE_STENCIL
   std::vector<MatStencil> indices(nodesPerElem*dofsPerNode);
+#else
+  std::vector<PetscInt> indices(nodesPerElem*dofsPerNode);
+  int px = lx.size();
+  int py = ly.size();
+  int pz = lz.size();
+#endif
 
   std::vector<PetscScalar> vals((indices.size())*(indices.size()));
   for(size_t r = 0, i = 0; r < (indices.size()); ++r) {
@@ -479,17 +491,58 @@ void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsi
           unsigned int z = (n/4);
           unsigned int y = ((n/2)%2);
           unsigned int x = (n%2);
+          int vi = (xi + x);
+          int vj = (yi + y);
+          int vk = (zi + z);
+#ifndef USE_STENCIL
+          std::vector<int>::iterator xIt = std::lower_bound(scanLx.begin(), scanLx.end(), vi);
+          assert(xIt != scanLx.end());
+          int pi = xIt - scanLx.begin();
+          std::vector<int>::iterator yIt = std::lower_bound(scanLy.begin(), scanLy.end(), vj);
+          assert(yIt != scanLy.end());
+          int pj = yIt - scanLy.begin();
+          std::vector<int>::iterator zIt = std::lower_bound(scanLz.begin(), scanLz.end(), vk);
+          assert(zIt != scanLz.end());
+          int pk = zIt - scanLz.begin();
+          int xLoc;
+          if(pi > 0) {
+            xLoc = vi - (1 + scanLx[pi - 1]);
+          } else {
+            xLoc = vi;
+          }
+          int yLoc;
+          if(pj > 0) {
+            yLoc = vj - (1 + scanLy[pj - 1]);
+          } else {
+            yLoc = vj;
+          }
+          int zLoc;
+          if(pk > 0) {
+            zLoc = vk - (1 + scanLz[pk - 1]);
+          } else {
+            zLoc = vk;
+          }
+          int pid = (((pk*py) + pj)*px) + pi;
+          int loc = (((zLoc*ly[pj]) + yLoc)*lx[pi]) + xLoc;
+          int idBase = ((offsets[pid] + loc)*dofsPerNode);
+#endif
           for(unsigned int d = 0; d < dofsPerNode; ++i, ++d) {
-            (indices[i]).k = zi + z;
-            (indices[i]).j = yi + y;
-            (indices[i]).i = xi + x;
+#ifdef USE_STENCIL
+            (indices[i]).k = vk;
+            (indices[i]).j = vj;
+            (indices[i]).i = vi;
             (indices[i]).c = d;
+#else
+            indices[i] = idBase + d;
+#endif
           }//end d
         }//end n
 #ifdef USE_STENCIL
         MatSetValuesStencil(Kmat, (indices.size()), &(indices[0]),
             (indices.size()), &(indices[0]), &(vals[0]), ADD_VALUES);
 #else
+        MatSetValues(Kmat, (indices.size()), &(indices[0]),
+            (indices.size()), &(indices[0]), &(vals[0]), ADD_VALUES);
 #endif
       }//end xi
     }//end yi
