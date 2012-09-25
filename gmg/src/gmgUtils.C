@@ -84,11 +84,11 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 }
 
-void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
-    std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode,
-    std::vector<long long int>& coeffs, const unsigned int K, std::vector<PetscInt> & Nz, 
-    std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, std::vector<std::vector<PetscInt> >& partZ,
-    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, bool print) {
+void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ,
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
+    std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, std::vector<std::vector<int> >& scanLx, bool print) {
   PetscLogEventBegin(buildPmatEvent, 0, 0, 0, 0);
 
   Pmat.resize((da.size() - 1), NULL);
@@ -125,6 +125,8 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
       PetscLogEventEnd(PmemEvent, 0, 0, 0, 0);
       computePmat(Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
           partZ[lev], partY[lev], partX[lev], partZ[lev + 1], partY[lev + 1], partX[lev + 1],
+          offsets[lev], scanLz[lev], scanLy[lev], scanLx[lev],
+          offsets[lev + 1], scanLz[lev + 1], scanLy[lev + 1], scanLx[lev + 1],
           dim, dofsPerNode, coeffs, K);
     }
     if(print) {
@@ -138,6 +140,8 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
 void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     std::vector<PetscInt>& lzc, std::vector<PetscInt>& lyc, std::vector<PetscInt>& lxc,
     std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf,
+    std::vector<int>& cOffsets, std::vector<int>& scanClz, std::vector<int>& scanCly, std::vector<int>& scanClx,
+    std::vector<int>& fOffsets, std::vector<int>& scanFlz, std::vector<int>& scanFly, std::vector<int>& scanFlx,
     int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
   PetscLogEventBegin(fillPmatEvent, 0, 0, 0, 0);
 
@@ -157,60 +161,25 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
   int fnx = lxf[fpi];
 
   int fzs = 0;
-  for(int k = 0; k < fpk; ++k) {
-    fzs += lzf[k];
-  }//end k
+  if(fpk > 0) {
+    fzs = 1 + scanFlz[fpk - 1];
+  }
 
   int fys = 0;
-  for(int j = 0; j < fpj; ++j) {
-    fys += lyf[j];
-  }//end j
+  if(fpj > 0) {
+    fys = 1 + scanFly[fpj - 1];
+  }
 
   int fxs = 0;
-  for(int i = 0; i < fpi; ++i) {
-    fxs += lxf[i];
-  }//end i
+  if(fpi > 0) {
+    fxs = 1 + scanFlx[fpi - 1];
+  }
 
-  int fOffset = 0;
-  for(int p = 0; p < rank; ++p) {
-    int k = p/(fpx*fpy);
-    int j = (p/fpx)%fpy;
-    int i = p%fpx;
-    fOffset += (lzf[k]*lyf[j]*lxf[i]);
-  }//end p
+  int fOff = fOffsets[rank];
 
   int cpx = lxc.size();
   int cpy = lyc.size();
   int cpz = lzc.size();
-
-  int cNpes = cpx*cpy*cpz;
-
-  std::vector<int> cOffsets(cNpes);
-  cOffsets[0] = 0;
-  for(int p = 1; p < cNpes; ++p) {
-    int k = (p - 1)/(cpx*cpy);
-    int j = ((p - 1)/cpx)%cpy;
-    int i = (p - 1)%cpx;
-    cOffsets[p] = cOffsets[p - 1] + (lzc[k]*lyc[j]*lxc[i]);
-  }//end p
-
-  std::vector<int> scanClx(cpx);
-  scanClx[0] = lxc[0] - 1;
-  for(int i = 1; i < cpx; ++i) {
-    scanClx[i] = scanClx[i - 1] + lxc[i];
-  }//end i
-
-  std::vector<int> scanCly(cpy);
-  scanCly[0] = lyc[0] - 1;
-  for(int i = 1; i < cpy; ++i) {
-    scanCly[i] = scanCly[i - 1] + lyc[i];
-  }//end i
-
-  std::vector<int> scanClz(cpz);
-  scanClz[0] = lzc[0] - 1;
-  for(int i = 1; i < cpz; ++i) {
-    scanClz[i] = scanClz[i - 1] + lzc[i];
-  }//end i
 
   long double hxf, hyf, hzf;
   long double hxc, hyc, hzc;
@@ -306,7 +275,7 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
           int xfd = fd%(K + 1);
           //PERFORMANCE IMPROVEMENT: Pre-Compute 
           long double factor = (std::pow((0.5L*hzf), zfd))*(std::pow((0.5L*hyf), yfd))*(std::pow((0.5L*hxf), xfd));
-          int rowId = ((fOffset + fLoc)*dofsPerNode) + fd;
+          int rowId = ((fOff + fLoc)*dofsPerNode) + fd;
           for(int k = 0; k < zVec.size(); ++k) {
             int zLoc;
             if(zPid[k] > 0) {
