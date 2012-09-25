@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
   read1DshapeFnCoeffs(K, coeffs);
 
   std::vector<Mat> Kmat;
-  buildKmat(Kmat, da, coeffs, K, print);
+  buildKmat(Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, print);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;

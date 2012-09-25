@@ -20,7 +20,8 @@ extern PetscLogEvent elemKmatEvent;
 extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
 
-void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
+void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
   Kmat.resize(da.size(), NULL);
@@ -31,23 +32,15 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
       DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
 #else
       PetscInt nx, ny, nz;
-      PetscInt dofsPerNode;
-      PetscInt dim;
       DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
-      DAGetInfo(da[i], &dim, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-          &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
       if(dim < 2) {
         ny = 1;
       }
       if(dim < 3) {
         nz = 1;
       }
-      MPI_Comm comm;
-      PetscObjectGetComm((PetscObject)(da[i]), &comm);
-      int npes;
-      MPI_Comm_size(comm, &npes);
       PetscInt locSz = (nx*ny*nz*dofsPerNode);
-      MatCreate(comm, &(Kmat[i]));
+      MatCreate(activeComms[i], &(Kmat[i]));
       MatSetSizes(Kmat[i], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
       MatSetType(Kmat[i], MATAIJ);
       int factor = 3;
@@ -57,7 +50,7 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long lon
       if(dim > 2) {
         factor *= 3;
       }
-      if(npes > 1) {
+      if(activeNpes[i] > 1) {
         MatMPIAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL, (factor*dofsPerNode), PETSC_NULL);
       } else {
         MatSeqAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL);
