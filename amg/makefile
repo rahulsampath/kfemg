@@ -4,7 +4,7 @@ include $(TRILINOS_DIR)/include/Makefile.export.ML
 
 PCC = mpicxx
 
-CFLAGS = -O3
+CFLAGS = -O2
 
 #CFLAGS = -D__PRINT_MAT__
 

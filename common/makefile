@@ -5,7 +5,7 @@ PCC = mpicxx
 AR = /usr/bin/ar
 AR_FLAGS = cr
 RANLIB = /usr/bin/ranlib
-CFLAGS = -O3
+CFLAGS = -O2
 
 include ./makefileCore
 
