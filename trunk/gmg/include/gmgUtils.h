@@ -34,9 +34,14 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
-    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, bool print);
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
+    std::vector<std::vector<int> >& offsets, std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, 
+    std::vector<std::vector<int> >& scanLx, bool print);
 
-void computeKmat(Mat Kmat, DA da, std::vector<long long int>& coeffs, const unsigned int K, bool print);
+void computeKmat(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx,
+    std::vector<long long int>& coeffs, const unsigned int K, bool print);
 
 void dirichletMatrixCorrection(Mat Kmat, DA da);
 
