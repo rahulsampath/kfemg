@@ -20,16 +20,18 @@ void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
 
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
 
-void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da,
-    std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dim, int dofsPerNode,
-    std::vector<long long int>& coeffs, const unsigned int K, std::vector<PetscInt> & Nz, 
-    std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, std::vector<std::vector<PetscInt> >& partZ,
-    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, bool print);
+void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms,
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ,
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
+    std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, std::vector<std::vector<int> >& scanLx, bool print);
 
 void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     std::vector<PetscInt>& lzc, std::vector<PetscInt>& lyc, std::vector<PetscInt>& lxc,
-    std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf, int dim,
-    int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
+    std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf, 
+    std::vector<int>& cOffsets, std::vector<int>& scanClz, std::vector<int>& scanCly, std::vector<int>& scanClx,
+    std::vector<int>& fOffsets, std::vector<int>& scanFlz, std::vector<int>& scanFly, std::vector<int>& scanFlx,
+    int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<long long int>& coeffs, const unsigned int K, bool print);
 
