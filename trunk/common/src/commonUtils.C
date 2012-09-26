@@ -7,8 +7,9 @@
 #include <vector>
 #include "common/include/commonUtils.h"
 
-void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
-    long double hz, long double hy, long double hx, std::vector<std::vector<long double> >& mat, bool print) {
+void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorialsList,
+    unsigned int K, std::vector<long long int> & coeffs, long double hz, long double hy, long double hx,
+    std::vector<std::vector<long double> >& mat, bool print) {
   unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
   if(print) {
     std::cout<<"ElemMatSize = "<<matSz<<std::endl;
@@ -43,17 +44,17 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
                             for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
                               for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
                                 mat[r][c] += ( gWt[gZ] * gWt[gY] * gWt[gX] * (
-                                      ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
+                                      ( eval3DshFnGderivative(factorialsList, rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
                                                               coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) *
-                                        eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
+                                        eval3DshFnGderivative(factorialsList, cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
                                           coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) ) + 
-                                      ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
+                                      ( eval3DshFnGderivative(factorialsList, rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
                                                               coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 1, 0, hz, hy, hx) * 
-                                        eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
+                                        eval3DshFnGderivative(factorialsList, cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
                                           coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 1, 0, hz, hy, hx) ) +
-                                      ( eval3DshFnGderivative(rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
+                                      ( eval3DshFnGderivative(factorialsList, rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
                                                               coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) * 
-                                        eval3DshFnGderivative(cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
+                                        eval3DshFnGderivative(factorialsList, cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
                                           coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) ) ) );
                               }//end gX
                             }//end gY
@@ -78,8 +79,9 @@ void createPoisson3DelementMatrix(unsigned int K, std::vector<long long int> & c
   }//end i
 }
 
-void createPoisson2DelementMatrix(unsigned int K, std::vector<long long int> & coeffs, 
-    long double hy, long double hx, std::vector<std::vector<long double> >& mat, bool print) {
+void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorialsList,
+    unsigned int K, std::vector<long long int> & coeffs, long double hy, long double hx,
+    std::vector<std::vector<long double> >& mat, bool print) {
   unsigned int matSz = 4*(K + 1)*(K + 1);
   if(print) {
     std::cout<<"ElemMatSize = "<<matSz<<std::endl;
@@ -109,13 +111,13 @@ void createPoisson2DelementMatrix(unsigned int K, std::vector<long long int> & c
                   for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
                     for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
                       mat[r][c] += ( gWt[gY] * gWt[gX] * (
-                            ( eval2DshFnGderivative(rNodeY, rNodeX, rDofY, rDofX, K,
+                            ( eval2DshFnGderivative(factorialsList, rNodeY, rNodeX, rDofY, rDofX, K,
                                                     coeffs, gPt[gY], gPt[gX], 1, 0, hy, hx) * 
-                              eval2DshFnGderivative(cNodeY, cNodeX, cDofY, cDofX, K,
+                              eval2DshFnGderivative(factorialsList, cNodeY, cNodeX, cDofY, cDofX, K,
                                 coeffs, gPt[gY], gPt[gX], 1, 0, hy, hx) ) +
-                            ( eval2DshFnGderivative(rNodeY, rNodeX, rDofY, rDofX, K,
+                            ( eval2DshFnGderivative(factorialsList, rNodeY, rNodeX, rDofY, rDofX, K,
                                                     coeffs, gPt[gY], gPt[gX], 0, 1, hy, hx) * 
-                              eval2DshFnGderivative(cNodeY, cNodeX, cDofY, cDofX, K,
+                              eval2DshFnGderivative(factorialsList, cNodeY, cNodeX, cDofY, cDofX, K,
                                 coeffs, gPt[gY], gPt[gX], 0, 1, hy, hx) ) ) );
                     }//end gX
                   }//end gY
@@ -135,8 +137,9 @@ void createPoisson2DelementMatrix(unsigned int K, std::vector<long long int> & c
   }//end i
 }
 
-void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & coeffs,
-    long double hx, std::vector<std::vector<long double> >& mat, bool print) {
+void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorialsList,
+    unsigned int K, std::vector<long long int> & coeffs, long double hx,
+    std::vector<std::vector<long double> >& mat, bool print) {
   unsigned int matSz = 2*(K + 1);
   if(print) {
     std::cout<<"ElemMatSize = "<<matSz<<std::endl;
@@ -160,8 +163,8 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
         for(unsigned int cDof = 0; cDof <= K; ++cDof, ++c) {
           mat[r][c] = 0.0;
           for(unsigned int g = 0; g < numGaussPts; ++g) {
-            mat[r][c] += ( gWt[g] * eval1DshFnGderivative(rNode, rDof, K, coeffs, gPt[g], 1, hx) *
-                eval1DshFnGderivative(cNode, cDof, K, coeffs, gPt[g], 1, hx) );
+            mat[r][c] += ( gWt[g] * eval1DshFnGderivative(factorialsList, rNode, rDof, K, coeffs, gPt[g], 1, hx) *
+                eval1DshFnGderivative(factorialsList, cNode, cDof, K, coeffs, gPt[g], 1, hx) );
           }//end g
         }//end cDof
       }//end cNode
@@ -175,34 +178,38 @@ void createPoisson1DelementMatrix(unsigned int K, std::vector<long long int> & c
   }//end i
 }
 
-long double eval3DshFnGderivative(unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
+long double eval3DshFnGderivative(std::vector<unsigned long long int>& factorialsList,
+    unsigned int zNodeId, unsigned int yNodeId, unsigned int xNodeId,
     unsigned int zDofId, unsigned int yDofId, unsigned int xDofId, unsigned int K,
     std::vector<long long int> & coeffs, long double zi, long double yi, long double xi,
     int zl, int yl, int xl, long double hz, long double hy, long double hx) {
 
   long double result = ( std::pow((2.0L/hz), zl) * std::pow((2.0L/hy), yl) * std::pow((2.0L/hx), xl) * 
-      eval1DshFnLderivative(zNodeId, zDofId, K, coeffs, zi, zl) *
-      eval1DshFnLderivative(yNodeId, yDofId, K, coeffs, yi, yl) *
-      eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
+      eval1DshFnLderivative(factorialsList, zNodeId, zDofId, K, coeffs, zi, zl) *
+      eval1DshFnLderivative(factorialsList, yNodeId, yDofId, K, coeffs, yi, yl) *
+      eval1DshFnLderivative(factorialsList, xNodeId, xDofId, K, coeffs, xi, xl) );
 
   return result;
 }
 
-long double eval2DshFnGderivative(unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, 
-    unsigned int xDofId, unsigned int K, std::vector<long long int> & coeffs, long double yi,
-    long double xi, int yl, int xl, long double hy, long double hx) {
+long double eval2DshFnGderivative(std::vector<unsigned long long int>& factorialsList,
+    unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, unsigned int xDofId,
+    unsigned int K, std::vector<long long int> & coeffs, long double yi, long double xi,
+    int yl, int xl, long double hy, long double hx) {
 
   long double result = ( std::pow((2.0L/hy), yl) * std::pow((2.0L/hx), xl) * 
-      eval1DshFnLderivative(yNodeId, yDofId, K, coeffs, yi, yl) *
-      eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
+      eval1DshFnLderivative(factorialsList, yNodeId, yDofId, K, coeffs, yi, yl) *
+      eval1DshFnLderivative(factorialsList, xNodeId, xDofId, K, coeffs, xi, xl) );
 
   return result;
 }
 
-long double eval1DshFnGderivative(unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
+long double eval1DshFnGderivative(std::vector<unsigned long long int>& factorialsList,
+    unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
     std::vector<long long int> & coeffs, long double xi, int xl, long double hx) {
 
-  long double result = ( std::pow((2.0L/hx), xl) * eval1DshFnLderivative(xNodeId, xDofId, K, coeffs, xi, xl) );
+  long double result = ( std::pow((2.0L/hx), xl) * 
+      eval1DshFnLderivative(factorialsList, xNodeId, xDofId, K, coeffs, xi, xl) );
 
   return result;
 }
@@ -227,8 +234,8 @@ long double eval2DshFn(unsigned int yNodeId, unsigned int xNodeId, unsigned int 
   return result;
 }
 
-long double eval1DshFnLderivative(unsigned int nodeId, unsigned int dofId, unsigned int K,
-    std::vector<long long int> & coeffs, long double xi, unsigned int l) {
+long double eval1DshFnLderivative(std::vector<unsigned long long int>& factorialsList, unsigned int nodeId,
+    unsigned int dofId, unsigned int K, std::vector<long long int> & coeffs, long double xi, unsigned int l) {
   assert(nodeId < 2);
   assert(dofId <= K);
   assert(K <= 10);
@@ -247,7 +254,7 @@ long double eval1DshFnLderivative(unsigned int nodeId, unsigned int dofId, unsig
     long double num = coeffArr[2*i];
     long double den = coeffArr[(2*i) + 1];
     long double c = num/den;
-    result += (c*powDerivative(xi, i, l));    
+    result += (c*powDerivative(factorialsList, xi, i, l));    
   }//end i
 
   return result;
@@ -297,19 +304,20 @@ void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs) {
   fclose(fp);
 }
 
-long double powDerivative(long double x, unsigned int i, unsigned int l) {
+long double powDerivative(std::vector<unsigned long long int>& factorialsList, long double x,
+    unsigned int i, unsigned int l) {
   long double result;
 
   if(l > i) {
     result = 0.0;
   } else if(l == i) {
-    result = static_cast<long double>(factorial(l));
+    result = static_cast<long double>(factorialsList[l]);
   } else {
     int p = (i - l);
     result = std::pow(x, p);
     while(p < i) {
-      result *= (static_cast<long double>(p + 1));
       ++p;
+      result *= (static_cast<long double>(p));
     }
   }
 
