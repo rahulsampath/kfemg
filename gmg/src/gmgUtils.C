@@ -20,7 +20,8 @@ extern PetscLogEvent elemKmatEvent;
 extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
 
-void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+void buildKmat(std::vector<unsigned long long int>& factorialsList,
+    std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, 
@@ -69,7 +70,7 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm
       if(i > 0) {
         printInt = false;
       }
-      computeKmat(Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i], 
+      computeKmat(factorialsList, Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i], 
           scanLz[i], scanLy[i], scanLx[i], coeffs, K, printInt);
       dirichletMatrixCorrection(Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i]);
     }
@@ -81,7 +82,8 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 }
 
-void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+void buildPmat(std::vector<unsigned long long int>& factorialsList, 
+    std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ,
     std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
@@ -119,7 +121,7 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
       }
       MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
       PetscLogEventEnd(PmemEvent, 0, 0, 0, 0);
-      computePmat(Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
+      computePmat(factorialsList, Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
           partZ[lev], partY[lev], partX[lev], partZ[lev + 1], partY[lev + 1], partX[lev + 1],
           offsets[lev], scanLz[lev], scanLy[lev], scanLx[lev],
           offsets[lev + 1], scanLz[lev + 1], scanLy[lev + 1], scanLx[lev + 1],
@@ -133,7 +135,8 @@ void buildPmat(std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA
   PetscLogEventEnd(buildPmatEvent, 0, 0, 0, 0);
 }
 
-void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
+void computePmat(std::vector<unsigned long long int>& factorialsList, 
+    Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
     std::vector<PetscInt>& lzc, std::vector<PetscInt>& lyc, std::vector<PetscInt>& lxc,
     std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf,
     std::vector<int>& cOffsets, std::vector<int>& scanClz, std::vector<int>& scanCly, std::vector<int>& scanClx,
@@ -366,13 +369,13 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
                   }
                   //PERFORMANCE IMPROVEMENT: Pre-Compute 
                   if(dim == 1) {
-                    val = eval1DshFnGderivative(xNodeId, xcd, K, 
+                    val = eval1DshFnGderivative(factorialsList, xNodeId, xcd, K, 
                         coeffs, xPt, xfd, hxc);
                   } else if(dim == 2) {
-                    val = eval2DshFnGderivative(yNodeId, xNodeId, ycd, 
+                    val = eval2DshFnGderivative(factorialsList, yNodeId, xNodeId, ycd, 
                         xcd, K, coeffs, yPt, xPt, yfd, xfd, hyc, hxc);
                   } else {
-                    val = eval3DshFnGderivative(zNodeId, yNodeId, xNodeId,
+                    val = eval3DshFnGderivative(factorialsList, zNodeId, yNodeId, xNodeId,
                         zcd, ycd, xcd, K, coeffs, zPt, yPt, xPt, 
                         zfd, yfd, xfd, hzc, hyc, hxc);
                   }
@@ -394,7 +397,8 @@ void computePmat(Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
   PetscLogEventEnd(fillPmatEvent, 0, 0, 0, 0);
 }
 
-void computeKmat(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+void computeKmat(std::vector<unsigned long long int>& factorialsList,
+    Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx,
     std::vector<long long int>& coeffs, const unsigned int K, bool print) {
   PetscLogEventBegin(fillKmatEvent, 0, 0, 0, 0);
@@ -438,11 +442,11 @@ void computeKmat(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscIn
   PetscLogEventBegin(elemKmatEvent, 0, 0, 0, 0);
   std::vector<std::vector<long double> > elemMat;
   if(dim == 1) {
-    createPoisson1DelementMatrix(K, coeffs, hx, elemMat, print);
+    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, print);
   } else if(dim == 2) {
-    createPoisson2DelementMatrix(K, coeffs, hy, hx, elemMat, print);
+    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, print);
   } else {
-    createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat, print);
+    createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, print);
   }
   PetscLogEventEnd(elemKmatEvent, 0, 0, 0, 0);
 

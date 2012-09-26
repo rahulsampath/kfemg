@@ -89,13 +89,16 @@ int main(int argc, char *argv[]) {
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
 
+  std::vector<unsigned long long int> factorialsList;
+  initFactorials(factorialsList); 
+
   std::vector<Mat> Kmat;
-  buildKmat(Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K,
+  buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K,
       partZ, partY, partX, offsets, scanLz, scanLy, scanLx, print);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
-  buildPmat(Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, Nz, Ny, Nx,
+  buildPmat(factorialsList, Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, Nz, Ny, Nx,
       partZ, partY, partX, offsets, scanLz, scanLy, scanLx, print);
 
   std::vector<KSP> ksp;
