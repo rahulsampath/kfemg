@@ -664,18 +664,13 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 #else
           int ok = zi + k;
           int pk = rk;
+          int oZs = zs;
           if(ok < zs) {
             --pk;
-          }
-          if(ok >= (zs + nz)) {
-            ++pk;
-          }
-          int oZs = zs;
-          if(pk < rk) {
             oZs = zs - lz[pk];
-          }
-          if(pk > rk) {
-            oZs = zs + lz[rk];
+          } else if(ok >= (zs + nz)) {
+            ++pk;
+            oZs = zs + nz;
           }
           int oZloc = ok - oZs;
 #endif
@@ -687,18 +682,13 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 #else
               int oj = yi + j;
               int pj = rj;
+              int oYs = ys;
               if(oj < ys) {
                 --pj;
-              }
-              if(oj >= (ys + ny)) {
-                ++pj;
-              }
-              int oYs = ys;
-              if(pj < rj) {
                 oYs = ys - ly[pj];
-              }
-              if(pj > rj) {
-                oYs = ys + ly[rj];
+              } else if(oj >= (ys + ny)) {
+                ++pj;
+                oYs = ys + ny;
               }
               int oYloc = oj - oYs;
 #endif
@@ -709,19 +699,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   oth.i = oi;
 #else
                   int oi =  xvec[b] + i;
-              int pi = ri;
-              if(oi < xs) {
-                --pi;
-              }
-              if(oi >= (xs + nx)) {
-                ++pi;
-              }
+                  int pi = ri;
                   int oXs = xs;
-                  if(pi < ri) {
+                  if(oi < xs) {
+                    --pi;
                     oXs = xs - lx[pi];
-                  }
-                  if(pi > ri) {
-                    oXs = xs + lx[ri];
+                  } else if(oi >= (xs + nx)) {
+                    ++pi;
+                    oXs = xs + nx;
                   }
                   int oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
@@ -789,18 +774,13 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 #else
           int ok = zi + k;
           int pk = rk;
+          int oZs = zs;
           if(ok < zs) {
             --pk;
-          }
-          if(ok >= (zs + nz)) {
-            ++pk;
-          }
-          int oZs = zs;
-          if(pk < rk) {
             oZs = zs - lz[pk];
-          }
-          if(pk > rk) {
-            oZs = zs + lz[rk];
+          } else if(ok >= (zs + nz)) {
+            ++pk;
+            oZs = zs + nz;
           }
           int oZloc = ok - oZs;
 #endif
@@ -812,18 +792,13 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 #else
               int oj = yvec[b] + j;
               int pj = rj;
+              int oYs = ys;
               if(oj < ys) {
                 --pj;
-              }
-              if(oj >= (ys + ny)) {
-                ++pj;
-              }
-              int oYs = ys;
-              if(pj < rj) {
                 oYs = ys - ly[pj];
-              }
-              if(pj > rj) {
-                oYs = ys + ly[rj];
+              } else if(oj >= (ys + ny)) {
+                ++pj;
+                oYs = ys + ny;
               }
               int oYloc = oj - oYs;
 #endif
@@ -834,19 +809,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   oth.i = oi;
 #else
                   int oi = xi + i;
-              int pi = ri;
-              if(oi < xs) {
-                --pi;
-              }
-              if(oi >= (xs + nx)) {
-                ++pi;
-              }
+                  int pi = ri;
                   int oXs = xs;
-                  if(pi < ri) {
+                  if(oi < xs) {
+                    --pi;
                     oXs = xs - lx[pi];
-                  }
-                  if(pi > ri) {
-                    oXs = xs + lx[ri];
+                  } else if(oi >= (xs + nx)) {
+                    ++pi;
+                    oXs = xs + nx;
                   }
                   int oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
@@ -914,18 +884,13 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 #else
           int ok = zvec[b] + k;
           int pk = rk;
+          int oZs = zs;
           if(ok < zs) {
             --pk;
-          }
-          if(ok >= (zs + nz)) {
-            ++pk;
-          }
-          int oZs = zs;
-          if(pk < rk) {
             oZs = zs - lz[pk];
-          }
-          if(pk > rk) {
-            oZs = zs + lz[rk];
+          } else if(ok >= (zs + nz)) {
+            ++pk;
+            oZs = zs + nz;
           }
           int oZloc = ok - oZs;
 #endif
@@ -937,18 +902,13 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 #else
               int oj = yi + j;
               int pj = rj;
+              int oYs = ys;
               if(oj < ys) {
                 --pj;
-              }
-              if(oj >= (ys + ny)) {
-                ++pj;
-              }
-              int oYs = ys;
-              if(pj < rj) {
                 oYs = ys - ly[pj];
-              }
-              if(pj > rj) {
-                oYs = ys + ly[rj];
+              } else if(oj >= (ys + ny)) {
+                ++pj;
+                oYs = ys + ny;
               }
               int oYloc = oj - oYs;
 #endif
@@ -959,19 +919,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   oth.i = oi;
 #else
                   int oi = xi + i;
-              int pi = ri;
-              if(oi < xs) {
-                --pi;
-              }
-              if(oi >= (xs + nx)) {
-                ++pi;
-              }
+                  int pi = ri;
                   int oXs = xs;
-                  if(pi < ri) {
+                  if(oi < xs) {
+                    --pi;
                     oXs = xs - lx[pi];
-                  }
-                  if(pi > ri) {
-                    oXs = xs + lx[ri];
+                  } else if(oi >= (xs + nx)) {
+                    ++pi;
+                    oXs = xs + nx;
                   }
                   int oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
