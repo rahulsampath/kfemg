@@ -43,7 +43,8 @@ void computeKmat(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscIn
     std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx,
     std::vector<long long int>& coeffs, const unsigned int K, bool print);
 
-void dirichletMatrixCorrection(Mat Kmat, DA da);
+void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+    std::vector<PetscInt>& lx, std::vector<int>& offsets);
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed);
 

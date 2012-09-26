@@ -71,7 +71,7 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm
       }
       computeKmat(Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i], 
           scanLz[i], scanLy[i], scanLx[i], coeffs, K, printInt);
-      dirichletMatrixCorrection(Kmat[i], da[i]);
+      dirichletMatrixCorrection(Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i]);
     }
     if(print) {
       std::cout<<"Built Kmat for level = "<<i<<std::endl;
@@ -554,7 +554,8 @@ void computeKmat(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscIn
   PetscLogEventEnd(fillKmatEvent, 0, 0, 0, 0);
 }
 
-void dirichletMatrixCorrection(Mat Kmat, DA da) {
+void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+    std::vector<PetscInt>& lx, std::vector<int>& offsets) {
   PetscLogEventBegin(dirichletMatCorrectionEvent, 0, 0, 0, 0);
 
   PetscInt dim;
@@ -615,39 +616,138 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
   PetscScalar one = 1.0;
   PetscScalar zero = 0.0;
 
+#ifdef USE_STENCIL
+  MatStencil oth;
   MatStencil bnd;
   bnd.c = 0;
+#else
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  MatStencil oth;
+  PetscInt oth;
+  PetscInt bnd;
+
+  int px = lx.size();
+  int py = ly.size();
+  int pz = lz.size();
+
+  int rk = rank/(px*py);
+  int rj = (rank/px)%py;
+  int ri = rank%px;
+#endif
 
   //x
   for(int b = 0; b < xvec.size(); ++b) {
+#ifdef USE_STENCIL
     bnd.i = xvec[b];
+#else
+    int bXloc = xvec[b] - xs;
+#endif
     for(int zi = zs; zi < (zs + nz); ++zi) {
+#ifdef USE_STENCIL
       bnd.k = zi;
+#else
+      int bZloc = zi - zs;
+#endif
       for(int yi = ys; yi < (ys + ny); ++yi) {
+#ifdef USE_STENCIL
         bnd.j = yi;
+#else
+        int bYloc = yi - ys;
+        int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
+        bnd = ((offsets[rank] + bLoc)*dofsPerNode);
+#endif
         for(int k = -1; k < 2; ++k) {
-          oth.k = (bnd.k) + k;
-          if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
+#ifdef USE_STENCIL
+          int ok = (bnd.k) + k;
+          oth.k = ok;
+#else
+          int ok = zi + k;
+          int pk = rk;
+          if(ok < zs) {
+            --pk;
+          }
+          if(ok >= (zs + nz)) {
+            ++pk;
+          }
+          int oZs = zs;
+          if(pk < rk) {
+            oZs = zs - lz[pk];
+          }
+          if(pk > rk) {
+            oZs = zs + lz[rk];
+          }
+          int oZloc = ok - oZs;
+#endif
+          if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-              oth.j = (bnd.j) + j;
-              if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
+#ifdef USE_STENCIL
+              int oj = (bnd.j) + j;
+              oth.j = oj;
+#else
+              int oj = yi + j;
+              int pj = rj;
+              if(oj < ys) {
+                --pj;
+              }
+              if(oj >= (ys + ny)) {
+                ++pj;
+              }
+              int oYs = ys;
+              if(pj < rj) {
+                oYs = ys - ly[pj];
+              }
+              if(pj > rj) {
+                oYs = ys + ly[rj];
+              }
+              int oYloc = oj - oYs;
+#endif
+              if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-                  oth.i = (bnd.i) + i;
-                  if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
+#ifdef USE_STENCIL
+                  int oi = (bnd.i) + i; 
+                  oth.i = oi;
+#else
+                  int oi =  xvec[b] + i;
+              int pi = ri;
+              if(oi < xs) {
+                --pi;
+              }
+              if(oi >= (xs + nx)) {
+                ++pi;
+              }
+                  int oXs = xs;
+                  if(pi < ri) {
+                    oXs = xs - lx[pi];
+                  }
+                  if(pi > ri) {
+                    oXs = xs + lx[ri];
+                  }
+                  int oXloc = oi - oXs;
+                  int oPid = (((pk*py) + pj)*px) + pi;
+                  int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
+                  int oBase = ((offsets[oPid] + oLoc)*dofsPerNode);
+#endif
+                  if( (oi >= 0) && (oi < Nx) ) {
                     for(int d = 0; d < dofsPerNode; ++d) {
+#ifdef USE_STENCIL
                       oth.c = d;
+#else
+                      oth = oBase + d;
+#endif
                       if(k || j || i || d) {
 #ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
 #else
+                        MatSetValues(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                        MatSetValues(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
 #endif
                       } else {
 #ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
 #else
+                        MatSetValues(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
 #endif
                       }
                     }//end d
@@ -663,32 +763,116 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
 
   //y
   for(int b = 0; b < yvec.size(); ++b) {
+#ifdef USE_STENCIL
     bnd.j = yvec[b];
+#else
+    int bYloc = yvec[b] - ys;
+#endif
     for(int zi = zs; zi < (zs + nz); ++zi) {
+#ifdef USE_STENCIL
       bnd.k = zi;
+#else
+      int bZloc = zi - zs;
+#endif
       for(int xi = xs; xi < (xs + nx); ++xi) {
+#ifdef USE_STENCIL
         bnd.i = xi; 
+#else
+        int bXloc = xi - xs;
+        int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
+        bnd = ((offsets[rank] + bLoc)*dofsPerNode);
+#endif
         for(int k = -1; k < 2; ++k) {
-          oth.k = (bnd.k) + k;
-          if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
+#ifdef USE_STENCIL
+          int ok = (bnd.k) + k;
+          oth.k = ok;
+#else
+          int ok = zi + k;
+          int pk = rk;
+          if(ok < zs) {
+            --pk;
+          }
+          if(ok >= (zs + nz)) {
+            ++pk;
+          }
+          int oZs = zs;
+          if(pk < rk) {
+            oZs = zs - lz[pk];
+          }
+          if(pk > rk) {
+            oZs = zs + lz[rk];
+          }
+          int oZloc = ok - oZs;
+#endif
+          if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-              oth.j = (bnd.j) + j;
-              if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
+#ifdef USE_STENCIL
+              int oj = (bnd.j) + j;
+              oth.j = oj;
+#else
+              int oj = yvec[b] + j;
+              int pj = rj;
+              if(oj < ys) {
+                --pj;
+              }
+              if(oj >= (ys + ny)) {
+                ++pj;
+              }
+              int oYs = ys;
+              if(pj < rj) {
+                oYs = ys - ly[pj];
+              }
+              if(pj > rj) {
+                oYs = ys + ly[rj];
+              }
+              int oYloc = oj - oYs;
+#endif
+              if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-                  oth.i = (bnd.i) + i;
-                  if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
+#ifdef USE_STENCIL
+                  int oi = (bnd.i) + i;
+                  oth.i = oi;
+#else
+                  int oi = xi + i;
+              int pi = ri;
+              if(oi < xs) {
+                --pi;
+              }
+              if(oi >= (xs + nx)) {
+                ++pi;
+              }
+                  int oXs = xs;
+                  if(pi < ri) {
+                    oXs = xs - lx[pi];
+                  }
+                  if(pi > ri) {
+                    oXs = xs + lx[ri];
+                  }
+                  int oXloc = oi - oXs;
+                  int oPid = (((pk*py) + pj)*px) + pi;
+                  int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
+                  int oBase = ((offsets[oPid] + oLoc)*dofsPerNode);
+#endif
+                  if( (oi >= 0) && (oi < Nx) ) {
                     for(int d = 0; d < dofsPerNode; ++d) {
+#ifdef USE_STENCIL
                       oth.c = d;
+#else
+                      oth = oBase + d;
+#endif
                       if(k || j || i || d) {
 #ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
 #else
+                        MatSetValues(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                        MatSetValues(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
 #endif
                       } else {
 #ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
 #else
+                        MatSetValues(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
 #endif
                       }
                     }//end d
@@ -704,32 +888,116 @@ void dirichletMatrixCorrection(Mat Kmat, DA da) {
 
   //z
   for(int b = 0; b < zvec.size(); ++b) {
+#ifdef USE_STENCIL
     bnd.k = zvec[b];
+#else
+    int bZloc = zvec[b] - zs;
+#endif
     for(int yi = ys; yi < (ys + ny); ++yi) {
+#ifdef USE_STENCIL
       bnd.j = yi;
+#else
+      int bYloc = yi - ys;
+#endif
       for(int xi = xs; xi < (xs + nx); ++xi) {
+#ifdef USE_STENCIL
         bnd.i = xi; 
+#else
+        int bXloc = xi - xs;
+        int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
+        bnd = ((offsets[rank] + bLoc)*dofsPerNode);
+#endif
         for(int k = -1; k < 2; ++k) {
-          oth.k = (bnd.k) + k;
-          if( ((oth.k) >= 0) && ((oth.k) < Nz) ) {
+#ifdef USE_STENCIL
+          int ok = (bnd.k) + k;
+          oth.k = ok;
+#else
+          int ok = zvec[b] + k;
+          int pk = rk;
+          if(ok < zs) {
+            --pk;
+          }
+          if(ok >= (zs + nz)) {
+            ++pk;
+          }
+          int oZs = zs;
+          if(pk < rk) {
+            oZs = zs - lz[pk];
+          }
+          if(pk > rk) {
+            oZs = zs + lz[rk];
+          }
+          int oZloc = ok - oZs;
+#endif
+          if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-              oth.j = (bnd.j) + j;
-              if( ((oth.j) >= 0) && ((oth.j) < Ny) ) {
+#ifdef USE_STENCIL
+              int oj = (bnd.j) + j; 
+              oth.j = oj;
+#else
+              int oj = yi + j;
+              int pj = rj;
+              if(oj < ys) {
+                --pj;
+              }
+              if(oj >= (ys + ny)) {
+                ++pj;
+              }
+              int oYs = ys;
+              if(pj < rj) {
+                oYs = ys - ly[pj];
+              }
+              if(pj > rj) {
+                oYs = ys + ly[rj];
+              }
+              int oYloc = oj - oYs;
+#endif
+              if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-                  oth.i = (bnd.i) + i;
-                  if( ((oth.i) >= 0) && ((oth.i) < Nx) ) {
+#ifdef USE_STENCIL
+                  int oi = (bnd.i) + i;
+                  oth.i = oi;
+#else
+                  int oi = xi + i;
+              int pi = ri;
+              if(oi < xs) {
+                --pi;
+              }
+              if(oi >= (xs + nx)) {
+                ++pi;
+              }
+                  int oXs = xs;
+                  if(pi < ri) {
+                    oXs = xs - lx[pi];
+                  }
+                  if(pi > ri) {
+                    oXs = xs + lx[ri];
+                  }
+                  int oXloc = oi - oXs;
+                  int oPid = (((pk*py) + pj)*px) + pi;
+                  int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
+                  int oBase = ((offsets[oPid] + oLoc)*dofsPerNode);
+#endif
+                  if( (oi >= 0) && (oi < Nx) ) {
                     for(int d = 0; d < dofsPerNode; ++d) {
+#ifdef USE_STENCIL
                       oth.c = d;
+#else
+                      oth = oBase + d;
+#endif
                       if(k || j || i || d) {
 #ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
 #else
+                        MatSetValues(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                        MatSetValues(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
 #endif
                       } else {
 #ifdef USE_STENCIL
                         MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
 #else
+                        MatSetValues(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
 #endif
                       }
                     }//end d
