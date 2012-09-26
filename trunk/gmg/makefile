@@ -5,7 +5,7 @@ include ${PETSC_DIR}/${PETSC_ARCH}/conf/petscvariables
 include ${PETSC_DIR}/conf/variables
 PCC = mpicxx
 
-CFLAGS = -DPETSC_USE_LOG  -O2 
+CFLAGS = -DPETSC_USE_LOG  -O3 
 
 #-DUSE_STENCIL
 
