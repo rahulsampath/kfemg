@@ -376,5 +376,20 @@ long long int myIntPow(long long int base, unsigned int exp) {
   return res;
 }
 
+void initFactorials(std::vector<unsigned long long int>& fac) { 
+  fac.resize(11);
+  fac[0] = 1ULL;
+  fac[1] = 1ULL;
+  fac[2] = 2ULL;
+  fac[3] = 6ULL;
+  fac[4] = 24ULL;
+  fac[5] = 120ULL;
+  fac[6] = 720ULL;
+  fac[7] = 5040ULL;
+  fac[8] = 40320ULL;
+  fac[9] = 362880ULL;
+  fac[10] = 3628800ULL;
+} 
+
 
 

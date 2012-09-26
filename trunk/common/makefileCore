@@ -5,7 +5,7 @@ ARCHIVES = ./lib/libcommon.a
 
 LIBS = -L./lib -lcommon 
 
-EXEC = bin/testRead bin/testGaussQuad 
+EXEC = bin/testRead bin/testGaussQuad bin/testFactorial
 
 all : ${ARCHIVES} $(EXEC)
 
@@ -20,6 +20,9 @@ bin/testRead : ./src/testRead.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS)
 
 bin/testGaussQuad : ./src/testGaussQuad.o  
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS)
+
+bin/testFactorial : ./src/testFactorial.o  
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS)
 
 clean :
