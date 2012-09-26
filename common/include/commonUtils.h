@@ -61,6 +61,8 @@ long double eval1DshFnLderivative(std::vector<unsigned long long int>& factorial
 long double powDerivative(std::vector<unsigned long long int>& factorialsList, long double x,
     unsigned int i, unsigned int l);
 
+void initFactorials(std::vector<unsigned long long int>& fac); 
+
 inline unsigned long long int factorial(unsigned long long int n) {
   return ( (n <= 1) ? 1 : (n*factorial(n - 1)) );
 }

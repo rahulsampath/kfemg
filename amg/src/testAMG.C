@@ -77,14 +77,17 @@ int main(int argc, char *argv[]) {
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
 
+  std::vector<unsigned long long int> factorialsList;
+  initFactorials(factorialsList); 
+
   double createElemMatStartTime = MPI_Wtime();
   std::vector<std::vector<long double> > elemMat;
   if(dim == 1) {
-    createPoisson1DelementMatrix(K, coeffs, hx, elemMat, true);
+    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, true);
   } else if(dim == 2) {
-    createPoisson2DelementMatrix(K, coeffs, hy, hx, elemMat, true);
+    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, true);
   } else {
-    createPoisson3DelementMatrix(K, coeffs, hz, hy, hx, elemMat, true);
+    createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, true);
   }
   double createElemMatEndTime = MPI_Wtime();
 
