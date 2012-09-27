@@ -1,13 +1,18 @@
 
 #include <vector>
+
+#ifdef DEBUG
 #include <cassert>
+#endif
 
 void gaussQuad(std::vector<long double> & x,std::vector<long double> & w){
   unsigned int n = x.size();
 
+#ifdef DEBUG
   assert(n >= 1);
   assert(n <= 50);
   assert(n == (w.size()));
+#endif
 
   //----------------------------------------------------------------------
   //
