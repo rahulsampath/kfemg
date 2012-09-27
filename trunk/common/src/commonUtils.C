@@ -308,17 +308,15 @@ long double powDerivative(std::vector<unsigned long long int>& factorialsList, l
     unsigned int i, unsigned int l) {
   long double result;
 
-  if(l > i) {
+  if(l == 0) {
+    result = myIntPow(x, i);
+  } else if(l > i) {
     result = 0.0;
   } else if(l == i) {
     result = static_cast<long double>(factorialsList[l]);
   } else {
-    int p = (i - l);
-    result = myIntPow(x, p);
-    while(p < i) {
-      ++p;
-      result *= (static_cast<long double>(p));
-    }
+    int j = (i - l);
+    result = (static_cast<long double>(factorialsList[i]))*(myIntPow(x, j))/(static_cast<long double>(factorialsList[j]));
   }
 
   return result;
