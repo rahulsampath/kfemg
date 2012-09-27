@@ -1,5 +1,4 @@
 
-#include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -8,8 +7,13 @@
 #include "amg/include/amgUtils.h"
 #include "common/include/commonUtils.h"
 
+#ifdef DEBUG
+#include <cassert>
+#endif
+
 void zeroBoundaries(double* arr, const unsigned int K, const unsigned int dim,
     const int Nz, const int Ny, const int Nx) {
+#ifdef DEBUG
   if(dim > 1) {
     assert(Ny > 1);
   } else {
@@ -22,6 +26,7 @@ void zeroBoundaries(double* arr, const unsigned int K, const unsigned int dim,
   }
   assert(dim > 0);
   assert(Nx > 1);
+#endif
 
   int dofsPerNode = getDofsPerNode(dim, K); 
 
@@ -92,23 +97,32 @@ void printMatrix(MyMatrix & myMat) {
 
 void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<long double> > const & elemMat, const unsigned int K, 
     const unsigned int dim, const unsigned int Nz, const unsigned int Ny, const unsigned int Nx) {
-  unsigned int ye, ze;
+#ifdef DEBUG
   if(dim > 1) {
     assert(Ny > 1);
-    ye = Ny - 1;
   } else {
     assert(Ny == 1);
-    ye = 1;
   }
   if(dim > 2) {
     assert(Nz > 1);
-    ze = Nz - 1;
   } else {
     assert(Nz == 1);
-    ze = 1;
   }
   assert(dim > 0);
   assert(Nx > 1);
+#endif
+
+  unsigned int ye, ze;
+  if(dim > 1) {
+    ye = Ny - 1;
+  } else {
+    ye = 1;
+  }
+  if(dim > 2) {
+    ze = Nz - 1;
+  } else {
+    ze = 1;
+  }
 
   size_t dofsPerNode = getDofsPerNode(dim, K); 
   std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
@@ -160,6 +174,7 @@ void assembleMatrix(MyMatrix & myMat, std::vector<std::vector<long double> > con
 
 void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const unsigned int dim,
     const int Nz, const int Ny, const int Nx) {
+#ifdef DEBUG
   if(dim > 1) {
     assert(Ny > 1);
   } else {
@@ -172,6 +187,7 @@ void dirichletMatrixCorrection(MyMatrix & myMat, const unsigned int K, const uns
   }
   assert(dim > 0);
   assert(Nx > 1);
+#endif
 
   int dofsPerNode = getDofsPerNode(dim, K); 
 
@@ -415,8 +431,10 @@ void getNeighbors(std::vector<int> & nh, int zi, int yi, int xi, int Nz, int Ny,
 void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, long double val) {
   std::vector<unsigned int>::iterator pos = std::lower_bound(((myMat.nzCols)[row]).begin(),
       ((myMat.nzCols)[row]).end(), col);
+#ifdef DEBUG
   assert(pos != (((myMat.nzCols)[row]).end()));
   assert((*pos) == col);
+#endif
   (myMat.vals)[row][(pos - (((myMat.nzCols)[row]).begin()))] = val;
 }
 
