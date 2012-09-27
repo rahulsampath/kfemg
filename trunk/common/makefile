@@ -7,5 +7,7 @@ AR_FLAGS = cr
 RANLIB = /usr/bin/ranlib
 CFLAGS = -O3
 
+#-DDEBUG
+
 include ./makefileCore
 
