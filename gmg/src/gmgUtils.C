@@ -273,7 +273,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
           //PERFORMANCE IMPROVEMENT: Pre-Compute 
-          long double factor = (std::pow((0.5L*hzf), zfd))*(std::pow((0.5L*hyf), yfd))*(std::pow((0.5L*hxf), xfd));
+          long double factor = (myIntPow((0.5L*hzf), zfd))*(myIntPow((0.5L*hyf), yfd))*(myIntPow((0.5L*hxf), xfd));
           int rowId = ((fOff + fLoc)*dofsPerNode) + fd;
           for(int k = 0; k < zVec.size(); ++k) {
             int zLoc;
