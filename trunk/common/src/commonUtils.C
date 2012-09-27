@@ -402,5 +402,45 @@ void initFactorials(std::vector<unsigned long long int>& fac) {
   fac[20] = 2432902008176640000ULL;
 } 
 
+long double myIntPow(long double base, unsigned long long int exponent) {
+  long double res;
+  if(exponent == 0) {
+    res = 1.0;
+  } else if(exponent == 1) {
+    res = base;
+  } else if(exponent == 2) {
+    res = (base*base);
+  } else if(exponent == 3) {
+    res = (base*base*base);
+  } else if(exponent == 4) {
+    long double baseSqr = (base*base);
+    res = (baseSqr*baseSqr);
+  } else if(exponent == 5) {
+    long double baseSqr = (base*base);
+    res = (baseSqr*baseSqr*base);
+  } else if(exponent == 6) {
+    long double baseCube = (base*base*base);
+    res = (baseCube*baseCube);
+  } else if(exponent == 7) {
+    long double baseCube = (base*base*base);
+    res = (baseCube*baseCube*base);
+  } else if(exponent == 8) {
+    long double baseSqr = (base*base);
+    long double baseFour = (baseSqr*baseSqr);
+    res = (baseFour*baseFour);
+  } else if(exponent == 9) {
+    long double baseSqr = (base*base);
+    long double baseFour = (baseSqr*baseSqr);
+    res = (baseFour*baseFour*base);
+  } else if(exponent == 10) {
+    long double baseSqr = (base*base);
+    long double baseFour = (baseSqr*baseSqr);
+    res = (baseFour*baseFour*baseSqr);
+  } else {
+    res = ( (myIntPow(base, 10)) * (myIntPow(base, (exponent - 10))) );
+  }
+  return res;
+}
+
 
 
