@@ -4,7 +4,7 @@
 
 #include <vector>
 
-long double myIntPow(long double base, unsigned long long int exponent);
+long double myIntPow(long double base, unsigned int exponent);
 
 int getDofsPerNode(int dim, int K);
 

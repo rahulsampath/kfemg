@@ -314,7 +314,7 @@ long double powDerivative(std::vector<unsigned long long int>& factorialsList, l
     result = static_cast<long double>(factorialsList[l]);
   } else {
     int p = (i - l);
-    result = std::pow(x, p);
+    result = myIntPow(x, p);
     while(p < i) {
       ++p;
       result *= (static_cast<long double>(p));
@@ -402,7 +402,7 @@ void initFactorials(std::vector<unsigned long long int>& fac) {
   fac[20] = 2432902008176640000ULL;
 } 
 
-long double myIntPow(long double base, unsigned long long int exponent) {
+long double myIntPow(long double base, unsigned int exponent) {
   long double res;
   if(exponent == 0) {
     res = 1.0;
