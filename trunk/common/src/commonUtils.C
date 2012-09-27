@@ -197,7 +197,7 @@ long double eval2DshFnGderivative(std::vector<unsigned long long int>& factorial
     unsigned int K, std::vector<long long int> & coeffs, long double yi, long double xi,
     int yl, int xl, long double hy, long double hx) {
 
-  long double result = ( std::pow((2.0L/hy), yl) * std::pow((2.0L/hx), xl) * 
+  long double result = ( myIntPow((2.0L/hy), yl) * myIntPow((2.0L/hx), xl) * 
       eval1DshFnLderivative(factorialsList, yNodeId, yDofId, K, coeffs, yi, yl) *
       eval1DshFnLderivative(factorialsList, xNodeId, xDofId, K, coeffs, xi, xl) );
 
@@ -208,7 +208,7 @@ long double eval1DshFnGderivative(std::vector<unsigned long long int>& factorial
     unsigned int xNodeId, unsigned int xDofId, unsigned int K, 
     std::vector<long long int> & coeffs, long double xi, int xl, long double hx) {
 
-  long double result = ( std::pow((2.0L/hx), xl) * 
+  long double result = ( myIntPow((2.0L/hx), xl) * 
       eval1DshFnLderivative(factorialsList, xNodeId, xDofId, K, coeffs, xi, xl) );
 
   return result;
@@ -280,7 +280,7 @@ long double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K,
     long double num = coeffArr[2*i];
     long double den = coeffArr[(2*i) + 1];
     long double c = num/den;
-    result += (c*std::pow(xi, i));    
+    result += (c*(myIntPow(xi, i)));    
   }//end i
 
   return result;
