@@ -249,18 +249,22 @@ long double eval1DshFnLderivative(std::vector<unsigned long long int>& factorial
   assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
 #endif
 
-  unsigned int P = (2*K) + 1;
-
-  long long int* coeffArr = &(coeffs[2*(P + 1)*((nodeId*(K + 1)) + dofId)]);
-
   long double result = 0.0;
 
-  for(unsigned int i = 0; i <= P; ++i) {
-    long double num = coeffArr[2*i];
-    long double den = coeffArr[(2*i) + 1];
-    long double c = num/den;
-    result += (c*powDerivative(factorialsList, xi, i, l));    
-  }//end i
+  if(l == 0) {
+    result = eval1DshFn(nodeId, dofId, K, coeffs, xi); 
+  } else {
+    unsigned int P = (2*K) + 1;
+    if(l <= P) {
+      long long int* coeffArr = &(coeffs[2*(P + 1)*((nodeId*(K + 1)) + dofId)]);
+      for(unsigned int i = l; i <= P; ++i) {
+        long double num = coeffArr[2*i];
+        long double den = coeffArr[(2*i) + 1];
+        long double c = num/den;
+        result += (c*powDerivative(factorialsList, xi, i, l));    
+      }//end i
+    }
+  }
 
   return result;
 }
@@ -277,11 +281,11 @@ long double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K,
   assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
 #endif
 
+  long double result = 0.0;
+
   unsigned int P = (2*K) + 1;
 
   long long int* coeffArr = &(coeffs[2*(P + 1)*((nodeId*(K + 1)) + dofId)]);
-
-  long double result = 0.0;
 
   for(int i = 0; i <= P; ++i) {
     long double num = coeffArr[2*i];
@@ -325,7 +329,7 @@ long double powDerivative(std::vector<unsigned long long int>& factorialsList, l
     result = static_cast<long double>(factorialsList[l]);
   } else {
     int j = (i - l);
-    result = (static_cast<long double>(factorialsList[i]))*(myIntPow(x, j))/(static_cast<long double>(factorialsList[j]));
+    result = ((static_cast<long double>(factorialsList[i]))/(static_cast<long double>(factorialsList[j])))*(myIntPow(x, j));
   }
 
   return result;
