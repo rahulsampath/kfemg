@@ -1,11 +1,14 @@
 
 #include <cstdio>
 #include <cstring>
-#include <cassert>
 #include <iostream>
 #include <cmath>
 #include <vector>
 #include "common/include/commonUtils.h"
+
+#ifdef DEBUG
+#include <cassert>
+#endif
 
 void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorialsList,
     unsigned int K, std::vector<long long int> & coeffs, long double hz, long double hy, long double hx,
@@ -236,6 +239,7 @@ long double eval2DshFn(unsigned int yNodeId, unsigned int xNodeId, unsigned int 
 
 long double eval1DshFnLderivative(std::vector<unsigned long long int>& factorialsList, unsigned int nodeId,
     unsigned int dofId, unsigned int K, std::vector<long long int> & coeffs, long double xi, unsigned int l) {
+#ifdef DEBUG
   assert(nodeId < 2);
   assert(dofId <= K);
   assert(K <= 10);
@@ -243,6 +247,7 @@ long double eval1DshFnLderivative(std::vector<unsigned long long int>& factorial
   assert(xi >= -1.0L);
   assert(xi <= 1.0L);
   assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
+#endif
 
   unsigned int P = (2*K) + 1;
 
@@ -262,6 +267,7 @@ long double eval1DshFnLderivative(std::vector<unsigned long long int>& factorial
 
 long double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K, 
     std::vector<long long int> & coeffs, long double xi) {
+#ifdef DEBUG
   assert(nodeId < 2);
   assert(dofId <= K);
   assert(K <= 10);
@@ -269,6 +275,7 @@ long double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K,
   assert(xi >= -1.0L);
   assert(xi <= 1.0L);
   assert( (coeffs.size()) == (8*(K + 1)*(K + 1)) );
+#endif
 
   unsigned int P = (2*K) + 1;
 
@@ -292,7 +299,9 @@ void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs) {
 
   FILE *fp = fopen(fname, "r"); 
 
+#ifdef DEBUG
   assert(fp != NULL);
+#endif
 
   unsigned int numCoeffs = 4*(K + 1)*(K + 1);
 
@@ -362,9 +371,11 @@ long double gaussWeight(int n, long double x) {
 }
 
 int getDofsPerNode(int dim, int K) { 
-  int dofsPerNode = (K + 1);
+#ifdef DEBUG
   assert(dim > 0);
   assert(dim <= 3);
+#endif
+  int dofsPerNode = (K + 1);
   if(dim > 1) {
     dofsPerNode *= (K + 1);
   }
