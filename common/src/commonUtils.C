@@ -184,7 +184,7 @@ long double eval3DshFnGderivative(std::vector<unsigned long long int>& factorial
     std::vector<long long int> & coeffs, long double zi, long double yi, long double xi,
     int zl, int yl, int xl, long double hz, long double hy, long double hx) {
 
-  long double result = ( std::pow((2.0L/hz), zl) * std::pow((2.0L/hy), yl) * std::pow((2.0L/hx), xl) * 
+  long double result = ( myIntPow((2.0L/hz), zl) * myIntPow((2.0L/hy), yl) * myIntPow((2.0L/hx), xl) * 
       eval1DshFnLderivative(factorialsList, zNodeId, zDofId, K, coeffs, zi, zl) *
       eval1DshFnLderivative(factorialsList, yNodeId, yDofId, K, coeffs, yi, yl) *
       eval1DshFnLderivative(factorialsList, xNodeId, xDofId, K, coeffs, xi, xl) );
