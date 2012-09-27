@@ -1,13 +1,16 @@
 
 #include <vector>
 #include <cmath>
-#include <cassert>
 #include <iostream>
 #include <algorithm>
 #include "mpi.h"
 #include "gmg/include/gmgUtils.h"
 #include "common/include/commonUtils.h"
 #include "petscmg.h"
+
+#ifdef DEBUG
+#include <cassert>
+#endif
 
 extern PetscLogEvent createDAevent;
 extern PetscLogEvent buildPmatEvent;
@@ -205,7 +208,9 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
     int czi = fzi/2;
     bool oddZ = ((fzi%2) != 0);
     std::vector<int>::iterator zIt = std::lower_bound(scanClz.begin(), scanClz.end(), czi);
+#ifdef DEBUG
     assert(zIt != scanClz.end());
+#endif
     std::vector<int> zVec;
     std::vector<int> zPid;
     zVec.push_back(czi);
@@ -222,7 +227,9 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
       int cyi = fyi/2;
       bool oddY = ((fyi%2) != 0);
       std::vector<int>::iterator yIt = std::lower_bound(scanCly.begin(), scanCly.end(), cyi);
+#ifdef DEBUG
       assert(yIt != scanCly.end());
+#endif
       std::vector<int> yVec;
       std::vector<int> yPid;
       yVec.push_back(cyi);
@@ -239,7 +246,9 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
         int cxi = fxi/2;
         bool oddX = ((fxi%2) != 0);
         std::vector<int>::iterator xIt = std::lower_bound(scanClx.begin(), scanClx.end(), cxi);
+#ifdef DEBUG
         assert(xIt != scanClx.end());
+#endif
         std::vector<int> xVec;
         std::vector<int> xPid;
         xVec.push_back(cxi);
@@ -500,13 +509,15 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
           int vk = (zi + z);
 #ifndef USE_STENCIL
           std::vector<int>::iterator xIt = std::lower_bound(scanLx.begin(), scanLx.end(), vi);
-          assert(xIt != scanLx.end());
-          int pi = xIt - scanLx.begin();
           std::vector<int>::iterator yIt = std::lower_bound(scanLy.begin(), scanLy.end(), vj);
-          assert(yIt != scanLy.end());
-          int pj = yIt - scanLy.begin();
           std::vector<int>::iterator zIt = std::lower_bound(scanLz.begin(), scanLz.end(), vk);
+#ifdef DEBUG
+          assert(xIt != scanLx.end());
+          assert(yIt != scanLy.end());
           assert(zIt != scanLz.end());
+#endif
+          int pi = xIt - scanLx.begin();
+          int pj = yIt - scanLy.begin();
           int pk = zIt - scanLz.begin();
           int xLoc;
           if(pi > 0) {
@@ -988,7 +999,9 @@ void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
   //VecSet(tmpSol, 10.0);
   PetscRandomDestroy(rndCtx);
   zeroBoundaries(da, tmpSol);
+#ifdef DEBUG
   assert(Kmat != NULL);
+#endif
   MatMult(Kmat, tmpSol, rhs);
   VecDestroy(tmpSol);
 }
@@ -1095,8 +1108,9 @@ void zeroBoundaries(DA da, Vec vec) {
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
   PetscLogEventBegin(vCycleEvent, 0, 0, 0, 0);
-
+#ifdef DEBUG
   assert(ksp[currLev] != NULL);
+#endif
   KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
   if(currLev > 0) {
     computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
@@ -1109,14 +1123,15 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
     VecAXPY(mgSol[currLev], 1.0, mgRes[currLev]);
     KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
   }
-
   PetscLogEventEnd(vCycleEvent, 0, 0, 0, 0);
 }
 
 void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
+#ifdef DEBUG
   assert(Pmat != NULL);
   assert(fVec != NULL);
   assert(tmpCvec != NULL);
+#endif
   PetscScalar* arr;
   if(cVec != NULL) {
     VecGetArray(cVec, &arr);
@@ -1130,9 +1145,11 @@ void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
 }
 
 void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
+#ifdef DEBUG
   assert(Pmat != NULL);
   assert(fVec != NULL);
   assert(tmpCvec != NULL);
+#endif
   PetscScalar* arr;
   if(cVec != NULL) {
     VecGetArray(cVec, &arr);
@@ -1208,10 +1225,14 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
   if(maxCoarseNpes > globalNpes) {
     maxCoarseNpes = globalNpes;
   }
+#ifdef DEBUG
   assert(maxCoarseNpes > 0);
+#endif
 
   int numLevels = Nx.size();
+#ifdef DEBUG
   assert(numLevels > 0);
+#endif
   activeNpes.resize(numLevels);
   activeComms.resize(numLevels);
   da.resize(numLevels);
@@ -1249,9 +1270,11 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
       std::cout<<"Active Npes for Level "<<lev<<" = "<<(activeNpes[lev])
         <<" : (px, py, pz) = ("<<px<<", "<<py<<", "<<pz<<")"<<std::endl;
     }
+#ifdef DEBUG
     if(lev > 0) {
       assert(activeNpes[lev] >= activeNpes[lev - 1]);
     }
+#endif
     if(globalRank < (activeNpes[lev])) {
       MPI_Group subGroup;
       MPI_Group_incl(globalGroup, (activeNpes[lev]), rankList, &subGroup);
@@ -1261,7 +1284,9 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
           px, py, pz, dofsPerNode, 1, &(partX[lev][0]), &(partY[lev][0]), &(partZ[lev][0]), (&(da[lev])));
     } else {
       MPI_Comm_create(globalComm, MPI_GROUP_EMPTY, &(activeComms[lev]));
+#ifdef DEBUG
       assert(activeComms[lev] == MPI_COMM_NULL);
+#endif
       da[lev] = NULL;
     }
   }//end lev
@@ -1275,6 +1300,7 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
 void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
     std::vector<PetscInt> &lz, std::vector<PetscInt> &ly, std::vector<PetscInt> &lx,
     std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx) {
+#ifdef DEBUG
   if(dim < 3) {
     assert(Nz == 1);
   }
@@ -1285,6 +1311,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
   assert(Ny > 0);
   assert(Nz > 0);
   assert(maxNpes > 0);
+#endif
 
   std::vector<PetscInt> Nlist;
   Nlist.push_back(Nx);
@@ -1307,7 +1334,9 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
       }
     }
   }//end d
+#ifdef DEBUG
   assert(((pList[0])*(pList[1])*(pList[2])) <= maxNpes);
+#endif
 
   bool partChanged;
   do {
@@ -1342,10 +1371,14 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
     }
   }//end d
 
-  int pz;
+#ifdef DEBUG
   assert(Nz == Nlist[0]);
+#endif
+
+  int pz;
   pz = pList[0];
 
+#ifdef DEBUG
   assert((px*py*pz) <= maxNpes);
   assert(px >= 1);
   assert(py >= 1);
@@ -1353,6 +1386,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
   assert(px <= Nx);
   assert(py <= Ny);
   assert(pz <= Nz);
+#endif
 
   PetscInt avgX = Nx/px;
   PetscInt extraX = Nx%px; 
@@ -1406,12 +1440,14 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
 }
 
 void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, bool print) {
+#ifdef DEBUG
+  assert(dim > 0);
+  assert(dim <= 3);
+#endif
+
   PetscInt currNx = 17;
   PetscInt currNy = 1;
   PetscInt currNz = 1;
-
-  assert(dim > 0);
-  assert(dim <= 3);
 
   PetscOptionsGetInt(PETSC_NULL, "-finestNx", &currNx, PETSC_NULL);
   if(print) {
@@ -1467,18 +1503,24 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
     }
   }//lev
 
+#ifdef DEBUG
   if(dim < 2) {
     assert(Ny.empty());
-    Ny.resize((Nx.size()), 1);
   } else { 
     assert( (Ny.size()) == (Nx.size()) );
   }
-
   if(dim < 3) {
     assert(Nz.empty());
-    Nz.resize((Nx.size()), 1);
   } else {
     assert( (Nz.size()) == (Nx.size()) );
+  }
+#endif
+
+  if(dim < 2) {
+    Ny.resize((Nx.size()), 1);
+  }
+  if(dim < 3) {
+    Nz.resize((Nx.size()), 1);
   }
 
   if(print) {
