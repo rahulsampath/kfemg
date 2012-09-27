@@ -6,7 +6,7 @@ PCC = mpicxx
 
 CFLAGS = -O3
 
-#CFLAGS = -D__PRINT_MAT__
+#CFLAGS = -DPRINT_MAT -DDEBUG
 
 
 include ./makefileCore
