@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
   }
   double createElemMatEndTime = MPI_Wtime();
 
-#ifdef __PRINT_MAT__
+#ifdef PRINT_MAT
   std::cout<<"Element Matrix: "<<std::endl;
   for(int i = 0; i < elemMat.size(); ++i) {
     for(int j = 0; j < elemMat[i].size(); ++j) {
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
   double applyBCstartTime = MPI_Wtime();
   dirichletMatrixCorrection(myMat, K, dim, Nz, Ny, Nx);
   double applyBCendTime = MPI_Wtime();
-#ifdef __PRINT_MAT__
+#ifdef PRINT_MAT
   std::cout<<"Assembled Matrix: "<<std::endl;
   printMatrix(myMat);
 #endif
