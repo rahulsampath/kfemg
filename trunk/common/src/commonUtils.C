@@ -125,21 +125,8 @@ void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorial
     }//end dof
   }//end node
 
-
-  /*
-     long double eval2DshFnGderivative(std::vector<unsigned long long int>& factorialsList,
-     unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, unsigned int xDofId,
-     unsigned int K, std::vector<long long int> & coeffs, long double yi, long double xi,
-     int yl, int xl, long double hy, long double hx) {
-
-     long double result = ( myIntPow((2.0L/hy), yl) * myIntPow((2.0L/hx), xl) * 
-     eval1DshFnLderivative(factorialsList, yNodeId, yDofId, K, coeffs, yi, yl) *
-     eval1DshFnLderivative(factorialsList, xNodeId, xDofId, K, coeffs, xi, xl) );
-
-     return result;
-     }
-     */
-
+  long double yFac = (hx/hy);
+  long double xFac = (hy/hx);
   for(unsigned int rNodeY = 0, r = 0; rNodeY < 2; ++rNodeY) {
     for(unsigned int rNodeX = 0; rNodeX < 2; ++rNodeX) {
       for(unsigned int rDofY = 0; rDofY <= K; ++rDofY) {
@@ -152,14 +139,11 @@ void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorial
                   for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
                     for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
                       mat[r][c] += ( gWt[gY] * gWt[gX] * (
-                            ( eval2DshFnGderivative(factorialsList, rNodeY, rNodeX, rDofY, rDofX, K,
-                                                    coeffs, gPt[gY], gPt[gX], 1, 0, hy, hx) * 
-                              eval2DshFnGderivative(factorialsList, cNodeY, cNodeX, cDofY, cDofX, K,
-                                coeffs, gPt[gY], gPt[gX], 1, 0, hy, hx) ) +
-                            ( eval2DshFnGderivative(factorialsList, rNodeY, rNodeX, rDofY, rDofX, K,
-                                                    coeffs, gPt[gY], gPt[gX], 0, 1, hy, hx) * 
-                              eval2DshFnGderivative(factorialsList, cNodeY, cNodeX, cDofY, cDofX, K,
-                                coeffs, gPt[gY], gPt[gX], 0, 1, hy, hx) ) ) );
+                            ( yFac*(shFnLderivatives[rNodeY][rDofY][gY])*(shFnVals[rNodeX][rDofX][gX])
+                              *(shFnLderivatives[cNodeY][cDofY][gY])*(shFnVals[cNodeX][cDofX][gX]) ) +
+                            ( xFac*(shFnVals[rNodeY][rDofY][gY])*(shFnLderivatives[rNodeX][rDofX][gX])
+                              *(shFnVals[cNodeY][cDofY][gY])*(shFnLderivatives[cNodeX][cDofX][gX]) )
+                            ) );
                     }//end gX
                   }//end gY
                 }//end cDofX
@@ -170,13 +154,6 @@ void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorial
       }//end rDofY
     }//end rNodeX
   }//end rNodeY
-
-  long double scaling = (hx*hy/4.0L);
-  for(unsigned int i = 0; i < matSz; ++i) {
-    for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= scaling;
-    }//end j
-  }//end i
 }
 
 void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorialsList,
