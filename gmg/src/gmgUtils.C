@@ -1169,6 +1169,7 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
 }
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode, bool print) {
+  /*
   int numSmoothIters = 3*dofsPerNode;
   if(dim > 1) {
     numSmoothIters *= 3;
@@ -1176,6 +1177,8 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
   if(dim > 2) {
     numSmoothIters *= 3;
   }
+  */
+  int numSmoothIters = 1;
   if(print) {
     std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
   }
