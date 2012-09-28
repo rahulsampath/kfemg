@@ -485,9 +485,17 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   std::vector<MatStencil> indices(nodesPerElem*dofsPerNode);
 #else
   std::vector<PetscInt> indices(nodesPerElem*dofsPerNode);
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
   int px = lx.size();
   int py = ly.size();
   int pz = lz.size();
+
+  int rk = rank/(px*py);
+  int rj = (rank/px)%py;
+  int ri = rank%px;
 #endif
 
   std::vector<PetscScalar> vals((indices.size())*(indices.size()));
@@ -508,35 +516,27 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
           int vj = (yi + y);
           int vk = (zi + z);
 #ifndef USE_STENCIL
-          std::vector<int>::iterator xIt = std::lower_bound(scanLx.begin(), scanLx.end(), vi);
-          std::vector<int>::iterator yIt = std::lower_bound(scanLy.begin(), scanLy.end(), vj);
-          std::vector<int>::iterator zIt = std::lower_bound(scanLz.begin(), scanLz.end(), vk);
-#ifdef DEBUG
-          assert(xIt != scanLx.end());
-          assert(yIt != scanLy.end());
-          assert(zIt != scanLz.end());
-#endif
-          int pi = xIt - scanLx.begin();
-          int pj = yIt - scanLy.begin();
-          int pk = zIt - scanLz.begin();
-          int xLoc;
-          if(pi > 0) {
-            xLoc = vi - (1 + scanLx[pi - 1]);
-          } else {
-            xLoc = vi;
+          int pi = ri;
+          int pj = rj;
+          int pk = rk;
+          int vXs = xs;
+          int vYs = ys;
+          int vZs = zs;
+          if(vi >= (xs + nx)) {
+            ++pi;
+            vXs += nx;
           }
-          int yLoc;
-          if(pj > 0) {
-            yLoc = vj - (1 + scanLy[pj - 1]);
-          } else {
-            yLoc = vj;
+          if(vj >= (ys + ny)) {
+            ++pj;
+            vYs += ny;
           }
-          int zLoc;
-          if(pk > 0) {
-            zLoc = vk - (1 + scanLz[pk - 1]);
-          } else {
-            zLoc = vk;
+          if(vk >= (zs + nz)) {
+            ++pk;
+            vZs += nz;
           }
+          int xLoc = vi - vXs;
+          int yLoc = vj - vYs;
+          int zLoc = vk - vZs;
           int pid = (((pk*py) + pj)*px) + pi;
           int loc = (((zLoc*ly[pj]) + yLoc)*lx[pi]) + xLoc;
           int idBase = ((offsets[pid] + loc)*dofsPerNode);
@@ -636,11 +636,11 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
   MatStencil bnd;
   bnd.c = 0;
 #else
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
   PetscInt oth;
   PetscInt bnd;
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   int px = lx.size();
   int py = ly.size();
@@ -1170,14 +1170,14 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode, bool print) {
   /*
-  int numSmoothIters = 3*dofsPerNode;
-  if(dim > 1) {
-    numSmoothIters *= 3;
-  }
-  if(dim > 2) {
-    numSmoothIters *= 3;
-  }
-  */
+     int numSmoothIters = 3*dofsPerNode;
+     if(dim > 1) {
+     numSmoothIters *= 3;
+     }
+     if(dim > 2) {
+     numSmoothIters *= 3;
+     }
+     */
   int numSmoothIters = 1;
   if(print) {
     std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
