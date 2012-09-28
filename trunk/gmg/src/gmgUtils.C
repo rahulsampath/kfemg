@@ -27,8 +27,7 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
-    std::vector<std::vector<int> >& offsets, std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, 
-    std::vector<std::vector<int> >& scanLx, bool print) {
+    std::vector<std::vector<int> >& offsets, bool print) {
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
   Kmat.resize(da.size(), NULL);
@@ -73,8 +72,7 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
       if(i > 0) {
         printInt = false;
       }
-      computeKmat(factorialsList, Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i], 
-          scanLz[i], scanLy[i], scanLx[i], coeffs, K, printInt);
+      computeKmat(factorialsList, Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i], coeffs, K, printInt);
       dirichletMatrixCorrection(Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i]);
     }
     if(print) {
@@ -408,8 +406,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
 
 void computeKmat(std::vector<unsigned long long int>& factorialsList,
     Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
-    std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx,
-    std::vector<long long int>& coeffs, const unsigned int K, bool print) {
+    std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
   PetscLogEventBegin(fillKmatEvent, 0, 0, 0, 0);
 
   PetscInt dim;
@@ -428,24 +425,40 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   PetscInt nz;
   DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
-  if(dim < 2) {
-    Ny = 1;
-    ys = 0;
-    ny = 1;
-  }
-  if(dim < 3) {
-    Nz = 1; 
-    zs = 0;
-    nz = 1;
-  }
+  PetscInt nxe = nx;
+  PetscInt nye = ny;
+  PetscInt nze = nz;
+
+  int numZnodes = 2;
+  int numYnodes = 2;
+  int numXnodes = 2;
 
   long double hx, hy, hz;
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
   hx = 1.0L/(static_cast<long double>(Nx - 1));
   if(dim > 1) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
+    if((ys + ny) == Ny) {
+      nye = ny - 1;
+    }
+  } else {
+    Ny = 1;
+    ys = 0;
+    ny = 1;
+    numYnodes = 1;
   }
   if(dim > 2) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
+    if((zs + nz) == Nz) {
+      nze = nz - 1;
+    }
+  } else {
+    Nz = 1; 
+    zs = 0;
+    nz = 1;
+    numZnodes = 1;
   }
 
   PetscLogEventBegin(elemKmatEvent, 0, 0, 0, 0);
@@ -459,27 +472,7 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   }
   PetscLogEventEnd(elemKmatEvent, 0, 0, 0, 0);
 
-  PetscInt nxe = nx;
-  PetscInt nye = ny;
-  PetscInt nze = nz;
-
-  if((xs + nx) == Nx) {
-    nxe = nx - 1;
-  }
-  if(dim > 1) {
-    if((ys + ny) == Ny) {
-      nye = ny - 1;
-    }
-  }
-  if(dim > 2) {
-    if((zs + nz) == Nz) {
-      nze = nz - 1;
-    }
-  }
-
   unsigned int nodesPerElem = (1 << dim);
-
-  MatZeroEntries(Kmat);
 
 #ifdef USE_STENCIL
   std::vector<MatStencil> indices(nodesPerElem*dofsPerNode);
@@ -505,53 +498,60 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
     }//end c
   }//end r
 
+  MatZeroEntries(Kmat);
+
   for(unsigned int zi = zs; zi < (zs + nze); ++zi) {
     for(unsigned int yi = ys; yi < (ys + nye); ++yi) {
       for(unsigned int xi = xs; xi < (xs + nxe); ++xi) {
-        for(unsigned int n = 0, i = 0; n < nodesPerElem; ++n) {
-          unsigned int z = (n/4);
-          unsigned int y = ((n/2)%2);
-          unsigned int x = (n%2);
-          int vi = (xi + x);
-          int vj = (yi + y);
+        for(int z = 0, i = 0; z < numZnodes; ++z) {
           int vk = (zi + z);
 #ifndef USE_STENCIL
-          int pi = ri;
-          int pj = rj;
           int pk = rk;
-          int vXs = xs;
-          int vYs = ys;
           int vZs = zs;
-          if(vi >= (xs + nx)) {
-            ++pi;
-            vXs += nx;
-          }
-          if(vj >= (ys + ny)) {
-            ++pj;
-            vYs += ny;
-          }
           if(vk >= (zs + nz)) {
             ++pk;
             vZs += nz;
           }
-          int xLoc = vi - vXs;
-          int yLoc = vj - vYs;
           int zLoc = vk - vZs;
-          int pid = (((pk*py) + pj)*px) + pi;
-          int loc = (((zLoc*ly[pj]) + yLoc)*lx[pi]) + xLoc;
-          int idBase = ((offsets[pid] + loc)*dofsPerNode);
 #endif
-          for(unsigned int d = 0; d < dofsPerNode; ++i, ++d) {
+          for(int y = 0; y < numZnodes; ++y) {
+            int vj = (yi + y);
+#ifndef USE_STENCIL
+            int pj = rj;
+            int vYs = ys;
+            if(vj >= (ys + ny)) {
+              ++pj;
+              vYs += ny;
+            }
+            int yLoc = vj - vYs;
+#endif
+            for(int x = 0; x < numZnodes; ++x) {
+              int vi = (xi + x);
+#ifndef USE_STENCIL
+              int pi = ri;
+              int vXs = xs;
+              if(vi >= (xs + nx)) {
+                ++pi;
+                vXs += nx;
+              }
+              int xLoc = vi - vXs;
+              int pid = (((pk*py) + pj)*px) + pi;
+              int loc = (((zLoc*ly[pj]) + yLoc)*lx[pi]) + xLoc;
+              int idBase = ((offsets[pid] + loc)*dofsPerNode);
+#endif
+              for(unsigned int d = 0; d < dofsPerNode; ++i, ++d) {
 #ifdef USE_STENCIL
-            (indices[i]).k = vk;
-            (indices[i]).j = vj;
-            (indices[i]).i = vi;
-            (indices[i]).c = d;
+                (indices[i]).k = vk;
+                (indices[i]).j = vj;
+                (indices[i]).i = vi;
+                (indices[i]).c = d;
 #else
-            indices[i] = idBase + d;
+                indices[i] = idBase + d;
 #endif
-          }//end d
-        }//end n
+              }//end d
+            }//end x
+          }//end y
+        }//end z
 #ifdef USE_STENCIL
         MatSetValuesStencil(Kmat, (indices.size()), &(indices[0]),
             (indices.size()), &(indices[0]), &(vals[0]), ADD_VALUES);
