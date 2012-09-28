@@ -589,17 +589,6 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
   PetscInt nz;
   DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
-  if(dim < 2) {
-    Ny = 1;
-    ys = 0;
-    ny = 1;
-  }
-  if(dim < 3) {
-    Nz = 1; 
-    zs = 0;
-    nz = 1;
-  }
-
   std::vector<PetscInt> xvec;
   if(xs == 0) {
     xvec.push_back(0);
@@ -616,6 +605,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
     if((ys + ny) == Ny) {
       yvec.push_back((Ny - 1));
     }
+  } else {
+    Ny = 1;
+    ys = 0;
+    ny = 1;
   }
 
   std::vector<PetscInt> zvec;
@@ -626,6 +619,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
     if((zs + nz) == Nz) {
       zvec.push_back((Nz - 1));
     }
+  } else {
+    Nz = 1; 
+    zs = 0;
+    nz = 1;
   }
 
   PetscScalar one = 1.0;
@@ -682,10 +679,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
           int oZs = zs;
           if(ok < zs) {
             --pk;
-            oZs = zs - lz[pk];
+            oZs -= lz[pk];
           } else if(ok >= (zs + nz)) {
             ++pk;
-            oZs = zs + nz;
+            oZs += nz;
           }
           int oZloc = ok - oZs;
 #endif
@@ -700,10 +697,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
               int oYs = ys;
               if(oj < ys) {
                 --pj;
-                oYs = ys - ly[pj];
+                oYs -= ly[pj];
               } else if(oj >= (ys + ny)) {
                 ++pj;
-                oYs = ys + ny;
+                oYs += ny;
               }
               int oYloc = oj - oYs;
 #endif
@@ -718,10 +715,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   int oXs = xs;
                   if(oi < xs) {
                     --pi;
-                    oXs = xs - lx[pi];
+                    oXs -= lx[pi];
                   } else if(oi >= (xs + nx)) {
                     ++pi;
-                    oXs = xs + nx;
+                    oXs += nx;
                   }
                   int oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
@@ -792,10 +789,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
           int oZs = zs;
           if(ok < zs) {
             --pk;
-            oZs = zs - lz[pk];
+            oZs -= lz[pk];
           } else if(ok >= (zs + nz)) {
             ++pk;
-            oZs = zs + nz;
+            oZs += nz;
           }
           int oZloc = ok - oZs;
 #endif
@@ -810,10 +807,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
               int oYs = ys;
               if(oj < ys) {
                 --pj;
-                oYs = ys - ly[pj];
+                oYs -= ly[pj];
               } else if(oj >= (ys + ny)) {
                 ++pj;
-                oYs = ys + ny;
+                oYs += ny;
               }
               int oYloc = oj - oYs;
 #endif
@@ -828,10 +825,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   int oXs = xs;
                   if(oi < xs) {
                     --pi;
-                    oXs = xs - lx[pi];
+                    oXs -= lx[pi];
                   } else if(oi >= (xs + nx)) {
                     ++pi;
-                    oXs = xs + nx;
+                    oXs += nx;
                   }
                   int oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
@@ -902,10 +899,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
           int oZs = zs;
           if(ok < zs) {
             --pk;
-            oZs = zs - lz[pk];
+            oZs -= lz[pk];
           } else if(ok >= (zs + nz)) {
             ++pk;
-            oZs = zs + nz;
+            oZs += nz;
           }
           int oZloc = ok - oZs;
 #endif
@@ -920,10 +917,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
               int oYs = ys;
               if(oj < ys) {
                 --pj;
-                oYs = ys - ly[pj];
+                oYs -= ly[pj];
               } else if(oj >= (ys + ny)) {
                 ++pj;
-                oYs = ys + ny;
+                oYs += ny;
               }
               int oYloc = oj - oYs;
 #endif
@@ -938,10 +935,10 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   int oXs = xs;
                   if(oi < xs) {
                     --pi;
-                    oXs = xs - lx[pi];
+                    oXs -= lx[pi];
                   } else if(oi >= (xs + nx)) {
                     ++pi;
-                    oXs = xs + nx;
+                    oXs += nx;
                   }
                   int oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
