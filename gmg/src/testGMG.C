@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<Mat> Kmat;
   buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K,
-      partZ, partY, partX, offsets, scanLz, scanLy, scanLx, print);
+      partZ, partY, partX, offsets, print);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
