@@ -30,6 +30,31 @@ void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorial
   std::vector<long double> gWt(numGaussPts);
   gaussQuad(gPt, gWt);
 
+  std::vector<std::vector<std::vector<long double> > > shFnLderivatives(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnLderivatives[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnLderivatives[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnLderivatives[node][dof][g] = eval1DshFnLderivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
+      }//end g
+    }//end dof
+  }//end node
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnVals[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
+
+  long double zFac = (hx*hy)/(2.0L*hz);
+  long double yFac = (hz*hx)/(2.0L*hy);
+  long double xFac = (hy*hz)/(2.0L*hx);
   for(unsigned int rNodeZ = 0, r = 0; rNodeZ < 2; ++rNodeZ) {
     for(unsigned int rNodeY = 0; rNodeY < 2; ++rNodeY) {
       for(unsigned int rNodeX = 0; rNodeX < 2; ++rNodeX) {
@@ -47,18 +72,13 @@ void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorial
                             for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
                               for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
                                 mat[r][c] += ( gWt[gZ] * gWt[gY] * gWt[gX] * (
-                                      ( eval3DshFnGderivative(factorialsList, rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
-                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) *
-                                        eval3DshFnGderivative(factorialsList, cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
-                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 1, 0, 0, hz, hy, hx) ) + 
-                                      ( eval3DshFnGderivative(factorialsList, rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
-                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 1, 0, hz, hy, hx) * 
-                                        eval3DshFnGderivative(factorialsList, cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
-                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 1, 0, hz, hy, hx) ) +
-                                      ( eval3DshFnGderivative(factorialsList, rNodeZ, rNodeY, rNodeX, rDofZ, rDofY, rDofX, K,
-                                                              coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) * 
-                                        eval3DshFnGderivative(factorialsList, cNodeZ, cNodeY, cNodeX, cDofZ, cDofY, cDofX, K,
-                                          coeffs, gPt[gZ], gPt[gY], gPt[gX], 0, 0, 1, hz, hy, hx) ) ) );
+                                      ( zFac*(shFnLderivatives[rNodeZ][rDofZ][gZ])*(shFnVals[rNodeY][rDofY][gY])*(shFnVals[rNodeX][rDofX][gX])
+                                        *(shFnLderivatives[cNodeZ][cDofZ][gZ])*(shFnVals[cNodeY][cDofY][gY])*(shFnVals[cNodeX][cDofX][gX]) ) + 
+                                      ( yFac*(shFnVals[rNodeZ][rDofZ][gZ])*(shFnLderivatives[rNodeY][rDofY][gY])*(shFnVals[rNodeX][rDofX][gX])
+                                        *(shFnVals[cNodeZ][cDofZ][gZ])*(shFnLderivatives[cNodeY][cDofY][gY])*(shFnVals[cNodeX][cDofX][gX]) ) +
+                                      ( xFac*(shFnVals[rNodeZ][rDofZ][gZ])*(shFnVals[rNodeY][rDofY][gY])*(shFnLderivatives[rNodeX][rDofX][gX])
+                                        *(shFnVals[cNodeZ][cDofZ][gZ])*(shFnVals[cNodeY][cDofY][gY])*(shFnLderivatives[cNodeX][cDofX][gX]) ) 
+                                      ) );
                               }//end gX
                             }//end gY
                           }//end gZ
@@ -74,13 +94,6 @@ void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorial
       }//end rNodeX
     }//end rNodeY
   }//end rNodeZ
-
-  long double scaling = (hx*hy*hz/8.0L);
-  for(unsigned int i = 0; i < matSz; ++i) {
-    for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= scaling;
-    }//end j
-  }//end i
 }
 
 void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorialsList,
