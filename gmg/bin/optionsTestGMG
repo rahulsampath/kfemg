@@ -6,7 +6,7 @@
 -finestNz 33
 -maxNumLevels 10
 -maxCoarseNpes 1
--maxVcycles 500
+-maxVcycles 1
 -rTol 1.0e-12
 -aTol 1.0e-12
 
