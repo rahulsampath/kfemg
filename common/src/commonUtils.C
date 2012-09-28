@@ -160,23 +160,33 @@ void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorial
   std::vector<long double> gWt(numGaussPts);
   gaussQuad(gPt, gWt);
 
+  std::vector<std::vector<long double> > shFnLderivatives(2*(K + 1));
+  for(unsigned int node = 0, i = 0; node < 2; ++node) {
+    for(unsigned int dof = 0; dof <= K; ++dof, ++i) {
+      (shFnLderivatives[i]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnLderivatives[i][g] = eval1DshFnLderivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
+      }//end g
+    }//end dof
+  }//end node
+
   for(unsigned int rNode = 0, r = 0; rNode < 2; ++rNode) {
     for(unsigned int rDof = 0; rDof <= K; ++rDof, ++r) {
       for(unsigned int cNode = 0, c = 0; cNode < 2; ++cNode) {
         for(unsigned int cDof = 0; cDof <= K; ++cDof, ++c) {
           mat[r][c] = 0.0;
           for(unsigned int g = 0; g < numGaussPts; ++g) {
-            mat[r][c] += ( gWt[g] * eval1DshFnGderivative(factorialsList, rNode, rDof, K, coeffs, gPt[g], 1, hx) *
-                eval1DshFnGderivative(factorialsList, cNode, cDof, K, coeffs, gPt[g], 1, hx) );
+            mat[r][c] += ( gWt[g] * shFnLderivatives[r][g] * shFnLderivatives[c][g] );
           }//end g
         }//end cDof
       }//end cNode
     }//end rDof
   }//end rNode
 
+  long double scaling = (2.0L/hx);
   for(unsigned int i = 0; i < matSz; ++i) {
     for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= (hx/2.0L);
+      mat[i][j] *= scaling;
     }//end j
   }//end i
 }
