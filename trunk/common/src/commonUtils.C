@@ -75,9 +75,10 @@ void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorial
     }//end rNodeY
   }//end rNodeZ
 
+  long double scaling = (hx*hy*hz/8.0L);
   for(unsigned int i = 0; i < matSz; ++i) {
     for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= (hx*hy*hz/8.0L);
+      mat[i][j] *= scaling;
     }//end j
   }//end i
 }
@@ -101,6 +102,43 @@ void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorial
   std::vector<long double> gPt(numGaussPts);
   std::vector<long double> gWt(numGaussPts);
   gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnLderivatives(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnLderivatives[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnLderivatives[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnLderivatives[node][dof][g] = eval1DshFnLderivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
+      }//end g
+    }//end dof
+  }//end node
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnVals[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
+
+
+  /*
+     long double eval2DshFnGderivative(std::vector<unsigned long long int>& factorialsList,
+     unsigned int yNodeId, unsigned int xNodeId, unsigned int yDofId, unsigned int xDofId,
+     unsigned int K, std::vector<long long int> & coeffs, long double yi, long double xi,
+     int yl, int xl, long double hy, long double hx) {
+
+     long double result = ( myIntPow((2.0L/hy), yl) * myIntPow((2.0L/hx), xl) * 
+     eval1DshFnLderivative(factorialsList, yNodeId, yDofId, K, coeffs, yi, yl) *
+     eval1DshFnLderivative(factorialsList, xNodeId, xDofId, K, coeffs, xi, xl) );
+
+     return result;
+     }
+     */
 
   for(unsigned int rNodeY = 0, r = 0; rNodeY < 2; ++rNodeY) {
     for(unsigned int rNodeX = 0; rNodeX < 2; ++rNodeX) {
@@ -133,9 +171,10 @@ void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorial
     }//end rNodeX
   }//end rNodeY
 
+  long double scaling = (hx*hy/4.0L);
   for(unsigned int i = 0; i < matSz; ++i) {
     for(unsigned int j = 0; j < matSz; ++j) {
-      mat[i][j] *= (hx*hy/4.0L);
+      mat[i][j] *= scaling;
     }//end j
   }//end i
 }
@@ -160,12 +199,13 @@ void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorial
   std::vector<long double> gWt(numGaussPts);
   gaussQuad(gPt, gWt);
 
-  std::vector<std::vector<long double> > shFnLderivatives(2*(K + 1));
-  for(unsigned int node = 0, i = 0; node < 2; ++node) {
-    for(unsigned int dof = 0; dof <= K; ++dof, ++i) {
-      (shFnLderivatives[i]).resize(numGaussPts);
+  std::vector<std::vector<std::vector<long double> > > shFnLderivatives(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnLderivatives[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnLderivatives[node][dof]).resize(numGaussPts);
       for(unsigned int g = 0; g < numGaussPts; ++g) {
-        shFnLderivatives[i][g] = eval1DshFnLderivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
+        shFnLderivatives[node][dof][g] = eval1DshFnLderivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
       }//end g
     }//end dof
   }//end node
@@ -176,7 +216,7 @@ void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorial
         for(unsigned int cDof = 0; cDof <= K; ++cDof, ++c) {
           mat[r][c] = 0.0;
           for(unsigned int g = 0; g < numGaussPts; ++g) {
-            mat[r][c] += ( gWt[g] * shFnLderivatives[r][g] * shFnLderivatives[c][g] );
+            mat[r][c] += ( gWt[g] * shFnLderivatives[rNode][rDof][g] * shFnLderivatives[cNode][cDof][g] );
           }//end g
         }//end cDof
       }//end cNode
