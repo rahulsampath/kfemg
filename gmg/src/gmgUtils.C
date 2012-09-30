@@ -395,12 +395,14 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
                     val =  ( myIntPow((2.0L/hxc), xfd) * 
                         eval1DshFnLderivative(factorialsList, xNodeId, xcd, K, coeffs, xPt, xfd) );
                   } else if(dim == 2) {
-                    val = eval2DshFnGderivative(factorialsList, yNodeId, xNodeId, ycd, 
-                        xcd, K, coeffs, yPt, xPt, yfd, xfd, hyc, hxc);
+                    val = ( myIntPow((2.0L/hyc), yfd) * myIntPow((2.0L/hxc), xfd) * 
+                        eval1DshFnLderivative(factorialsList, yNodeId, ycd, K, coeffs, yPt, yfd) *
+                        eval1DshFnLderivative(factorialsList, xNodeId, xcd, K, coeffs, xPt, xfd) );
                   } else {
-                    val = eval3DshFnGderivative(factorialsList, zNodeId, yNodeId, xNodeId,
-                        zcd, ycd, xcd, K, coeffs, zPt, yPt, xPt, 
-                        zfd, yfd, xfd, hzc, hyc, hxc);
+                    val = ( myIntPow((2.0L/hzc), zfd) * myIntPow((2.0L/hyc), yfd) * myIntPow((2.0L/hxc), xfd) * 
+                        eval1DshFnLderivative(factorialsList, zNodeId, zcd, K, coeffs, zPt, zfd) *
+                        eval1DshFnLderivative(factorialsList, yNodeId, ycd, K, coeffs, yPt, yfd) *
+                        eval1DshFnLderivative(factorialsList, xNodeId, xcd, K, coeffs, xPt, xfd) );
                   }
                   val *= factor;
                   PetscScalar val2 = val;
