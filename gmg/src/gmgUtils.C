@@ -392,8 +392,8 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
                   }
                   //PERFORMANCE IMPROVEMENT: Pre-Compute 
                   if(dim == 1) {
-                    val = eval1DshFnGderivative(factorialsList, xNodeId, xcd, K, 
-                        coeffs, xPt, xfd, hxc);
+                    val =  ( myIntPow((2.0L/hxc), xfd) * 
+                        eval1DshFnLderivative(factorialsList, xNodeId, xcd, K, coeffs, xPt, xfd) );
                   } else if(dim == 2) {
                     val = eval2DshFnGderivative(factorialsList, yNodeId, xNodeId, ycd, 
                         xcd, K, coeffs, yPt, xPt, yfd, xfd, hyc, hxc);
