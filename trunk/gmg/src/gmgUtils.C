@@ -217,6 +217,23 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
     factorZ[i] = myIntPow((0.5L*hzf), i);
   }//end i
 
+  long double pt[] = {-1.0, 0.0, 1.0};
+
+  std::vector<std::vector<std::vector<std::vector<long double> > > > eval1Dderivatives(2);
+  for(int nodeId = 0; nodeId < 2; ++nodeId) {
+    eval1Dderivatives[nodeId].resize(K + 1);
+    for(int cdof = 0; cdof <= K; ++cdof) {
+      eval1Dderivatives[nodeId][cdof].resize(3);
+      for(int ptId = 0; ptId < 3; ++ptId) {
+        eval1Dderivatives[nodeId][cdof][ptId].resize(K + 1);
+        for(int fdof = 0; fdof <= K; ++fdof) {
+          eval1Dderivatives[nodeId][cdof][ptId][fdof] = eval1DshFnLderivative(factorialsList, 
+              nodeId, cdof, K, coeffs, pt[ptId], fdof);
+        }//end fdof
+      }//end pt
+    }//end cdof
+  }//end nodeId
+
   MatZeroEntries(Pmat);
 
   for(int fzi = fzs; fzi < (fzs + fnz); ++fzi) {
@@ -360,49 +377,47 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
                   } else {
                     zNodeId = 0;
                   }
-                  double xPt;
+                  int xPtId;
                   if(oddX) {
-                    xPt = 0.0;
+                    xPtId = 1;
                   } else {
                     if(xNodeId == 0) {
-                      xPt = -1.0;
+                      xPtId = 0;
                     } else {
-                      xPt = 1.0;
+                      xPtId = 2;
                     }
                   }
-                  double yPt;
+                  int yPtId;
                   if(oddY) {
-                    yPt = 0.0;
+                    yPtId = 1;
                   } else {
                     if(yNodeId == 0) {
-                      yPt = -1.0;
+                      yPtId = 0;
                     } else {
-                      yPt = 1.0;
+                      yPtId = 2;
                     }
                   }
-                  double zPt;
+                  int zPtId;
                   if(oddZ) {
-                    zPt = 0.0;
+                    zPtId = 1;
                   } else {
                     if(zNodeId == 0) {
-                      zPt = -1.0;
+                      zPtId = 0;
                     } else {
-                      zPt = 1.0;
+                      zPtId = 2;
                     }
                   }
-                  //PERFORMANCE IMPROVEMENT: Pre-Compute 
                   if(dim == 1) {
-                    val =  ( myIntPow((2.0L/hxc), xfd) * 
-                        eval1DshFnLderivative(factorialsList, xNodeId, xcd, K, coeffs, xPt, xfd) );
+                    val = ( myIntPow((2.0L/hxc), xfd) * eval1Dderivatives[xNodeId][xcd][xPtId][xfd] );
                   } else if(dim == 2) {
                     val = ( myIntPow((2.0L/hyc), yfd) * myIntPow((2.0L/hxc), xfd) * 
-                        eval1DshFnLderivative(factorialsList, yNodeId, ycd, K, coeffs, yPt, yfd) *
-                        eval1DshFnLderivative(factorialsList, xNodeId, xcd, K, coeffs, xPt, xfd) );
+                        eval1Dderivatives[yNodeId][ycd][yPtId][yfd] *
+                        eval1Dderivatives[xNodeId][xcd][xPtId][xfd] );
                   } else {
                     val = ( myIntPow((2.0L/hzc), zfd) * myIntPow((2.0L/hyc), yfd) * myIntPow((2.0L/hxc), xfd) * 
-                        eval1DshFnLderivative(factorialsList, zNodeId, zcd, K, coeffs, zPt, zfd) *
-                        eval1DshFnLderivative(factorialsList, yNodeId, ycd, K, coeffs, yPt, yfd) *
-                        eval1DshFnLderivative(factorialsList, xNodeId, xcd, K, coeffs, xPt, xfd) );
+                        eval1Dderivatives[zNodeId][zcd][zPtId][zfd] *
+                        eval1Dderivatives[yNodeId][ycd][yPtId][yfd] *
+                        eval1Dderivatives[xNodeId][xcd][xPtId][xfd] );
                   }
                   val *= factor;
                   PetscScalar val2 = val;
