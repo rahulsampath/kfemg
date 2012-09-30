@@ -181,6 +181,9 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
   int cpy = lyc.size();
   int cpz = lzc.size();
 
+  std::vector<long double> factorX(K + 1);
+  std::vector<long double> factorY;
+  std::vector<long double> factorZ;
   long double hxf, hyf, hzf;
   long double hxc, hyc, hzc;
   hxf = 1.0L/(static_cast<long double>(Nxf - 1));
@@ -188,17 +191,31 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
   if(dim > 1) {
     hyf = 1.0L/(static_cast<long double>(Nyf - 1));
     hyc = 1.0L/(static_cast<long double>(Nyc - 1));
+    factorY.resize(K + 1);
   } else {
     hyf = 1.0L;
     hyc = 1.0L;
+    factorY.resize(1);
   }
   if(dim > 2) {
     hzf = 1.0L/(static_cast<long double>(Nzf - 1));
     hzc = 1.0L/(static_cast<long double>(Nzc - 1));
+    factorZ.resize(K + 1);
   } else {
     hzf = 1.0L;
     hzc = 1.0L;
+    factorZ.resize(1);
   }
+
+  for(int i = 0; i < factorX.size(); ++i) {
+    factorX[i] = myIntPow((0.5L*hxf), i);
+  }//end i
+  for(int i = 0; i < factorY.size(); ++i) {
+    factorY[i] = myIntPow((0.5L*hyf), i);
+  }//end i
+  for(int i = 0; i < factorZ.size(); ++i) {
+    factorZ[i] = myIntPow((0.5L*hzf), i);
+  }//end i
 
   MatZeroEntries(Pmat);
 
@@ -279,8 +296,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           int zfd = fd/((K + 1)*(K + 1));
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
-          //PERFORMANCE IMPROVEMENT: Pre-Compute 
-          long double factor = (myIntPow((0.5L*hzf), zfd))*(myIntPow((0.5L*hyf), yfd))*(myIntPow((0.5L*hxf), xfd));
+          long double factor = (factorZ[zfd])*(factorY[yfd])*(factorX[xfd]); 
           int rowId = ((fOff + fLoc)*dofsPerNode) + fd;
           for(int k = 0; k < zVec.size(); ++k) {
             int zLoc;
