@@ -181,9 +181,12 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
   int cpy = lyc.size();
   int cpz = lzc.size();
 
-  std::vector<long double> factorX(K + 1);
-  std::vector<long double> factorY;
-  std::vector<long double> factorZ;
+  std::vector<long double> factorXf(K + 1);
+  std::vector<long double> factorXc(K + 1);
+  std::vector<long double> factorYf;
+  std::vector<long double> factorYc;
+  std::vector<long double> factorZf;
+  std::vector<long double> factorZc;
   long double hxf, hyf, hzf;
   long double hxc, hyc, hzc;
   hxf = 1.0L/(static_cast<long double>(Nxf - 1));
@@ -191,30 +194,37 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
   if(dim > 1) {
     hyf = 1.0L/(static_cast<long double>(Nyf - 1));
     hyc = 1.0L/(static_cast<long double>(Nyc - 1));
-    factorY.resize(K + 1);
+    factorYf.resize(K + 1);
+    factorYc.resize(K + 1);
   } else {
     hyf = 1.0L;
     hyc = 1.0L;
-    factorY.resize(1);
+    factorYf.resize(1);
+    factorYc.resize(1);
   }
   if(dim > 2) {
     hzf = 1.0L/(static_cast<long double>(Nzf - 1));
     hzc = 1.0L/(static_cast<long double>(Nzc - 1));
-    factorZ.resize(K + 1);
+    factorZf.resize(K + 1);
+    factorZc.resize(K + 1);
   } else {
     hzf = 1.0L;
     hzc = 1.0L;
-    factorZ.resize(1);
+    factorZf.resize(1);
+    factorZc.resize(1);
   }
 
-  for(int i = 0; i < factorX.size(); ++i) {
-    factorX[i] = myIntPow((0.5L*hxf), i);
+  for(int i = 0; i < factorXf.size(); ++i) {
+    factorXf[i] = myIntPow((0.5L*hxf), i);
+    factorXc[i] = myIntPow((2.0L/hxc), i);
   }//end i
-  for(int i = 0; i < factorY.size(); ++i) {
-    factorY[i] = myIntPow((0.5L*hyf), i);
+  for(int i = 0; i < factorYf.size(); ++i) {
+    factorYf[i] = myIntPow((0.5L*hyf), i);
+    factorYc[i] = myIntPow((2.0L/hyc), i);
   }//end i
-  for(int i = 0; i < factorZ.size(); ++i) {
-    factorZ[i] = myIntPow((0.5L*hzf), i);
+  for(int i = 0; i < factorZf.size(); ++i) {
+    factorZf[i] = myIntPow((0.5L*hzf), i);
+    factorZc[i] = myIntPow((2.0L/hzc), i);
   }//end i
 
   long double pt[] = {-1.0, 0.0, 1.0};
@@ -313,7 +323,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           int zfd = fd/((K + 1)*(K + 1));
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
-          long double factor = (factorZ[zfd])*(factorY[yfd])*(factorX[xfd]); 
+          long double factor = (factorZf[zfd])*(factorYf[yfd])*(factorXf[xfd]); 
           int rowId = ((fOff + fLoc)*dofsPerNode) + fd;
           for(int k = 0; k < zVec.size(); ++k) {
             int zLoc;
@@ -358,7 +368,6 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
                   int ycd = (d/(K + 1))%(K + 1);
                   int xcd = d%(K + 1);
                   int colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
-                  long double val;
                   int xNodeId;
                   if( (xVec[i] == (Nxc - 1)) || i ) {
                     xNodeId = 1;
@@ -407,16 +416,15 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
                       zPtId = 2;
                     }
                   }
+                  long double val;
                   if(dim == 1) {
-                    val = ( myIntPow((2.0L/hxc), xfd) * eval1Dderivatives[xNodeId][xcd][xPtId][xfd] );
+                    val = ( factorXc[xfd] * eval1Dderivatives[xNodeId][xcd][xPtId][xfd] );
                   } else if(dim == 2) {
-                    val = ( myIntPow((2.0L/hyc), yfd) * myIntPow((2.0L/hxc), xfd) * 
-                        eval1Dderivatives[yNodeId][ycd][yPtId][yfd] *
+                    val = ( factorYc[yfd] * factorXc[xfd] * eval1Dderivatives[yNodeId][ycd][yPtId][yfd] *
                         eval1Dderivatives[xNodeId][xcd][xPtId][xfd] );
                   } else {
-                    val = ( myIntPow((2.0L/hzc), zfd) * myIntPow((2.0L/hyc), yfd) * myIntPow((2.0L/hxc), xfd) * 
-                        eval1Dderivatives[zNodeId][zcd][zPtId][zfd] *
-                        eval1Dderivatives[yNodeId][ycd][yPtId][yfd] *
+                    val = ( factorZc[zfd] * factorYc[yfd] * factorXc[xfd] *
+                        eval1Dderivatives[zNodeId][zcd][zPtId][zfd] * eval1Dderivatives[yNodeId][ycd][yPtId][yfd] *
                         eval1Dderivatives[xNodeId][xcd][xPtId][xfd] );
                   }
                   val *= factor;
