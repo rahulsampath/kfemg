@@ -470,6 +470,12 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   } else {
     createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, print);
   }
+  std::vector<PetscScalar> vals((elemMat.size())*(elemMat.size()));
+  for(size_t r = 0, i = 0; r < (elemMat.size()); ++r) {
+    for(size_t c = 0; c < (elemMat.size()); ++c, ++i) {
+      vals[i] = elemMat[r][c];
+    }//end c
+  }//end r
   PetscLogEventEnd(elemKmatEvent, 0, 0, 0, 0);
 
   unsigned int nodesPerElem = (1 << dim);
@@ -490,13 +496,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   int rj = (rank/px)%py;
   int ri = rank%px;
 #endif
-
-  std::vector<PetscScalar> vals((indices.size())*(indices.size()));
-  for(size_t r = 0, i = 0; r < (indices.size()); ++r) {
-    for(size_t c = 0; c < (indices.size()); ++c, ++i) {
-      vals[i] = elemMat[r][c];
-    }//end c
-  }//end r
 
   MatZeroEntries(Kmat);
 
