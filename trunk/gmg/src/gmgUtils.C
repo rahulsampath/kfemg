@@ -1199,7 +1199,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
      numSmoothIters *= 3;
      }
      */
-  int numSmoothIters = 1;
+  int numSmoothIters = 2;
   if(print) {
     std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
   }
@@ -1217,7 +1217,8 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetType(ksp[lev], KSPCG);
         //KSPRichardsonSetScale(ksp[lev], 1.0);
         KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
-        PCSetType(pc, PCSOR);
+        //PCSetType(pc, PCSOR);
+        PCSetType(pc, PCJACOBI);
         PCSORSetOmega(pc, 1.0);
         PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
         PCSORSetIterations(pc, 1, 1);
