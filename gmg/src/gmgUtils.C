@@ -1211,14 +1211,15 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
         PCSetType(pc, PCLU);
       } else {
+        //KSPSetType(ksp[lev], KSPRICHARDSON);
         KSPSetType(ksp[lev], KSPCG);
-        //KSPRichardsonSetScale(ksp[lev], 1.0);
-        KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
-        //PCSetType(pc, PCSOR);
-        PCSetType(pc, PCJACOBI);
-        //PCSORSetOmega(pc, 1.0);
-        //PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
-        //PCSORSetIterations(pc, 1, 1);
+        //KSPRichardsonSetScale(ksp[lev], (2.0/3.0));
+        //KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
+        PCSetType(pc, PCSOR);
+        //PCSetType(pc, PCJACOBI);
+        PCSORSetOmega(pc, 1.0);
+        PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
+        PCSORSetIterations(pc, 1, 1);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
