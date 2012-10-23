@@ -1190,16 +1190,13 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
 }
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode, bool print) {
-  /*
-     int numSmoothIters = 3*dofsPerNode;
-     if(dim > 1) {
-     numSmoothIters *= 3;
-     }
-     if(dim > 2) {
-     numSmoothIters *= 3;
-     }
-     */
-  int numSmoothIters = 2;
+  int numSmoothIters = 3*dofsPerNode;
+  if(dim > 1) {
+    numSmoothIters *= 3;
+  }
+  if(dim > 2) {
+    numSmoothIters *= 3;
+  }
   if(print) {
     std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
   }
@@ -1219,9 +1216,9 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
         //PCSetType(pc, PCSOR);
         PCSetType(pc, PCJACOBI);
-        PCSORSetOmega(pc, 1.0);
-        PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
-        PCSORSetIterations(pc, 1, 1);
+        //PCSORSetOmega(pc, 1.0);
+        //PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
+        //PCSORSetIterations(pc, 1, 1);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
