@@ -538,7 +538,7 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
           }
           int zLoc = vk - vZs;
 #endif
-          for(int y = 0; y < numZnodes; ++y) {
+          for(int y = 0; y < numYnodes; ++y) {
             int vj = (yi + y);
 #ifndef USE_STENCIL
             int pj = rj;
@@ -549,7 +549,7 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
             }
             int yLoc = vj - vYs;
 #endif
-            for(int x = 0; x < numZnodes; ++x) {
+            for(int x = 0; x < numXnodes; ++x) {
               int vi = (xi + x);
 #ifndef USE_STENCIL
               int pi = ri;
