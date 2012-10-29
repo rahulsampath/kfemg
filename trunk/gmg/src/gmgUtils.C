@@ -1197,13 +1197,16 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
 }
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode, bool print) {
-  int numSmoothIters = 3*dofsPerNode;
-  if(dim > 1) {
-    numSmoothIters *= 3;
-  }
-  if(dim > 2) {
-    numSmoothIters *= 3;
-  }
+  /*
+     int numSmoothIters = 3*dofsPerNode;
+     if(dim > 1) {
+     numSmoothIters *= 3;
+     }
+     if(dim > 2) {
+     numSmoothIters *= 3;
+     }
+     */
+  int numSmoothIters = 2;
   if(print) {
     std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
   }
@@ -1218,15 +1221,21 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
         PCSetType(pc, PCLU);
       } else {
-        //KSPSetType(ksp[lev], KSPRICHARDSON);
-        KSPSetType(ksp[lev], KSPCG);
-        //KSPRichardsonSetScale(ksp[lev], (2.0/3.0));
-        //KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
-        PCSetType(pc, PCSOR);
-        //PCSetType(pc, PCJACOBI);
-        PCSORSetOmega(pc, 1.0);
-        PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
-        PCSORSetIterations(pc, 1, 1);
+        //KSPSetType(ksp[lev], KSPCG);
+        KSPSetType(ksp[lev], KSPRICHARDSON);
+        if(dim == 1) {
+          KSPRichardsonSetScale(ksp[lev], (2.0/3.0));
+        } else if (dim == 2) {
+          KSPRichardsonSetScale(ksp[lev], (4.0/5.0));
+        } else {
+          KSPRichardsonSetScale(ksp[lev], (8.0/9.0));
+        }
+        KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
+        PCSetType(pc, PCJACOBI);
+        //PCSetType(pc, PCSOR);
+        //PCSORSetOmega(pc, 1.0);
+        //PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
+        //PCSORSetIterations(pc, 1, 1);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
