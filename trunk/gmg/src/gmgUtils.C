@@ -450,6 +450,19 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   PetscInt nz;
   DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
+#ifdef DEBUG
+  if(dim < 2) {
+    assert(Ny == 1);
+    assert(ys == 0);
+    assert(ny == 1);
+  }
+  if(dim < 3) {
+    assert(Nz == 1);
+    assert(zs == 0);
+    assert(nz == 1);
+  }
+#endif
+
   PetscInt nxe = nx;
   PetscInt nye = ny;
   PetscInt nze = nz;
@@ -469,9 +482,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
       nye = ny - 1;
     }
   } else {
-    Ny = 1;
-    ys = 0;
-    ny = 1;
     numYnodes = 1;
   }
   if(dim > 2) {
@@ -480,9 +490,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
       nze = nz - 1;
     }
   } else {
-    Nz = 1; 
-    zs = 0;
-    nz = 1;
     numZnodes = 1;
   }
 
