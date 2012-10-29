@@ -3,7 +3,7 @@ INCLUDE = -I.. ${ML_INCLUDE_DIRS}
 
 LIBS = -L../common/lib -lcommon ${ML_LIBRARY_DIRS} ${ML_LIBRARIES} ${ML_TPL_LIBRARIES}
 
-EXEC = bin/testAMG 
+EXEC = bin/testEigenValue bin/testAMG
 
 all : $(EXEC)
 
@@ -13,7 +13,13 @@ all : $(EXEC)
 ./src/testAMG.o: ./src/testAMG.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
+./src/testEigenValue.o: ./src/testEigenValue.C
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+
 bin/testAMG : ./src/testAMG.o ./src/amgUtils.o 
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
+
+bin/testEigenValue : ./src/testEigenValue.o ./src/amgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 clean :
