@@ -20,8 +20,37 @@ void suppressSmallValues(const unsigned int len, double* vec) {
   }//end i
 }
 
-void computeLambda(const unsigned int K, const unsigned int Ny, const unsigned int Nx,
-    double* inArr, double* outArr, double& lambdaY, double& lambdaX) {
+double computeLambda(const unsigned int K, const unsigned int Ny, const unsigned int Nx,
+    double* inArr, double* outArr) {
+  const unsigned int dofsPerNode = (K + 1)*(K + 1);
+  double lambda;
+  bool set = false;
+  for(int j = 1; j < (Ny - 1); ++j) {
+    for(int i = 1; i < (Nx - 1); ++i) {
+      for(int dy = 0; dy <= K; ++dy) {
+        for(int dx = 0; dx <= K; ++dx) {
+          int dof = (((j*Nx) + i)*dofsPerNode) + ((K + 1)*dy) + dx;
+          if(fabs(inArr[dof]) > 0) {
+            double tmp = (outArr[dof])/(inArr[dof]);
+            if(set) {
+              if(!(softEquals(lambda, tmp))) {
+                std::cout<<"Failed for i = "<<i<<", dx = "<<dx<<", j = "<<j<<", dy = "<<dy<<std::endl;
+                std::cout<<std::setprecision(13)<<"lambda = "<<lambda<<" tmp = "<<tmp<<std::endl;
+                assert(false);
+              }
+            } else {
+              set = true;
+              lambda = tmp;
+            }
+          }
+        }//end dx
+      }//end dy
+    }//end i
+  }//end j
+  if(!set) {
+    std::cout<<"Lambda Not Set!"<<std::endl;
+  }
+  return lambda;
 }
 
 void setInputVector(const unsigned int wNumY, const unsigned int wNumX, 
@@ -75,10 +104,16 @@ void setInputVector(const unsigned int wNumY, const unsigned int wNumX,
   suppressSmallValues(vecLen, inArr);
 }
 
-void printVector(const unsigned int len, double* vec) {
-  for(int i = 0; i < len; ++i) {
-    std::cout<<(std::setprecision(13))<<(vec[i])<<std::endl;
-  }//end i
+void printVector(const unsigned int K, const unsigned int Ny, const unsigned int Nx, double* vec) {
+  for(int j = 0, cnt = 0; j < Ny; ++j) {
+    for(int i = 0; i < Nx; ++i) {
+      for(int dy = 0; dy <= K; ++dy) {
+        for(int dx = 0; dx <= K; ++dx, ++cnt) {
+          std::cout<<"("<<i<<","<<dx<<"),("<<j<<","<<dy<<") = "<<(std::setprecision(13))<<(vec[cnt])<<std::endl;
+        }//end dx
+      }//end dy
+    }//end i
+  }//end j
 }
 
 int main(int argc, char *argv[]) {
@@ -126,25 +161,25 @@ int main(int argc, char *argv[]) {
     for(int wNumX = 0; wNumX < Nx; ++wNumX) {
       for(int wDofY = 0; wDofY <= K; ++wDofY) {
         for(int wDofX = 0; wDofX <= K; ++wDofX) {
-          std::cout<<"Testing: ("<<wNumY<<","<<wDofY<<"),("<<wNumX<<","<<wDofX<<")"<<std::endl;
+          std::cout<<"Testing: ("<<wNumX<<","<<wDofX<<"),("<<wNumY<<","<<wDofY<<")"<<std::endl;
           const unsigned int wDof = ((K + 1)*wDofY) + wDofX;
 
           setInputVector(wNumY, wNumX, wDofY, wDofX, K, Ny, Nx, inArr);
 
           //std::cout<<"Input Vector: "<<std::endl;
-          //printVector(vecLen, inArr);
+          //printVector(K, Ny, Nx, inArr);
 
           myMatVecPrivate(&myMat, vecLen, inArr, outArr);
           suppressSmallValues(vecLen, outArr); 
 
           //std::cout<<"Output Vector: "<<std::endl;
-          //printVector(vecLen, outArr);
+          //printVector(K, Ny, Nx, outArr);
 
           myBlockMatVec(&myMat, dofsPerNode, wDof, vecLen, inArr, blkOutArr);
           suppressSmallValues(vecLen, blkOutArr); 
 
           //std::cout<<"Block Output Vector: "<<std::endl;
-          //printVector(vecLen, blkOutArr);
+          //printVector(K, Ny, Nx, blkOutArr);
 
           if((wDofY == 0) && (wDofX == 0) && ((wNumY == 0) || (wNumY == (Ny - 1)))
               && ((wNumX == 0) || (wNumX == (Nx - 1)))) {
@@ -152,9 +187,8 @@ int main(int argc, char *argv[]) {
               assert(softEquals(inArr[i], outArr[i]));
             }//end i
           } else {
-            double lambdaY, lambdaX;
-            computeLambda(K, Ny, Nx, inArr, outArr, lambdaY, lambdaX);
-            //std::cout<<"LambdaY = "<<std::setprecision(13)<<lambdaY<<", LambdaX = "<<lambdaX<<std::endl;
+            double lambda = computeLambda(K, Ny, Nx, inArr, outArr);
+            std::cout<<"Lambda = "<<std::setprecision(13)<<lambda<<std::endl;
           }
 
           for(int i = 0; i < vecLen; ++i) {
