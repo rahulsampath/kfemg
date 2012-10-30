@@ -11,6 +11,21 @@
 #include <cassert>
 #endif
 
+void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int dofId, 
+    const unsigned int len, double* in, double* out) {
+  for(int i = 0; i < len; ++i) {
+    out[i] = 0.0;
+    if((i%dofsPerNode) == dofId) {
+      for(size_t j = 0; j < ((myMat->nzCols)[i]).size(); ++j) {
+        unsigned int col = (myMat->nzCols)[i][j];
+        if((col%dofsPerNode) == dofId) {
+          out[i] += ( ((myMat->vals)[i][j]) * (in[col]) );
+        }
+      }//end for j
+    }
+  }//end for i
+}
+
 void zeroBoundaries(double* arr, const unsigned int K, const unsigned int dim,
     const int Nz, const int Ny, const int Nx) {
 #ifdef DEBUG
