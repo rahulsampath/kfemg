@@ -14,7 +14,7 @@
 
 void suppressSmallValues(const unsigned int len, double* vec) {
   for(int i = 0; i < len; ++i) {
-    if(fabs(vec[i]) < 1.0e-12) {
+    if(softEquals(vec[i], 0.0)) {
       vec[i] = 0.0;
     }
   }//end i

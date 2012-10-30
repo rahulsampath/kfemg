@@ -14,7 +14,7 @@
 
 void suppressSmallValues(const unsigned int len, double* vec) {
   for(int i = 0; i < len; ++i) {
-    if(fabs(vec[i]) < 1.0e-12) {
+    if(softEquals(vec[i], 0.0)) {
       vec[i] = 0.0;
     }
   }//end i
@@ -58,17 +58,7 @@ double computeLambda(const unsigned int K, const unsigned int Nx, double* inArr,
       if(fabs(inArr[dof]) > 0) {
         double tmp = (outArr[dof])/(inArr[dof]);
         if(set) {
-          bool failed = false;
-          if(fabs(lambda) < 1.0e-12) {
-            if(fabs(tmp) >= 1.0e-12) {
-              failed = true;
-            }
-          } else {
-            if(fabs((lambda - tmp)/lambda) >=  1.0e-12) {
-              failed = true;
-            }
-          }
-          if(failed) {
+          if(!(softEquals(lambda, tmp))) {
             std::cout<<"Failed for i = "<<i<<" d = "<<d<<std::endl;
             std::cout<<std::setprecision(13)<<"lambda = "<<lambda<<" tmp = "<<tmp<<std::endl;
             assert(false);
@@ -87,17 +77,7 @@ double computeLambda(const unsigned int K, const unsigned int Nx, double* inArr,
       int dof = ((K + 1)*i) + d;
       if(fabs(inArr[dof]) > 0) {
         double tmp = 0.5*lambda*inArr[dof];
-        bool failed = false;
-        if(fabs(tmp) < 1.0e-12) {
-          if(fabs(outArr[dof]) >= 1.0e-12) {
-            failed = true;
-          }
-        } else {
-          if(fabs((outArr[dof] - tmp)/tmp) >= 1.0e-12) {
-            failed = true;
-          }
-        }
-        if(failed) {
+        if(!(softEquals(tmp, outArr[dof]))) {
           std::cout<<"Failed for i = "<<i<<" d = "<<d<<std::endl;
           std::cout<<std::setprecision(13)<<"tmp = "<<tmp<<" outArrVal = "<<(outArr[dof])<<std::endl;
           assert(false);
@@ -111,17 +91,7 @@ double computeLambda(const unsigned int K, const unsigned int Nx, double* inArr,
       int dof = ((K + 1)*i) + d;
       if(fabs(inArr[dof]) > 0) {
         double tmp = 0.5*lambda*inArr[dof];
-        bool failed = false;
-        if(fabs(tmp) < 1.0e-12) {
-          if(fabs(outArr[dof]) >= 1.0e-12) {
-            failed = true;
-          }
-        } else {
-          if(fabs((outArr[dof] - tmp)/tmp) >= 1.0e-12) {
-            failed = true;
-          }
-        }
-        if(failed) {
+        if(!(softEquals(tmp, outArr[dof]))) {
           std::cout<<"Failed for i = "<<i<<" d = "<<d<<std::endl;
           std::cout<<std::setprecision(13)<<"tmp = "<<tmp<<" outArrVal = "<<(outArr[dof])<<std::endl;
           assert(false);
@@ -192,7 +162,7 @@ int main(int argc, char *argv[]) {
 
       if((wDof == 0) && ((wNum == 0) || (wNum == (Nx - 1)))) {
         for(int i = 0; i < vecLen; ++i) {
-          assert(fabs(inArr[i] - outArr[i]) < 1.0e-12);
+          assert(softEquals(inArr[i], outArr[i]));
         }//end i
       } else {
         double lambda = computeLambda(K, Nx, inArr, outArr);
@@ -201,9 +171,9 @@ int main(int argc, char *argv[]) {
 
       for(int i = 0; i < vecLen; ++i) {
         if((i%dofsPerNode) == wDof) {
-          assert(fabs(outArr[i] - blkOutArr[i]) < 1.0e-12);
+          assert(softEquals(outArr[i], blkOutArr[i]));
         } else {
-          assert(fabs(blkOutArr[i]) < 1.0e-12);
+          assert(softEquals(blkOutArr[i], 0.0));
         }
       }//end i
 
