@@ -20,6 +20,10 @@ void suppressSmallValues(const unsigned int len, double* vec) {
   }//end i
 }
 
+void computeLambda(const unsigned int K, const unsigned int Ny, const unsigned int Nx,
+    double* inArr, double* outArr, double& lambdaY, double& lambdaX) {
+}
+
 void setInputVector(const unsigned int wNumY, const unsigned int wNumX, 
     const unsigned int wDofY, const unsigned int wDofX, const unsigned int K,
     const unsigned int Ny, const unsigned int Nx, double* inArr) {
@@ -141,6 +145,25 @@ int main(int argc, char *argv[]) {
 
           //std::cout<<"Block Output Vector: "<<std::endl;
           //printVector(vecLen, blkOutArr);
+
+          if((wDofY == 0) && (wDofX == 0) && ((wNumY == 0) || (wNumY == (Ny - 1)))
+              && ((wNumX == 0) || (wNumX == (Nx - 1)))) {
+            for(int i = 0; i < vecLen; ++i) {
+              assert(softEquals(inArr[i], outArr[i]));
+            }//end i
+          } else {
+            double lambdaY, lambdaX;
+            computeLambda(K, Ny, Nx, inArr, outArr, lambdaY, lambdaX);
+            //std::cout<<"LambdaY = "<<std::setprecision(13)<<lambdaY<<", LambdaX = "<<lambdaX<<std::endl;
+          }
+
+          for(int i = 0; i < vecLen; ++i) {
+            if((i%dofsPerNode) == wDof) {
+              assert(softEquals(outArr[i], blkOutArr[i]));
+            } else {
+              assert(softEquals(blkOutArr[i], 0.0));
+            }
+          }//end i
 
           std::cout<<std::endl;
         }//end wDofX
