@@ -387,14 +387,6 @@ bool softEquals(long double a, long double b) {
       if(fabs(diff/a) < 1.0e-12L) {
         result = true;
       }
-    } else {
-      while(fabs(a) <= 1.0) {
-        a*= 10.0;
-        diff*= 10.0;
-      }
-      if(fabs(diff/a) < 1.0e-12L) {
-        result = true;
-      }
     }
   }
   return result;
