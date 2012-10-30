@@ -58,7 +58,17 @@ double computeLambda(const unsigned int K, const unsigned int Nx, double* inArr,
       if(fabs(inArr[dof]) > 0) {
         double tmp = (outArr[dof])/(inArr[dof]);
         if(set) {
-          if(fabs(lambda - tmp) >=  1.0e-12) {
+          bool failed = false;
+          if(fabs(lambda) < 1.0e-12) {
+            if(fabs(tmp) >= 1.0e-12) {
+              failed = true;
+            }
+          } else {
+            if(fabs((lambda - tmp)/lambda) >=  1.0e-12) {
+              failed = true
+            }
+          }
+          if(failed) {
             std::cout<<"Failed for i = "<<i<<" d = "<<d<<std::endl;
             std::cout<<std::setprecision(13)<<"lambda = "<<lambda<<" tmp = "<<tmp<<std::endl;
             assert(false);
@@ -77,7 +87,17 @@ double computeLambda(const unsigned int K, const unsigned int Nx, double* inArr,
       int dof = ((K + 1)*i) + d;
       if(fabs(inArr[dof]) > 0) {
         double tmp = 0.5*lambda*inArr[dof];
-        assert(fabs(outArr[dof] - tmp) < 1.0e-12);
+        bool failed = false;
+        if(fabs(tmp) < 1.0e-12) {
+          if(fabs(outArr[dof]) >= 1.0e-12) {
+            failed = true;
+          }
+        } else {
+          if(fabs((outArr[dof] - tmp)/tmp) >= 1.0e-12) {
+            failed = true;
+          }
+        }
+        assert(!failed);
       }
     }//end d
   }
@@ -87,7 +107,17 @@ double computeLambda(const unsigned int K, const unsigned int Nx, double* inArr,
       int dof = ((K + 1)*i) + d;
       if(fabs(inArr[dof]) > 0) {
         double tmp = 0.5*lambda*inArr[dof];
-        assert(fabs(outArr[dof] - tmp) < 1.0e-12);
+        bool failed = false;
+        if(fabs(tmp) < 1.0e-12) {
+          if(fabs(outArr[dof]) >= 1.0e-12) {
+            failed = true;
+          }
+        } else {
+          if(fabs((outArr[dof] - tmp)/tmp) >= 1.0e-12) {
+            failed = true;
+          }
+        }
+        assert(!failed);
       }
     }//end d
   }
