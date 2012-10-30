@@ -379,7 +379,25 @@ long double powDerivative(std::vector<unsigned long long int>& factorialsList, l
 
 bool softEquals(long double a, long double b) {
   long double diff = a - b;
-  return ((fabs(diff)) < 1.0e-15L);
+  bool result = false;
+  if((fabs(diff)) < 1.0e-12L) {
+    result = true
+  } else {
+    if(fabs(a) > 1.0) {
+      if(fabs(diff/a) < 1.0e-12L) {
+        result = true;
+      }
+    } else {
+      while(fabs(a) <= 1.0) {
+        a*= 10.0;
+        diff*= 10.0;
+      }
+      if(fabs(diff/a) < 1.0e-12L) {
+        result = true;
+      }
+    }
+  }
+  return result;
 }
 
 long double legendrePoly(int n, long double x) {
