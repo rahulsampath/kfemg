@@ -29,6 +29,9 @@ int myMatVec(ML_Operator* data, int in_length, double in[], int out_length, doub
 
 void myMatVecPrivate(MyMatrix* myMat, const unsigned int len, double* in, double* out);
 
+void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int dofId, 
+    const unsigned int len, double* in, double* out);
+
 int myGetRow(ML_Operator* data, int N_requested_rows, int requested_rows[],
     int allocated_space, int columns[], double values[], int row_lengths[]);
 

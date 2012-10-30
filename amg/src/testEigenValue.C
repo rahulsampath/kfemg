@@ -110,6 +110,8 @@ int main(int argc, char *argv[]) {
   const unsigned int Ny = 1; 
   const unsigned int Nz = 1; 
 
+  const unsigned int dofsPerNode = K + 1;
+
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
 
   std::vector<long long int> coeffs;
@@ -128,21 +130,27 @@ int main(int argc, char *argv[]) {
   const unsigned int vecLen = (myMat.vals).size();
   double* inArr = new double[vecLen];
   double* outArr = new double[vecLen];
+  double* blkOutArr = new double[vecLen];
 
   for(int wNum = 0; wNum < Nx; ++wNum) {
     for(int wDof = 0; wDof <= K; ++wDof) {
       std::cout<<"Testing: ("<<wNum<<", "<<wDof<<")"<<std::endl;
       setInputVector(wNum, wDof, K, Nx, inArr);
 
-      myMatVecPrivate(&myMat, vecLen, inArr, outArr);
-
-      suppressSmallValues(vecLen, outArr); 
-
       std::cout<<"Input Vector: "<<std::endl;
       printVector(vecLen, inArr);
 
+      myMatVecPrivate(&myMat, vecLen, inArr, outArr);
+      suppressSmallValues(vecLen, outArr); 
+
       std::cout<<"Output Vector: "<<std::endl;
       printVector(vecLen, outArr);
+
+      myBlockMatVec(&myMat, dofsPerNode, wDof, vecLen, inArr, blkOutArr);
+      suppressSmallValues(vecLen, blkOutArr); 
+
+      std::cout<<"Block Output Vector: "<<std::endl;
+      printVector(vecLen, blkOutArr);
 
       if((wDof == 0) && ((wNum == 0) || (wNum == (Nx - 1)))) {
         for(int i = 0; i < vecLen; ++i) {
@@ -150,8 +158,18 @@ int main(int argc, char *argv[]) {
         }//end i
       } else {
         double lambda = computeLambda(K, Nx, inArr, outArr);
-        std::cout<<"Lambda = "<<std::setprecision(13)<<lambda<<std::endl<<std::endl;
+        std::cout<<"Lambda = "<<std::setprecision(13)<<lambda<<std::endl;
       }
+
+      for(int i = 0; i < vecLen; ++i) {
+        if((i%dofsPerNode) == wDof) {
+          assert(fabs(outArr[i] - blkOutArr[i]) < 1.0e-12);
+        } else {
+          assert(fabs(blkOutArr[i]) < 1.0e-12);
+        }
+      }//end i
+
+      std::cout<<std::endl;
     }//end wDof
   }//end wNum
 
@@ -159,6 +177,7 @@ int main(int argc, char *argv[]) {
 
   delete [] inArr;
   delete [] outArr;
+  delete [] blkOutArr;
 
   MPI_Finalize();
 
