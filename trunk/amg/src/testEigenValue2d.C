@@ -47,9 +47,107 @@ double computeLambda(const unsigned int K, const unsigned int Ny, const unsigned
       }//end dy
     }//end i
   }//end j
-  if(!set) {
-    std::cout<<"Lambda Not Set!"<<std::endl;
+  double factor = 1.0;
+  if(set) {
+    factor = 2.0;
   }
+  {
+    int j = 0;
+    for(int i = 1; i < (Nx - 1); ++i) {
+      for(int dy = 0; dy <= K; ++dy) {
+        for(int dx = 0; dx <= K; ++dx) {
+          int dof = (((j*Nx) + i)*dofsPerNode) + ((K + 1)*dy) + dx;
+          if(fabs(inArr[dof]) > 0) {
+            double tmp = (outArr[dof])/(inArr[dof]);
+            if(set) {
+              if(!(softEquals(lambda, (factor*tmp)))) {
+                std::cout<<"Failed for i = "<<i<<", dx = "<<dx<<", j = "<<j<<", dy = "<<dy<<std::endl;
+                std::cout<<std::setprecision(13)<<"lambda = "<<lambda<<" fac = "<<factor
+                  <<" (fac*tmp) = "<<(factor*tmp)<<std::endl;
+                assert(false);
+              }
+            } else {
+              set = true;
+              lambda = (factor*tmp);
+            }
+          }
+        }//end dx
+      }//end dy
+    }//end i
+  }
+  {
+    int j = Ny - 1;
+    for(int i = 1; i < (Nx - 1); ++i) {
+      for(int dy = 0; dy <= K; ++dy) {
+        for(int dx = 0; dx <= K; ++dx) {
+          int dof = (((j*Nx) + i)*dofsPerNode) + ((K + 1)*dy) + dx;
+          if(fabs(inArr[dof]) > 0) {
+            double tmp = (outArr[dof])/(inArr[dof]);
+            if(set) {
+              if(!(softEquals(lambda, (factor*tmp)))) {
+                std::cout<<"Failed for i = "<<i<<", dx = "<<dx<<", j = "<<j<<", dy = "<<dy<<std::endl;
+                std::cout<<std::setprecision(13)<<"lambda = "<<lambda<<" fac = "<<factor
+                  <<" (fac*tmp) = "<<(factor*tmp)<<std::endl;
+                assert(false);
+              }
+            } else {
+              set = true;
+              lambda = (factor*tmp);
+            }
+          }
+        }//end dx
+      }//end dy
+    }//end i
+  }
+  {
+    int i = 0;
+    for(int j = 1; j < (Ny - 1); ++j) { 
+      for(int dy = 0; dy <= K; ++dy) {
+        for(int dx = 0; dx <= K; ++dx) {
+          int dof = (((j*Nx) + i)*dofsPerNode) + ((K + 1)*dy) + dx;
+          if(fabs(inArr[dof]) > 0) {
+            double tmp = (outArr[dof])/(inArr[dof]);
+            if(set) {
+              if(!(softEquals(lambda, (factor*tmp)))) {
+                std::cout<<"Failed for i = "<<i<<", dx = "<<dx<<", j = "<<j<<", dy = "<<dy<<std::endl;
+                std::cout<<std::setprecision(13)<<"lambda = "<<lambda<<" fac = "<<factor
+                  <<" (fac*tmp) = "<<(factor*tmp)<<std::endl;
+                assert(false);
+              }
+            } else {
+              set = true;
+              lambda = (factor*tmp);
+            }
+          }
+        }//end dx
+      }//end dy
+    }//end j
+  }
+  {
+    int i = Nx - 1;
+    for(int j = 1; j < (Ny - 1); ++j) {
+      for(int dy = 0; dy <= K; ++dy) {
+        for(int dx = 0; dx <= K; ++dx) {
+          int dof = (((j*Nx) + i)*dofsPerNode) + ((K + 1)*dy) + dx;
+          if(fabs(inArr[dof]) > 0) {
+            double tmp = (outArr[dof])/(inArr[dof]);
+            if(set) {
+              if(!(softEquals(lambda, (factor*tmp)))) {
+                std::cout<<"Failed for i = "<<i<<", dx = "<<dx<<", j = "<<j<<", dy = "<<dy<<std::endl;
+                std::cout<<std::setprecision(13)<<"lambda = "<<lambda<<" fac = "<<factor
+                  <<" (fac*tmp) = "<<(factor*tmp)<<std::endl;
+                assert(false);
+              }
+            } else {
+              set = true;
+              lambda = (factor*tmp);
+            }
+          }
+        }//end dx
+      }//end dy
+    }//end j
+  }
+  assert(set);
   return lambda;
 }
 
