@@ -145,20 +145,20 @@ int main(int argc, char *argv[]) {
       std::cout<<"Testing: ("<<wNum<<", "<<wDof<<")"<<std::endl;
       setInputVector(wNum, wDof, K, Nx, inArr);
 
-      std::cout<<"Input Vector: "<<std::endl;
-      printVector(vecLen, inArr);
+      //std::cout<<"Input Vector: "<<std::endl;
+      //printVector(vecLen, inArr);
 
       myMatVecPrivate(&myMat, vecLen, inArr, outArr);
       suppressSmallValues(vecLen, outArr); 
 
-      std::cout<<"Output Vector: "<<std::endl;
-      printVector(vecLen, outArr);
+      //std::cout<<"Output Vector: "<<std::endl;
+      //printVector(vecLen, outArr);
 
       myBlockMatVec(&myMat, dofsPerNode, wDof, vecLen, inArr, blkOutArr);
       suppressSmallValues(vecLen, blkOutArr); 
 
-      std::cout<<"Block Output Vector: "<<std::endl;
-      printVector(vecLen, blkOutArr);
+      //std::cout<<"Block Output Vector: "<<std::endl;
+      //printVector(vecLen, blkOutArr);
 
       if((wDof == 0) && ((wNum == 0) || (wNum == (Nx - 1)))) {
         for(int i = 0; i < vecLen; ++i) {
