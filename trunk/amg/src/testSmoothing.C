@@ -60,9 +60,11 @@ int main(int argc, char *argv[]) {
 
   const unsigned int wNum = atoi(argv[6]);
   std::cout<<"wNum = "<<wNum<<std::endl;
+  assert(wNum < Nx);
 
   const unsigned int wDof = atoi(argv[7]);
   std::cout<<"wDof = "<<wDof<<std::endl;
+  assert(wDof <= K);
 
   const unsigned int Ny = 1; 
   const unsigned int Nz = 1; 
