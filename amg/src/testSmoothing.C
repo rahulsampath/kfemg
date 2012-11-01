@@ -35,25 +35,34 @@ void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  if(argc <= 4) {
-    std::cout<<"USAGE: <exe> K Nx maxIters alpha"<<std::endl;
+  if(argc <= 7) {
+    std::cout<<"USAGE: <exe> useBlocked K Nx maxIters alpha wNum wDof"<<std::endl;
     assert(false);
   }
   const unsigned int dim = 1; 
   std::cout<<"Dim = "<<dim<<std::endl;
 
-  const unsigned int K = atoi(argv[1]);
+  bool useBlocked = atoi(argv[1]);
+  std::cout<<"UseBlocked = "<<useBlocked<<std::endl;
+
+  const unsigned int K = atoi(argv[2]);
   std::cout<<"K = "<<K<<std::endl;
 
-  const unsigned int Nx = atoi(argv[2]); 
+  const unsigned int Nx = atoi(argv[3]); 
   assert(Nx > 1);
   std::cout<<"Nx = "<<Nx<<std::endl;
 
-  const unsigned int maxIters = atoi(argv[3]);
+  const unsigned int maxIters = atoi(argv[4]);
   std::cout<<"MaxIters = "<<maxIters<<std::endl;
 
-  const double alpha = atof(argv[4]);
+  const double alpha = atof(argv[5]);
   std::cout<<"alpha = "<<alpha<<std::endl;
+
+  const unsigned int wNum = atoi(argv[6]);
+  std::cout<<"wNum = "<<wNum<<std::endl;
+
+  const unsigned int wDof = atoi(argv[7]);
+  std::cout<<"wDof = "<<wDof<<std::endl;
 
   const unsigned int Ny = 1; 
   const unsigned int Nz = 1; 
@@ -82,10 +91,6 @@ int main(int argc, char *argv[]) {
 
   getDiagonal(&myMat, vecLen, diag);
 
-  int wNum = 1;
-  int wDof = 0;
-
-  std::cout<<"Testing: ("<<wNum<<", "<<wDof<<")"<<std::endl;
   setInputVector(wNum, wDof, K, Nx, inArr);
 
   double norm = maxNorm(vecLen, inArr);
@@ -101,7 +106,11 @@ int main(int argc, char *argv[]) {
       inPtr = outArr;
       outPtr = inArr;
     }
-    applyJacobi(alpha, &myMat, diag, vecLen, inPtr, outPtr);
+    if(useBlocked) {
+      applyBlockJacobi(alpha, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
+    } else {
+      applyJacobi(alpha, &myMat, diag, vecLen, inPtr, outPtr);
+    }
     norm = maxNorm(vecLen, outPtr);
     std::cout<<"Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
   }//end iter
