@@ -10,6 +10,8 @@ struct MyMatrix {
   std::vector<std::vector<long double> > vals;
 };
 
+double maxNorm(const unsigned int len, double* arr);
+
 void zeroBoundaries(double* arr, const unsigned int K, const unsigned int dim,
     const int Nz, const int Ny, const int Nx);
 
