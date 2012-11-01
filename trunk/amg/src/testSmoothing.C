@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
     }
     norm = maxNorm(vecLen, outPtr);
     std::cout<<"Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
-    if(norm < 1.0e-5) {
+    if(norm < 1.0e-12) {
       break;
     }
   }//end iter
