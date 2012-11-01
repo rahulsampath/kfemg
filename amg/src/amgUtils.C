@@ -453,5 +453,16 @@ void setValue(MyMatrix & myMat, unsigned int row, unsigned int col, long double 
   (myMat.vals)[row][(pos - (((myMat.nzCols)[row]).begin()))] = val;
 }
 
+double maxNorm(const unsigned int len, double* arr) {
+  double res = 0.0;
+  for(int i = 0; i < len; ++i) {
+    double absVal = fabs(arr[i]);
+    if(absVal > res) {
+      res = absVal;
+    }
+  }//end i
+  return res;
+}
+
 
 
