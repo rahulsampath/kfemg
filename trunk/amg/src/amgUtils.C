@@ -32,7 +32,10 @@ void getDiagonal(MyMatrix* myMat, const unsigned int len, double* diag) {
       unsigned int col = (myMat->nzCols)[i][j];
       if(col == i) {
         diag[i] = (myMat->vals)[i][j];
-        assert(diag[i] >= 1.0e-12);
+        if(diag[i] < 1.0e-12) {
+          std::cout<<"diag val = "<<(diag[i])<<std::endl;
+          assert(false);
+        }
         break;
       }
     }//end for j
