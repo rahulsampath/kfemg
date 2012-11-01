@@ -11,6 +11,43 @@
 #include <cassert>
 #endif
 
+void applyBlockJacobi(double alpha, MyMatrix* myMat, double* diag, const unsigned int dofsPerNode,
+    const unsigned int dofId, int len, double* in, double* out) {
+  myBlockMatVec(myMat, dofsPerNode, dofId, len, in, out);
+  divideVecPointwise(len, out, diag); 
+  scaleVec((-alpha), len, out);
+  addVec(len, out, in);
+}
+
+void applyJacobi(double alpha, MyMatrix* myMat, double* diag, int len, double* in, double* out) {
+  myMatVecPrivate(myMat, len, in, out);
+  divideVecPointwise(len, out, diag); 
+  scaleVec((-alpha), len, out);
+  addVec(len, out, in);
+}
+
+void getDiagonal(MyMatrix* myMat, const unsigned int len, double* diag) {
+  for(int i = 0; i < len; ++i) {
+    for(int j = 0; j < ((myMat->nzCols)[i]).size(); ++j) {
+      unsigned int col = (myMat->nzCols)[i][j];
+      if(col == i) {
+        diag[i] = (myMat->vals)[i][j];
+        assert(diag[i] >= 1.0e-12);
+        break;
+      }
+    }//end for j
+  }//end for i
+}
+
+void extractBlock(const unsigned int dofsPerNode, const unsigned int dofId,
+    const unsigned int len, double* arr) {
+  for(int i = 0; i < len; ++i) {
+    if((i%dofsPerNode) != dofId) {
+      arr[i] = 0.0;
+    }
+  }//end for i
+}
+
 void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int dofId, 
     const unsigned int len, double* in, double* out) {
   for(int i = 0; i < len; ++i) {
@@ -464,5 +501,22 @@ double maxNorm(const unsigned int len, double* arr) {
   return res;
 }
 
+void scaleVec(double alpha, int len, double* arr) {
+  for(int i = 0; i < len; ++i) {
+    arr[i] *= alpha;
+  }//end i
+}
+
+void addVec(int len, double* out, double* other) {
+  for(int i = 0; i < len; ++i) {
+    out[i] += other[i];
+  }//end i
+}
+
+void divideVecPointwise(int len, double* out, double* other) {
+  for(int i = 0; i < len; ++i) {
+    out[i] /= other[i];
+  }//end i
+}
 
 
