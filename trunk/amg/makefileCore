@@ -13,6 +13,9 @@ all : $(EXEC)
 ./src/testAMG.o: ./src/testAMG.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
+./src/testSmoothing.o: ./src/testSmoothing.C
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+
 ./src/testEigenValue2d.o: ./src/testEigenValue2d.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
