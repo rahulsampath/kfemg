@@ -4,6 +4,8 @@
 
 #include <vector>
 
+#define __PI__ 3.1415926535897932
+
 long double myIntPow(long double base, unsigned int exponent);
 
 int getDofsPerNode(int dim, int K);
