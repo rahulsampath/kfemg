@@ -10,16 +10,6 @@
 #include "common/include/commonUtils.h"
 #include "amg/include/amgUtils.h"
 
-#define __PI__ 3.1415926535897932
-
-void suppressSmallValues(const unsigned int len, double* vec) {
-  for(int i = 0; i < len; ++i) {
-    if(softEquals(vec[i], 0.0)) {
-      vec[i] = 0.0;
-    }
-  }//end i
-}
-
 double computeLambda(const unsigned int K, const unsigned int Ny, const unsigned int Nx,
     double* inArr, double* outArr) {
   const unsigned int dofsPerNode = (K + 1)*(K + 1);

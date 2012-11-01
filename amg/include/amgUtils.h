@@ -10,6 +10,8 @@ struct MyMatrix {
   std::vector<std::vector<long double> > vals;
 };
 
+void suppressSmallValues(const unsigned int len, double* vec);
+
 void applyBlockJacobi(double alpha, MyMatrix* myMat, double* diag, const unsigned int dofsPerNode,
     const unsigned int dofId, int len, double* in, double* out);
 
