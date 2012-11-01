@@ -10,16 +10,6 @@
 #include "common/include/commonUtils.h"
 #include "amg/include/amgUtils.h"
 
-#define __PI__ 3.1415926535897932
-
-void suppressSmallValues(const unsigned int len, double* vec) {
-  for(int i = 0; i < len; ++i) {
-    if(softEquals(vec[i], 0.0)) {
-      vec[i] = 0.0;
-    }
-  }//end i
-}
-
 void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
     const unsigned int K, const unsigned int Nx, double* inArr) {
   for(int i = 0; i < ((K + 1)*Nx); ++i) {
