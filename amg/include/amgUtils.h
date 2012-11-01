@@ -10,6 +10,17 @@ struct MyMatrix {
   std::vector<std::vector<long double> > vals;
 };
 
+void applyBlockJacobi(double alpha, MyMatrix* myMat, double* diag, const unsigned int dofsPerNode,
+    const unsigned int dofId, int len, double* in, double* out);
+
+void applyJacobi(double alpha, MyMatrix* myMat, double* diag, int len, double* in, double* out);
+
+void divideVecPointwise(int len, double* out, double* other); 
+
+void addVec(int len, double* out, double* other);
+
+void scaleVec(double alpha, int len, double* arr);
+
 double maxNorm(const unsigned int len, double* arr);
 
 void zeroBoundaries(double* arr, const unsigned int K, const unsigned int dim,
@@ -33,6 +44,11 @@ void myMatVecPrivate(MyMatrix* myMat, const unsigned int len, double* in, double
 
 void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int dofId, 
     const unsigned int len, double* in, double* out);
+
+void getDiagonal(MyMatrix* myMat, const unsigned int len, double* diag);
+
+void extractBlock(const unsigned int dofsPerNode, const unsigned int dofId,
+    const unsigned int len, double* arr);
 
 int myGetRow(ML_Operator* data, int N_requested_rows, int requested_rows[],
     int allocated_space, int columns[], double values[], int row_lengths[]);
