@@ -98,7 +98,8 @@ int main(int argc, char *argv[]) {
   double norm = maxNorm(vecLen, inArr);
   std::cout<<"Initial maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
 
-  for(int iter = 0; iter < maxIters; ++iter) {
+  int iter = 0;
+  for(; iter < maxIters; ++iter) {
     double* inPtr;
     double* outPtr;
     if((iter%2) == 0) {
@@ -115,7 +116,11 @@ int main(int argc, char *argv[]) {
     }
     norm = maxNorm(vecLen, outPtr);
     std::cout<<"Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+    if(norm < 1.0e-5) {
+      break;
+    }
   }//end iter
+  std::cout<<"Total Num Iters = "<<iter<<std::endl;
 
   delete [] inArr;
   delete [] outArr;
