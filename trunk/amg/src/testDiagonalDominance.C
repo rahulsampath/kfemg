@@ -56,24 +56,33 @@ int main(int argc, char *argv[]) {
 
   if(chkBlocked) {
     for(int i = 0; i < vecLen; ++i) {
+      double sum = 0.0;
       for(int j = 0; j < ((myMat.nzCols)[i]).size(); ++j) {
         unsigned int col = (myMat.nzCols)[i][j];
-        if((i%dofsPerNode) == (col%dofsPerNode)) {
-          if(diag[i] < fabs((myMat.vals)[i][j])) {
-            std::cout<<"Diag = "<<(diag[i])<<" Other = "<<((myMat.vals)[i][j])<<std::endl;
-            assert(false);
+        if(col != i) {
+          if((i%dofsPerNode) == (col%dofsPerNode)) {
+            sum += fabs((myMat.vals)[i][j]);
           }
         }
       }//end j
+      if(diag[i] < sum) {
+        std::cout<<"Diag = "<<(diag[i])<<" sum = "<<sum<<std::endl;
+        assert(false);
+      }
     }//end i
   } else {
     for(int i = 0; i < vecLen; ++i) {
-      for(int j = 0; j < (myMat.vals)[i].size(); ++j) {
-        if(diag[i] < fabs((myMat.vals)[i][j])) {
-          std::cout<<"Diag = "<<(diag[i])<<" Other = "<<((myMat.vals)[i][j])<<std::endl;
-          assert(false);
+      double sum = 0.0;
+      for(int j = 0; j < ((myMat.nzCols)[i]).size(); ++j) {
+        unsigned int col = (myMat.nzCols)[i][j];
+        if(col != i) {
+          sum += fabs((myMat.vals)[i][j]);
         }
       }//end j
+      if(diag[i] < sum) {
+        std::cout<<"Diag = "<<(diag[i])<<" sum = "<<sum<<std::endl;
+        assert(false);
+      }
     }//end i
   }
 
