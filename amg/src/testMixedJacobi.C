@@ -35,24 +35,25 @@ void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  if(argc <= 3) {
-    std::cout<<"USAGE: <exe> Nx maxIters wNum"<<std::endl;
+  if(argc <= 4) {
+    std::cout<<"USAGE: <exe> K Nx maxIters wNum"<<std::endl;
     assert(false);
   }
   const unsigned int dim = 1; 
   std::cout<<"Dim = "<<dim<<std::endl;
 
-  const unsigned int K = 4;
+  const unsigned int K = atoi(argv[1]);
+  assert((K == 4) || (K == 6));
   std::cout<<"K = "<<K<<std::endl;
 
-  const unsigned int Nx = atoi(argv[1]); 
+  const unsigned int Nx = atoi(argv[2]); 
   assert(Nx > 1);
   std::cout<<"Nx = "<<Nx<<std::endl;
 
-  const unsigned int maxIters = atoi(argv[2]);
+  const unsigned int maxIters = atoi(argv[3]);
   std::cout<<"MaxIters = "<<maxIters<<std::endl;
 
-  const unsigned int wNum = atoi(argv[3]);
+  const unsigned int wNum = atoi(argv[4]);
   std::cout<<"wNum = "<<wNum<<std::endl;
   assert(wNum < Nx);
 
@@ -90,6 +91,14 @@ int main(int argc, char *argv[]) {
 
   double norm = maxNorm(vecLen, inArr);
   std::cout<<"Initial maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+  double prevNorm = norm;
+
+  double dampFac;
+  if(K == 4) {
+    dampFac = 0.333*0.3333*0.333;
+  } else {
+    dampFac = 0.3333*0.3333*0.3333*0.3333*0.3333*0.3333*0.3333;
+  }
 
   int iter = 0;
   for(; iter < maxIters; ++iter) {
@@ -102,20 +111,52 @@ int main(int argc, char *argv[]) {
       inPtr = outArr;
       outPtr = inArr;
     }
-    applyBlockJacobi(0.7, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
-    norm = maxNorm(vecLen, outPtr);
-    std::cout<<"Step 1: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+    if(K == 4) {
+      applyBlockJacobi(1.0, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
+      norm = maxNorm(vecLen, outPtr);
+      std::cout<<"Step 1: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
 
-    applyBlockJacobi(3.0, &myMat, diag, dofsPerNode, wDof, vecLen, outPtr, inPtr);
-    norm = maxNorm(vecLen, inPtr);
-    std::cout<<"Step 2: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+      applyBlockJacobi(3.0, &myMat, diag, dofsPerNode, wDof, vecLen, outPtr, inPtr);
+      norm = maxNorm(vecLen, inPtr);
+      std::cout<<"Step 2: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
 
-    applyBlockJacobi(1.0, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
-    norm = maxNorm(vecLen, outPtr);
-    std::cout<<"Step 3: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+      applyBlockJacobi(0.7, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
+      norm = maxNorm(vecLen, outPtr);
+      std::cout<<"Step 3: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+    } else {
+      applyBlockJacobi(1.0, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
+      norm = maxNorm(vecLen, outPtr);
+      std::cout<<"Step 1: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+
+      applyBlockJacobi(4.6666666669, &myMat, diag, dofsPerNode, wDof, vecLen, outPtr, inPtr);
+      norm = maxNorm(vecLen, inPtr);
+      std::cout<<"Step 2: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+
+      applyBlockJacobi(0.6, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
+      norm = maxNorm(vecLen, outPtr);
+      std::cout<<"Step 3: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+
+      applyBlockJacobi(1.43, &myMat, diag, dofsPerNode, wDof, vecLen, outPtr, inPtr);
+      norm = maxNorm(vecLen, inPtr);
+      std::cout<<"Step 4: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+
+      applyBlockJacobi(2.3, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
+      norm = maxNorm(vecLen, outPtr);
+      std::cout<<"Step 5: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+
+      applyBlockJacobi(3.649, &myMat, diag, dofsPerNode, wDof, vecLen, outPtr, inPtr);
+      norm = maxNorm(vecLen, inPtr);
+      std::cout<<"Step 6: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+
+      applyBlockJacobi(0.6, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
+      norm = maxNorm(vecLen, outPtr);
+      std::cout<<"Step 7: Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+    }
 
     norm = maxNorm(vecLen, outPtr);
-    std::cout<<"Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+    std::cout<<"Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<" ideal = "<<(dampFac*prevNorm)<<std::endl;
+
+    prevNorm *= dampFac;
 
     if(norm < 1.0e-12) {
       break;
