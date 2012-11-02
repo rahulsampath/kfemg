@@ -12,8 +12,8 @@
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  if(argc <= 2) {
-    std::cout<<"USAGE: <exe> K Nx"<<std::endl;
+  if(argc <= 3) {
+    std::cout<<"USAGE: <exe> K Nx chkBlocked"<<std::endl;
     assert(false);
   }
   const unsigned int dim = 1; 
@@ -25,6 +25,9 @@ int main(int argc, char *argv[]) {
   const unsigned int Nx = atoi(argv[2]); 
   assert(Nx > 1);
   std::cout<<"Nx = "<<Nx<<std::endl;
+
+  bool chkBlocked = atoi(argv[3]);
+  std::cout<<"chkBlocked = "<<chkBlocked<<std::endl;
 
   const unsigned int Ny = 1; 
   const unsigned int Nz = 1; 
@@ -51,14 +54,28 @@ int main(int argc, char *argv[]) {
 
   getDiagonal(&myMat, vecLen, diag);
 
-  for(int i = 0; i < vecLen; ++i) {
-    for(int j = 0; j < (myMat.vals)[i].size(); ++j) {
-      if(diag[i] < fabs((myMat.vals)[i][j])) {
-        std::cout<<"Diag = "<<(diag[i])<<" Other = "<<((myMat.vals)[i][j])<<std::endl;
-        assert(false);
-      }
-    }//end j
-  }//end i
+  if(chkBlocked) {
+    for(int i = 0; i < vecLen; ++i) {
+      for(int j = 0; j < ((myMat.nzCols)[i]).size(); ++j) {
+        unsigned int col = (myMat.nzCols)[i][j];
+        if((i%dofsPerNode) == (col%dofsPerNode)) {
+          if(diag[i] < fabs((myMat.vals)[i][j])) {
+            std::cout<<"Diag = "<<(diag[i])<<" Other = "<<((myMat.vals)[i][j])<<std::endl;
+            assert(false);
+          }
+        }
+      }//end j
+    }//end i
+  } else {
+    for(int i = 0; i < vecLen; ++i) {
+      for(int j = 0; j < (myMat.vals)[i].size(); ++j) {
+        if(diag[i] < fabs((myMat.vals)[i][j])) {
+          std::cout<<"Diag = "<<(diag[i])<<" Other = "<<((myMat.vals)[i][j])<<std::endl;
+          assert(false);
+        }
+      }//end j
+    }//end i
+  }
 
   std::cout<<"Pass!"<<std::endl;
 
