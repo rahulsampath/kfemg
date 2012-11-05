@@ -3,7 +3,7 @@ INCLUDE = -I.. ${ML_INCLUDE_DIRS}
 
 LIBS = -L../common/lib -lcommon ${ML_LIBRARY_DIRS} ${ML_LIBRARIES} ${ML_TPL_LIBRARIES}
 
-EXEC = bin/testMixedJacobi bin/testAlgo1 bin/testDiagonalDominance bin/testSmoothing bin/testEigenValue2d bin/testEigenValue1d bin/testAMG
+EXEC = bin/testAlgo2 bin/testMixedJacobi bin/testAlgo1 bin/testDiagonalDominance bin/testSmoothing bin/testEigenValue2d bin/testEigenValue1d bin/testAMG
 
 all : $(EXEC)
 
@@ -11,6 +11,9 @@ all : $(EXEC)
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 ./src/testAMG.o: ./src/testAMG.C
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+
+./src/testAlgo2.o: ./src/testAlgo2.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 ./src/testMixedJacobi.o: ./src/testMixedJacobi.C
@@ -32,6 +35,9 @@ all : $(EXEC)
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 bin/testAMG : ./src/testAMG.o ./src/amgUtils.o 
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
+
+bin/testAlgo2 : ./src/testAlgo2.o ./src/amgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 bin/testMixedJacobi : ./src/testMixedJacobi.o ./src/amgUtils.o 
