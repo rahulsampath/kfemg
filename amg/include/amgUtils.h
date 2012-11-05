@@ -44,8 +44,8 @@ int myMatVec(ML_Operator* data, int in_length, double in[], int out_length, doub
 
 void myMatVecPrivate(MyMatrix* myMat, const unsigned int len, double* in, double* out);
 
-void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int dofId, 
-    const unsigned int len, double* in, double* out);
+void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int inDofId, 
+    const unsigned int outDofId, const unsigned int len, double* in, double* out);
 
 void getDiagonal(MyMatrix* myMat, const unsigned int len, double* diag);
 

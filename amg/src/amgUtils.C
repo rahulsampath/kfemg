@@ -13,7 +13,7 @@
 
 void applyBlockJacobi(double alpha, MyMatrix* myMat, double* diag, const unsigned int dofsPerNode,
     const unsigned int dofId, int len, double* in, double* out) {
-  myBlockMatVec(myMat, dofsPerNode, dofId, len, in, out);
+  myBlockMatVec(myMat, dofsPerNode, dofId, dofId, len, in, out);
   divideVecPointwise(len, out, diag); 
   scaleVec((-alpha), len, out);
   addVec(len, out, in);
@@ -51,14 +51,14 @@ void extractBlock(const unsigned int dofsPerNode, const unsigned int dofId,
   }//end for i
 }
 
-void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int dofId, 
-    const unsigned int len, double* in, double* out) {
+void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int inDofId, 
+    const unsigned int outDofId, const unsigned int len, double* in, double* out) {
   for(int i = 0; i < len; ++i) {
     out[i] = 0.0;
-    if((i%dofsPerNode) == dofId) {
+    if((i%dofsPerNode) == outDofId) {
       for(size_t j = 0; j < ((myMat->nzCols)[i]).size(); ++j) {
         unsigned int col = (myMat->nzCols)[i][j];
-        if((col%dofsPerNode) == dofId) {
+        if((col%dofsPerNode) == inDofId) {
           out[i] += ( ((myMat->vals)[i][j]) * (in[col]) );
         }
       }//end for j
