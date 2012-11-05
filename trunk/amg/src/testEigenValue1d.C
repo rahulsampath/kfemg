@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
       //std::cout<<"Output Vector: "<<std::endl;
       //printVector(vecLen, outArr);
 
-      myBlockMatVec(&myMat, dofsPerNode, wDof, vecLen, inArr, blkOutArr);
+      myBlockMatVec(&myMat, dofsPerNode, wDof, wDof, vecLen, inArr, blkOutArr);
       suppressSmallValues(vecLen, blkOutArr); 
 
       //std::cout<<"Block Output Vector: "<<std::endl;
