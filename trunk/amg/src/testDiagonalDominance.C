@@ -75,11 +75,18 @@ int main(int argc, char *argv[]) {
       double sum = 0.0;
       for(int j = 0; j < ((myMat.nzCols)[i]).size(); ++j) {
         unsigned int col = (myMat.nzCols)[i][j];
-        if(col != i) {
+        if((col%dofsPerNode) > (i%dofsPerNode)) {
           sum += fabs((myMat.vals)[i][j]);
+        }
+        if(diag[i] < fabs((myMat.vals)[i][j])) {
+          std::cout<<"Failing for i = "<<i<<" iDof = "<<(i%dofsPerNode)
+            <<" col = "<<col<<" cDof = "<<(col%dofsPerNode)<<std::endl;
+          std::cout<<"Diag = "<<(diag[i])<<" oth = "<<((myMat.vals)[i][j])<<std::endl;
+          assert((i%dofsPerNode) > (col%dofsPerNode));
         }
       }//end j
       if(diag[i] < sum) {
+        std::cout<<"Failing for i = "<<i<<" dof = "<<(i%dofsPerNode)<<std::endl;
         std::cout<<"Diag = "<<(diag[i])<<" sum = "<<sum<<std::endl;
         assert(false);
       }
