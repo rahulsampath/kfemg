@@ -35,36 +35,22 @@ void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  if(argc <= 7) {
-    std::cout<<"USAGE: <exe> useBlocked K Nx maxIters alpha wNum wDof"<<std::endl;
+  if(argc <= 3) {
+    std::cout<<"USAGE: <exe> K Nx maxAlpha"<<std::endl;
     assert(false);
   }
   const unsigned int dim = 1; 
   std::cout<<"Dim = "<<dim<<std::endl;
 
-  bool useBlocked = atoi(argv[1]);
-  std::cout<<"UseBlocked = "<<useBlocked<<std::endl;
-
-  const unsigned int K = atoi(argv[2]);
+  const unsigned int K = atoi(argv[1]);
   std::cout<<"K = "<<K<<std::endl;
 
-  const unsigned int Nx = atoi(argv[3]); 
+  const unsigned int Nx = atoi(argv[2]); 
   assert(Nx > 1);
   std::cout<<"Nx = "<<Nx<<std::endl;
 
-  const unsigned int maxIters = atoi(argv[4]);
-  std::cout<<"MaxIters = "<<maxIters<<std::endl;
-
-  const double alpha = atof(argv[5]);
-  std::cout<<"alpha = "<<alpha<<std::endl;
-
-  const unsigned int wNum = atoi(argv[6]);
-  std::cout<<"wNum = "<<wNum<<std::endl;
-  assert(wNum < Nx);
-
-  const unsigned int wDof = atoi(argv[7]);
-  std::cout<<"wDof = "<<wDof<<std::endl;
-  assert(wDof <= K);
+  const double maxAlpha = atof(argv[3]);
+  std::cout<<"maxAlpha = "<<maxAlpha<<std::endl;
 
   const unsigned int Ny = 1; 
   const unsigned int Nz = 1; 
@@ -94,34 +80,20 @@ int main(int argc, char *argv[]) {
   //getDiagonal(&myMat, vecLen, diag);
   getMaxAbsRow(&myMat, vecLen, diag);
 
-  setInputVector(wNum, wDof, K, Nx, inArr);
-
-  double norm = maxNorm(vecLen, inArr);
-  std::cout<<"Initial maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
-
-  int iter = 0;
-  for(; iter < maxIters; ++iter) {
-    double* inPtr;
-    double* outPtr;
-    if((iter%2) == 0) {
-      inPtr = inArr;
-      outPtr = outArr;
-    } else {
-      inPtr = outArr;
-      outPtr = inArr;
-    }
-    if(useBlocked) {
-      applyBlockJacobi(alpha, &myMat, diag, dofsPerNode, wDof, vecLen, inPtr, outPtr);
-    } else {
-      applyJacobi(alpha, &myMat, diag, vecLen, inPtr, outPtr);
-    }
-    norm = maxNorm(vecLen, outPtr);
-    std::cout<<"Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
-    if(norm < 1.0e-12) {
-      break;
-    }
-  }//end iter
-  std::cout<<"Total Num Iters = "<<iter<<std::endl;
+  for(double alpha = 0.1; alpha <= maxAlpha; alpha += 0.1) {
+    std::cout<<"alpha = "<<alpha<<std::endl;
+    for(int wDof = 0; wDof <= K; ++wDof) {
+      std::cout<<"wDof = "<<wDof<<std::endl;
+      for(int wNum = 0; wNum < Nx; ++wNum) {
+        setInputVector(wNum, wDof, K, Nx, inArr);
+        applyJacobi(alpha, &myMat, diag, vecLen, inArr, outArr);
+        double norm = maxNorm(vecLen, outArr);
+        std::cout<<"wNum = "<<wNum<<" : factor = "<<std::setprecision(13)<<norm<<std::endl;
+      }//end wNum
+      std::cout<<std::endl;
+    }//end wDof
+    std::cout<<std::endl;
+  }//end alpha
 
   delete [] inArr;
   delete [] outArr;
