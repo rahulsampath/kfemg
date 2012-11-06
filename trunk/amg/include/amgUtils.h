@@ -28,6 +28,10 @@ double maxNorm(const unsigned int len, double* arr);
 void zeroBoundaries(double* arr, const unsigned int K, const unsigned int dim,
     const int Nz, const int Ny, const int Nx);
 
+void getDiagonal(MyMatrix* myMat, const unsigned int len, double* diag);
+
+void getMaxAbsRow(MyMatrix* myMat, const unsigned int len, double* diag);
+
 void printMatrix(MyMatrix & myMat);
 
 void getNeighbors(std::vector<int> & nh, int zi, int yi, int xi, int Nz, int Ny, int Nx);
@@ -46,8 +50,6 @@ void myMatVecPrivate(MyMatrix* myMat, const unsigned int len, double* in, double
 
 void myBlockMatVec(MyMatrix* myMat, const unsigned int dofsPerNode, const unsigned int inDofId, 
     const unsigned int outDofId, const unsigned int len, double* in, double* out);
-
-void getDiagonal(MyMatrix* myMat, const unsigned int len, double* diag);
 
 void extractBlock(const unsigned int dofsPerNode, const unsigned int dofId,
     const unsigned int len, double* arr);
