@@ -79,9 +79,19 @@ int main(int argc, char *argv[]) {
 
   MyMatrix myMat;
   assembleMatrix(myMat, elemMat, K, dim, Nz, Ny, Nx);
+  const unsigned int vecLen = (myMat.vals).size();
+  /*
+     for(int r = 0; r < vecLen; ++r) {
+     int rDof = (r%dofsPerNode);
+     for(int j = 0; j < ((myMat.nzCols)[r]).size(); ++j) {
+     int col = myMat.nzCols[r][j];
+     int cDof = (col%dofsPerNode);
+     myMat.vals[r][j] *= myIntPow((0.5*hx), (rDof + cDof));
+     }//end j
+     }//end r
+     */
   dirichletMatrixCorrection(myMat, K, dim, Nz, Ny, Nx);
 
-  const unsigned int vecLen = (myMat.vals).size();
   double* inArr = new double[vecLen];
   double* outArr = new double[vecLen];
   double* diag = new double[vecLen];
@@ -110,15 +120,17 @@ int main(int argc, char *argv[]) {
       outPtr[i] = 0.0;
     }//end i
 
+    int step = 0;
     for(int r = 0; r <= K; ++r) {
       for(int c = 0; c <= K; ++c) {
+        double fac = 1.0;
         if(c < r) {
           myBlockMatVec(&myMat, dofsPerNode, c, r, vecLen, outPtr, tmp);
         } else {
           myBlockMatVec(&myMat, dofsPerNode, c, r, vecLen, inPtr, tmp);
         }
         for(int i = 0; i < Nx; ++i) {
-          outPtr[(i*dofsPerNode) + r] += tmp[(i*dofsPerNode) + r];
+          outPtr[(i*dofsPerNode) + r] += (tmp[(i*dofsPerNode) + r]*fac);
         }//end i
       }//end c
       double alpha;
@@ -136,6 +148,9 @@ int main(int argc, char *argv[]) {
       for(int i = 0; i < Nx; ++i) {
         outPtr[(i*dofsPerNode) + r] = inPtr[(i*dofsPerNode) + r] - (outPtr[(i*dofsPerNode) + r]*alpha/diag[(i*dofsPerNode) + r]) ;
       }//end i
+      norm = maxNorm(vecLen, outPtr);
+      std::cout<<"Step "<<step<<" Iter = "<<(iter + 1)<<" maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+      ++step;
     }//end r
 
     norm = maxNorm(vecLen, outPtr);
