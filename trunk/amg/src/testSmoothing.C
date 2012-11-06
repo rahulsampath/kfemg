@@ -91,7 +91,8 @@ int main(int argc, char *argv[]) {
   double* outArr = new double[vecLen];
   double* diag = new double[vecLen];
 
-  getDiagonal(&myMat, vecLen, diag);
+  //getDiagonal(&myMat, vecLen, diag);
+  getMaxAbsRow(&myMat, vecLen, diag);
 
   setInputVector(wNum, wDof, K, Nx, inArr);
 
