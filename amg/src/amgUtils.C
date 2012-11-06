@@ -42,6 +42,22 @@ void getDiagonal(MyMatrix* myMat, const unsigned int len, double* diag) {
   }//end for i
 }
 
+void getMaxAbsRow(MyMatrix* myMat, const unsigned int len, double* diag) {
+  for(int i = 0; i < len; ++i) {
+    double val = 0.0; 
+    for(int j = 0; j < ((myMat->vals)[i]).size(); ++j) {
+      if(val < fabs((myMat->vals)[i][j])) {
+        val = fabs((myMat->vals)[i][j]);
+      }
+    }//end for j
+    diag[i] = val;
+    if(diag[i] < 1.0e-12) {
+      std::cout<<"diag val = "<<(diag[i])<<std::endl;
+      assert(false);
+    }
+  }//end for i
+}
+
 void extractBlock(const unsigned int dofsPerNode, const unsigned int dofId,
     const unsigned int len, double* arr) {
   for(int i = 0; i < len; ++i) {
