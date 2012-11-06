@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
         setInputVector(wNum, wDof, K, Nx, inArr);
         applyJacobi(alpha, &myMat, diag, vecLen, inArr, outArr);
         double norm = maxNorm(vecLen, outArr);
-        if( (norm >= 0.99) || (norm <= 0.01) ) {
+        if( (norm >= 0.99) || (norm <= 0.1) ) {
           std::cout<<"wNum = "<<wNum<<" : factor = "<<std::setprecision(13)<<norm<<std::endl;
         }
       }//end wNum
