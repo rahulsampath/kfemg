@@ -47,9 +47,19 @@ int main(int argc, char *argv[]) {
 
   MyMatrix myMat;
   assembleMatrix(myMat, elemMat, K, dim, Nz, Ny, Nx);
+  const unsigned int vecLen = (myMat.vals).size();
+  /*
+  for(int r = 0; r < vecLen; ++r) {
+    int rDof = (r%dofsPerNode);
+    for(int j = 0; j < ((myMat.nzCols)[r]).size(); ++j) {
+      int col = myMat.nzCols[r][j];
+      int cDof = (col%dofsPerNode);
+      myMat.vals[r][j] *= myIntPow((0.5*hx), (rDof + cDof));
+    }//end j
+  }//end r
+  */
   dirichletMatrixCorrection(myMat, K, dim, Nz, Ny, Nx);
 
-  const unsigned int vecLen = (myMat.vals).size();
   double* diag = new double[vecLen];
 
   getDiagonal(&myMat, vecLen, diag);
