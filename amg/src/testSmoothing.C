@@ -86,9 +86,10 @@ int main(int argc, char *argv[]) {
       std::cout<<"wDof = "<<wDof<<std::endl;
       for(int wNum = 0; wNum < Nx; ++wNum) {
         setInputVector(wNum, wDof, K, Nx, inArr);
-        applyJacobi(alpha, &myMat, diag, vecLen, inArr, outArr);
+        // applyJacobi(alpha, &myMat, diag, vecLen, inArr, outArr);
+        applyBlockJacobi(alpha, &myMat, diag, dofsPerNode, wDof, vecLen, inArr, outArr);
         double norm = maxNorm(vecLen, outArr);
-        if( (norm >= 0.99) || (norm <= 0.1) ) {
+        if( (norm >= 0.99) || (norm <= 0.4) ) {
           std::cout<<"wNum = "<<wNum<<" : factor = "<<std::setprecision(13)<<norm<<std::endl;
         }
       }//end wNum
