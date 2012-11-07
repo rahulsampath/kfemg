@@ -10,6 +10,14 @@
 #include <cassert>
 #endif
 
+void suppressSmallValues(const unsigned int len, double* vec) {
+  for(int i = 0; i < len; ++i) {
+    if(softEquals(vec[i], 0.0)) {
+      vec[i] = 0.0;
+    }
+  }//end i
+}
+
 void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorialsList,
     unsigned int K, std::vector<long long int> & coeffs, long double hz, long double hy, long double hx,
     std::vector<std::vector<long double> >& mat, bool print) {

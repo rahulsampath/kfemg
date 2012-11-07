@@ -1,0 +1,9 @@
+-dim 1
+-K 0
+-wNum 0
+-wDof 0
+-finestNx 9
+-maxNumLevels 2
+-maxCoarseNpes 1
+
+

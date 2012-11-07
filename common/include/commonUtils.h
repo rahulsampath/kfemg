@@ -6,6 +6,8 @@
 
 #define __PI__ 3.1415926535897932
 
+void suppressSmallValues(const unsigned int len, double* vec);
+
 long double myIntPow(long double base, unsigned int exponent);
 
 int getDofsPerNode(int dim, int K);

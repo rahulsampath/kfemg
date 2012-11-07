@@ -1511,6 +1511,8 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
     std::cout<<"MaxNumLevels = "<<maxNumLevels<<std::endl;
   }
 
+  const unsigned int minGridSize = 9;
+
   Nx.clear();
   Ny.clear();
   Nz.clear();
@@ -1524,18 +1526,18 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
     if(dim > 2) {
       Nz.insert(Nz.begin(), currNz);
     }
-    if( (currNx < 17) || ((currNx%2) == 0) ) {
+    if( (currNx < minGridSize) || ((currNx%2) == 0) ) {
       break;
     }
     currNx = 1 + ((currNx - 1)/2); 
     if(dim > 1) {
-      if( (currNy < 17) || ((currNy%2) == 0) ) {
+      if( (currNy < minGridSize) || ((currNy%2) == 0) ) {
         break;
       }
       currNy = 1 + ((currNy - 1)/2); 
     }
     if(dim > 2) {
-      if( (currNz < 17) || ((currNz%2) == 0) ) {
+      if( (currNz < minGridSize) || ((currNz%2) == 0) ) {
         break;
       }
       currNz = 1 + ((currNz - 1)/2); 

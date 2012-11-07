@@ -3,15 +3,22 @@ INCLUDE = -I.. ${PETSC_INCLUDE}
 
 LIBS = -L../common/lib -lcommon ${PETSC_LIB}
 
-EXEC = bin/testGMG 
+EXEC =  bin/testCoarseGridCorrection
+# bin/testGMG 
 
 all : $(EXEC)
 
 ./src/gmgUtils.o: ./src/gmgUtils.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
+./src/testCoarseGridCorrection.o: ./src/testCoarseGridCorrection.C
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+
 ./src/testGMG.o: ./src/testGMG.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+
+bin/testCoarseGridCorrection : ./src/testCoarseGridCorrection.o ./src/gmgUtils.o 
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 bin/testGMG : ./src/testGMG.o ./src/gmgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 

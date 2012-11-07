@@ -538,12 +538,4 @@ void divideVecPointwise(int len, double* out, double* other) {
   }//end i
 }
 
-void suppressSmallValues(const unsigned int len, double* vec) {
-  for(int i = 0; i < len; ++i) {
-    if(softEquals(vec[i], 0.0)) {
-      vec[i] = 0.0;
-    }
-  }//end i
-}
-
 
