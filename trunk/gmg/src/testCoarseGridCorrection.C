@@ -20,6 +20,17 @@ PetscLogEvent elemKmatEvent;
 PetscLogEvent dirichletMatCorrectionEvent;
 PetscLogEvent vCycleEvent;
 
+void printVector(const unsigned int K, const unsigned int Nx, Vec in) {
+  PetscScalar* inArr;
+  VecGetArray(in, &inArr);
+  for(int i = 0, cnt = 0; i < Nx; ++i) {
+    for(int dx = 0; dx <= K; ++dx, ++cnt) {
+      std::cout<<"("<<i<<","<<dx<<") = "<<(std::setprecision(13))<<(inArr[cnt])<<std::endl;
+    }//end dx
+  }//end i
+  VecRestoreArray(in, &inArr);
+}
+
 void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
     const unsigned int K, const unsigned int Nx, Vec in) {
   PetscScalar* inArr;
@@ -146,6 +157,7 @@ int main(int argc, char *argv[]) {
   VecZeroEntries(rhs);
 
   setInputVector(wNum, wDof, K, finestNx, sol);
+  zeroBoundaries(da[1], sol);
 
   PetscReal norm;
   VecNorm(sol, NORM_INFINITY, &norm);
@@ -164,6 +176,8 @@ int main(int argc, char *argv[]) {
   if(print) {
     std::cout<<"Final Max Norm = "<<std::setprecision(15)<<norm<<std::endl;
   }
+
+  printVector(K, finestNx, sol);
 
   mgSol[Kmat.size() - 1] = NULL;
   mgRhs[Kmat.size() - 1] = NULL;
