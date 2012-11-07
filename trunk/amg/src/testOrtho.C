@@ -91,18 +91,35 @@ int main(int argc, char *argv[]) {
         int cNd = 1;
         //Elem 0
         {
+          int fId = (2*j) - 2;
+          for(int g = 0; g < numGaussPts; ++g) {
+            double v = 0;
+            for(int fNd = 0; fNd < 2; ++fNd) {
+              for(int df = 0; df <= K; ++df) {
+              }//end df
+            }//end fNd
+          }//end g
         }
         //Elem 1
         {
+          int fId = (2*j) - 1;
+          for(int g = 0; g < numGaussPts; ++g) {
+          }//end g
         }
       }
       if(j < (Nxc - 1)) {
         int cNd = 0;
         //Elem 2
         {
+          int fId = (2*j);
+          for(int g = 0; g < numGaussPts; ++g) {
+          }//end g
         }
         //Elem 3
         {
+          int fId = (2*j) + 1;
+          for(int g = 0; g < numGaussPts; ++g) {
+          }//end g
         }
       }
     }//end dj
