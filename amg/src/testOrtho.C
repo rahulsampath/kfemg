@@ -49,6 +49,8 @@ int main(int argc, char *argv[]) {
   const unsigned int Nxf = atoi(argv[2]); 
   assert(Nxf > 1);
   std::cout<<"Nxf = "<<Nxf<<std::endl;
+  const unsigned int Nxc = 1 + ((Nxf - 1)/2);
+  std::cout<<"Nxc = "<<Nxc<<std::endl;
 
   const unsigned int wNum = atoi(argv[3]);
   std::cout<<"wNum = "<<wNum<<std::endl;
@@ -59,6 +61,11 @@ int main(int argc, char *argv[]) {
   assert(wDof <= K);
 
   const unsigned int dofsPerNode = K + 1;
+  unsigned int numGaussPts = (2*K) + 2;
+
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
 
   long double hxf = 1.0L/(static_cast<long double>(Nxf - 1));
   long double hxc = 2.0*hxf;
@@ -71,6 +78,35 @@ int main(int argc, char *argv[]) {
 
   double* vec = new double[Nxf*dofsPerNode];
   setInputVector(wNum, wDof, K, Nxf, vec);
+
+  for(int j = 0; j < Nxc; ++j) {
+    for(int dj = 0; dj <= K; ++dj) {
+      if(dj == 0) {
+        if((j == 0) || (j == (Nxc - 1))) {
+          continue;
+        }
+      }
+      double res = 0.0;
+      if(j > 0) {
+        int cNd = 1;
+        //Elem 0
+        {
+        }
+        //Elem 1
+        {
+        }
+      }
+      if(j < (Nxc - 1)) {
+        int cNd = 0;
+        //Elem 2
+        {
+        }
+        //Elem 3
+        {
+        }
+      }
+    }//end dj
+  }//end j
 
   delete [] vec;
 
