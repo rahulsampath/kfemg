@@ -10,6 +10,14 @@
 #include "common/include/commonUtils.h"
 #include "amg/include/amgUtils.h"
 
+void printVector(int K, int Nx, double* vec) {
+  for(int i = 0, cnt = 0; i < Nx; ++i) {
+    for(int d = 0; d <= K; ++d, ++cnt) {
+      std::cout<<"("<<i<<", "<<d<<") = "<<(std::setprecision(13))<<(vec[cnt])<<std::endl;
+    }//end d
+  }//end i
+}
+
 void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
     const unsigned int K, const unsigned int Nx, double* inArr) {
   for(int i = 0; i < ((K + 1)*Nx); ++i) {
@@ -81,17 +89,35 @@ int main(int argc, char *argv[]) {
   const unsigned int vecLen = (myMat.vals).size();
   double* inArr = new double[vecLen];
   double* outArr = new double[vecLen];
+  double* tmpArr = new double[vecLen];
   double* diag = new double[vecLen];
 
   getDiagonal(&myMat, vecLen, diag);
 
   setInputVector(wNum, wDof, K, Nx, inArr);
 
-  double norm = maxNorm(vecLen, inArr);
-  std::cout<<"Initial maxNorm = "<<std::setprecision(13)<<norm<<std::endl;
+  std::cout<<"Initial u: "<<std::endl;
+  printVector(K, Nx, inArr);
+
+  std::cout<<"-f0 = A01*u1: "<<std::endl;
+  myBlockMatVec(&myMat, dofsPerNode, 1, 0, vecLen, inArr, tmpArr);
+  printVector(K, Nx, tmpArr);
+
+  std::cout<<"r0 = A00*u0 - f0: "<<std::endl;
+  myBlockMatVec(&myMat, dofsPerNode, 0, 0, vecLen, inArr, outArr);
+  addVec(vecLen, outArr, tmpArr);
+  printVector(K, Nx, outArr);
+
+  std::cout<<"v0 = u0 - (0.6666667*inv(D0)*r0): "<<std::endl; 
+  for(int i = 0; i < Nx; ++i) {
+    outArr[(i*dofsPerNode) + 0] = inArr[(i*dofsPerNode) + 0] - (0.6666667*outArr[(i*dofsPerNode) + 0]/diag[(i*dofsPerNode) + 0]);
+  }//end i
+  printVector(K, Nx, outArr);
+
 
   delete [] inArr;
   delete [] outArr;
+  delete [] tmpArr;
   delete [] diag;
 
   MPI_Finalize();
