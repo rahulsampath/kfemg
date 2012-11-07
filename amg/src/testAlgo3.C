@@ -13,6 +13,9 @@
 void printVector(int K, int Nx, double* vec) {
   for(int i = 0, cnt = 0; i < Nx; ++i) {
     for(int d = 0; d <= K; ++d, ++cnt) {
+      for(int j = 0; j < d; ++j) {
+        std::cout<<" ";
+      }//end j
       std::cout<<"("<<i<<", "<<d<<") = "<<(std::setprecision(13))<<(vec[cnt])<<std::endl;
     }//end d
   }//end i
@@ -90,6 +93,7 @@ int main(int argc, char *argv[]) {
   double* inArr = new double[vecLen];
   double* outArr = new double[vecLen];
   double* tmpArr = new double[vecLen];
+  double* tmp2Arr = new double[vecLen];
   double* diag = new double[vecLen];
 
   getDiagonal(&myMat, vecLen, diag);
@@ -108,9 +112,24 @@ int main(int argc, char *argv[]) {
   addVec(vecLen, outArr, tmpArr);
   printVector(K, Nx, outArr);
 
-  std::cout<<"v0 = u0 - (0.6666667*inv(D0)*r0): "<<std::endl; 
+  std::cout<<"v0 = u0 - (0.7*inv(D0)*r0): "<<std::endl; 
   for(int i = 0; i < Nx; ++i) {
-    outArr[(i*dofsPerNode) + 0] = inArr[(i*dofsPerNode) + 0] - (0.6666667*outArr[(i*dofsPerNode) + 0]/diag[(i*dofsPerNode) + 0]);
+    outArr[(i*dofsPerNode) + 0] = inArr[(i*dofsPerNode) + 0] - (0.7*outArr[(i*dofsPerNode) + 0]/diag[(i*dofsPerNode) + 0]);
+  }//end i
+  printVector(K, Nx, outArr);
+
+  std::cout<<"-f1 = A10*v0: "<<std::endl;
+  myBlockMatVec(&myMat, dofsPerNode, 0, 1, vecLen, outArr, tmpArr);
+  printVector(K, Nx, tmpArr);
+
+  std::cout<<"r1 = A11*u1 - f1: "<<std::endl;
+  myBlockMatVec(&myMat, dofsPerNode, 1, 1, vecLen, inArr, tmp2Arr);
+  addVec(vecLen, tmp2Arr, tmpArr);
+  printVector(K, Nx, tmp2Arr);
+
+  std::cout<<"v1 = u1 - (0.9*inv(D1)*r1): "<<std::endl; 
+  for(int i = 0; i < Nx; ++i) {
+    outArr[(i*dofsPerNode) + 1] = inArr[(i*dofsPerNode) + 1] - (0.9*tmp2Arr[(i*dofsPerNode) + 1]/diag[(i*dofsPerNode) + 1]);
   }//end i
   printVector(K, Nx, outArr);
 
@@ -118,6 +137,7 @@ int main(int argc, char *argv[]) {
   delete [] inArr;
   delete [] outArr;
   delete [] tmpArr;
+  delete [] tmp2Arr;
   delete [] diag;
 
   MPI_Finalize();
