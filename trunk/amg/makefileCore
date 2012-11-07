@@ -3,7 +3,8 @@ INCLUDE = -I.. ${ML_INCLUDE_DIRS}
 
 LIBS = -L../common/lib -lcommon ${ML_LIBRARY_DIRS} ${ML_LIBRARIES} ${ML_TPL_LIBRARIES}
 
-EXEC = bin/testAlgo3
+EXEC = bin/testOrtho
+# bin/testAlgo3
 #bin/testSmoothing bin/testSmoothingType2 \
 #	bin/testAlgo2 bin/testMixedJacobi bin/testAlgo1 bin/testDiagonalDominance \
 	bin/testEigenValue2d bin/testEigenValue1d bin/testAMG
@@ -14,6 +15,9 @@ all : $(EXEC)
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 ./src/testAMG.o: ./src/testAMG.C
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+
+./src/testOrtho.o: ./src/testOrtho.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 ./src/testAlgo3.o: ./src/testAlgo3.C
@@ -44,6 +48,9 @@ all : $(EXEC)
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 bin/testAMG : ./src/testAMG.o ./src/amgUtils.o 
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
+
+bin/testOrtho : ./src/testOrtho.o ./src/amgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 bin/testAlgo3 : ./src/testAlgo3.o ./src/amgUtils.o 
