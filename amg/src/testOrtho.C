@@ -16,22 +16,43 @@ void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
     inArr[i] = 0.0;
   }//end i
 
-  if((waveDof == 0) && (waveNum == 0)) {
-    inArr[0] = 1.0;
-  } else if((waveDof == 0) && (waveNum == (Nx - 1))) {
-    inArr[((K + 1)*(Nx - 1))] = 1.0;
+  if(waveNum == 0) {
+    inArr[waveDof] = 1.0;
+  } else if(waveNum == (Nx - 1)) {
+    inArr[((K + 1)*(Nx - 1)) + waveDof] = 1.0;
   } else {
     for(int i = 0; i < Nx; ++i) {
       double fac = (static_cast<double>(i*waveNum))/(static_cast<double>(Nx - 1));
-      if(waveDof == 0) {
-        inArr[((K + 1)*i)] = sin(fac*__PI__);
-      } else {
-        inArr[((K + 1)*i) + waveDof] = cos(fac*__PI__);
-      }
+      inArr[((K + 1)*i) + waveDof] = sin(fac*__PI__);
     }//end i
     suppressSmallValues(((K + 1)*Nx), inArr);
   }
 }
+
+/*
+   void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
+   const unsigned int K, const unsigned int Nx, double* inArr) {
+   for(int i = 0; i < ((K + 1)*Nx); ++i) {
+   inArr[i] = 0.0;
+   }//end i
+
+   if((waveDof == 0) && (waveNum == 0)) {
+   inArr[0] = 1.0;
+   } else if((waveDof == 0) && (waveNum == (Nx - 1))) {
+   inArr[((K + 1)*(Nx - 1))] = 1.0;
+   } else {
+   for(int i = 0; i < Nx; ++i) {
+   double fac = (static_cast<double>(i*waveNum))/(static_cast<double>(Nx - 1));
+   if(waveDof == 0) {
+   inArr[((K + 1)*i)] = sin(fac*__PI__);
+   } else {
+   inArr[((K + 1)*i) + waveDof] = cos(fac*__PI__);
+   }
+   }//end i
+   suppressSmallValues(((K + 1)*Nx), inArr);
+   }
+   }
+   */
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
