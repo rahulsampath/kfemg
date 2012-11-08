@@ -62,7 +62,7 @@ void printVector(int Nx, int K, double* vec) {
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  if(argc <= 5) {
+  if(argc <= 6) {
     std::cout<<"USAGE: <exe> K Nx wDof alpha useSin print"<<std::endl;
     assert(false);
   }
