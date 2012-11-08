@@ -10,7 +10,26 @@
 #include "common/include/commonUtils.h"
 #include "amg/include/amgUtils.h"
 
-void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
+void setSinInputVector(const unsigned int waveNum, const unsigned int waveDof,
+    const unsigned int K, const unsigned int Nx, double* inArr) {
+  for(int i = 0; i < ((K + 1)*Nx); ++i) {
+    inArr[i] = 0.0;
+  }//end i
+
+  if(waveNum == 0) {
+    inArr[waveDof] = 1.0;
+  } else if(waveNum == (Nx - 1)) {
+    inArr[((K + 1)*(Nx - 1)) + waveDof] = 1.0;
+  } else {
+    for(int i = 0; i < Nx; ++i) {
+      double fac = (static_cast<double>(i*waveNum))/(static_cast<double>(Nx - 1));
+      inArr[((K + 1)*i) + waveDof] = sin(fac*__PI__);
+    }//end i
+    suppressSmallValues(((K + 1)*Nx), inArr);
+  }
+}
+
+void setCosInputVector(const unsigned int waveNum, const unsigned int waveDof,
     const unsigned int K, const unsigned int Nx, double* inArr) {
   for(int i = 0; i < ((K + 1)*Nx); ++i) {
     inArr[i] = 0.0;
@@ -35,8 +54,8 @@ void setInputVector(const unsigned int waveNum, const unsigned int waveDof,
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  if(argc <= 3) {
-    std::cout<<"USAGE: <exe> K Nx alpha"<<std::endl;
+  if(argc <= 4) {
+    std::cout<<"USAGE: <exe> K Nx alpha useSin"<<std::endl;
     assert(false);
   }
   const unsigned int dim = 1; 
@@ -51,6 +70,9 @@ int main(int argc, char *argv[]) {
 
   const double alpha = atof(argv[3]);
   std::cout<<"alpha = "<<alpha<<std::endl;
+
+  bool useSin = atoi(argv[4]);
+  std::cout<<"useSin = "<<useSin<<std::endl;
 
   const unsigned int Ny = 1; 
   const unsigned int Nz = 1; 
@@ -77,13 +99,16 @@ int main(int argc, char *argv[]) {
   double* outArr = new double[vecLen];
   double* diag = new double[vecLen];
 
-  //getDiagonal(&myMat, vecLen, diag);
-  getMaxAbsRow(&myMat, vecLen, diag);
+  getDiagonal(&myMat, vecLen, diag);
 
   for(int wDof = 0; wDof <= K; ++wDof) {
     std::cout<<"wDof = "<<wDof<<std::endl;
     for(int wNum = 0; wNum < Nx; ++wNum) {
-      setInputVector(wNum, wDof, K, Nx, inArr);
+      if(useSin) {
+      setSinInputVector(wNum, wDof, K, Nx, inArr);
+      } else {
+      setCosInputVector(wNum, wDof, K, Nx, inArr);
+      }
       // applyJacobi(alpha, &myMat, diag, vecLen, inArr, outArr);
       applyBlockJacobi(alpha, &myMat, diag, dofsPerNode, wDof, vecLen, inArr, outArr);
       double norm = maxNorm(vecLen, outArr);
