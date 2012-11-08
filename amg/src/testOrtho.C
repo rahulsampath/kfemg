@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
 
   long double hxf = 1.0L/(static_cast<long double>(Nxf - 1));
   long double hxc = 2.0*hxf;
+  std::cout<<"hxf = "<<(std::setprecision(13))<<hxf<<std::endl;
 
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
@@ -79,6 +80,7 @@ int main(int argc, char *argv[]) {
   double* vec = new double[Nxf*dofsPerNode];
   setInputVector(wNum, wDof, K, Nxf, vec);
 
+  double maxRes = 0.0;
   for(int j = 0; j < Nxc; ++j) {
     for(int dj = 0; dj <= K; ++dj) {
       if(dj == 0) {
@@ -154,8 +156,13 @@ int main(int argc, char *argv[]) {
         }
       }
       std::cout<<"("<<j<<", "<<dj<<") = "<<(std::setprecision(13))<<res<<std::endl;
+      if(maxRes < fabs(res)) {
+        maxRes = fabs(res);
+      }
     }//end dj
   }//end j
+
+  std::cout<<"maxRes = "<<(std::setprecision(13))<<maxRes<<std::endl;
 
   delete [] vec;
 
