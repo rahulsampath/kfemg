@@ -3,7 +3,7 @@ INCLUDE = -I.. ${ML_INCLUDE_DIRS}
 
 LIBS = -L../common/lib -lcommon ${ML_LIBRARY_DIRS} ${ML_LIBRARIES} ${ML_TPL_LIBRARIES}
 
-EXEC = bin/testSmoothingType2 bin/testOrtho
+EXEC = bin/testSmoothing bin/testOrtho
 # bin/testAlgo3
 #	bin/testAlgo2 bin/testMixedJacobi bin/testAlgo1 bin/testDiagonalDominance \
 	bin/testEigenValue2d bin/testEigenValue1d bin/testAMG
@@ -34,7 +34,7 @@ all : $(EXEC)
 ./src/testDiagonalDominance.o: ./src/testDiagonalDominance.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-./src/testSmoothingType2.o: ./src/testSmoothingType2.C
+./src/testSmoothing.o: ./src/testSmoothing.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 ./src/testEigenValue2d.o: ./src/testEigenValue2d.C
@@ -64,7 +64,7 @@ bin/testMixedJacobi : ./src/testMixedJacobi.o ./src/amgUtils.o
 bin/testDiagonalDominance : ./src/testDiagonalDominance.o ./src/amgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
-bin/testSmoothingType2 : ./src/testSmoothingType2.o ./src/amgUtils.o 
+bin/testSmoothing : ./src/testSmoothing.o ./src/amgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 bin/testEigenValue2d : ./src/testEigenValue2d.o ./src/amgUtils.o 
