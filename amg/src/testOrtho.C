@@ -97,6 +97,9 @@ int main(int argc, char *argv[]) {
           if((wNum == 0) || (wNum == (Nxf - 1))) {
             continue;
           }
+          if(!useSin) {
+            continue;
+          }
         }
 
         if(useSin) {
