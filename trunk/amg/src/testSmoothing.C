@@ -52,10 +52,18 @@ void setCosInputVector(const unsigned int waveNum, const unsigned int waveDof,
   }
 }
 
+void printVector(int Nx, int K, double* vec) {
+  for(int i = 0, cnt = 0; i < Nx; ++i) {
+    for(int d = 0; d <= K; ++d, ++cnt) {
+      std::cout<<" i = "<<i<<" d = "<<d<<" : "<<(std::setprecision(13))<<(vec[cnt])<<std::endl;
+    }//end d
+  }//end i
+}
+
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
   if(argc <= 5) {
-    std::cout<<"USAGE: <exe> K Nx wDof alpha useSin"<<std::endl;
+    std::cout<<"USAGE: <exe> K Nx wDof alpha useSin print"<<std::endl;
     assert(false);
   }
   const unsigned int dim = 1; 
@@ -77,6 +85,9 @@ int main(int argc, char *argv[]) {
 
   bool useSin = atoi(argv[5]);
   std::cout<<"useSin = "<<useSin<<std::endl;
+
+  bool print = atoi(argv[6]);
+  std::cout<<"print = "<<print<<std::endl;
 
   const unsigned int Ny = 1; 
   const unsigned int Nz = 1; 
@@ -112,6 +123,9 @@ int main(int argc, char *argv[]) {
       setCosInputVector(wNum, wDof, K, Nx, inArr);
     }
     applyBlockJacobi(alpha, &myMat, diag, dofsPerNode, wDof, vecLen, inArr, outArr);
+    if(print) {
+      printVector(Nx, K, outArr);
+    }
     double norm = maxNorm(vecLen, outArr);
     std::cout<<"wNum = "<<wNum<<" : factor = "<<std::setprecision(13)<<norm<<std::endl;
   }//end wNum
