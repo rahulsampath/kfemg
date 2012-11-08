@@ -126,15 +126,34 @@ int main(int argc, char *argv[]) {
         {
           int fId = (2*j);
           for(int g = 0; g < numGaussPts; ++g) {
+            double glob = coordLocalToGlobal(gPt[g], (fId*hxf), hxf);
+            double loc = coordGlobalToLocal(glob, ((j - cNd)*hxc), hxc);
+            double v = 0;
+            for(int fNd = 0; fNd < 2; ++fNd) {
+              for(int df = 0; df <= K; ++df) {
+                v += ( vec[((fId + fNd)*dofsPerNode) + df] * eval1DshFn(fNd, df, K, coeffs, gPt[g]) );
+              }//end df
+            }//end fNd
+            res += ( gWt[g] * v * eval1DshFn(cNd, dj, K, coeffs, loc) );
           }//end g
         }
         //Elem 3
         {
           int fId = (2*j) + 1;
           for(int g = 0; g < numGaussPts; ++g) {
+            double glob = coordLocalToGlobal(gPt[g], (fId*hxf), hxf);
+            double loc = coordGlobalToLocal(glob, ((j - cNd)*hxc), hxc);
+            double v = 0;
+            for(int fNd = 0; fNd < 2; ++fNd) {
+              for(int df = 0; df <= K; ++df) {
+                v += ( vec[((fId + fNd)*dofsPerNode) + df] * eval1DshFn(fNd, df, K, coeffs, gPt[g]) );
+              }//end df
+            }//end fNd
+            res += ( gWt[g] * v * eval1DshFn(cNd, dj, K, coeffs, loc) );
           }//end g
         }
       }
+      std::cout<<"("<<j<<", "<<dj<<") = "<<(std::setprecision(13))<<res<<std::endl;
     }//end dj
   }//end j
 
