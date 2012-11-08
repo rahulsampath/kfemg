@@ -54,8 +54,8 @@ void setCosInputVector(const unsigned int waveNum, const unsigned int waveDof,
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  if(argc <= 4) {
-    std::cout<<"USAGE: <exe> K Nx alpha useSin"<<std::endl;
+  if(argc <= 5) {
+    std::cout<<"USAGE: <exe> K Nx wDof alpha useSin"<<std::endl;
     assert(false);
   }
   const unsigned int dim = 1; 
@@ -68,10 +68,14 @@ int main(int argc, char *argv[]) {
   assert(Nx > 1);
   std::cout<<"Nx = "<<Nx<<std::endl;
 
-  const double alpha = atof(argv[3]);
+  const unsigned int wDof = atoi(argv[3]); 
+  assert(wDof <= K);
+  std::cout<<"wDof = "<<wDof<<std::endl;
+
+  const double alpha = atof(argv[4]);
   std::cout<<"alpha = "<<alpha<<std::endl;
 
-  bool useSin = atoi(argv[4]);
+  bool useSin = atoi(argv[5]);
   std::cout<<"useSin = "<<useSin<<std::endl;
 
   const unsigned int Ny = 1; 
@@ -101,21 +105,16 @@ int main(int argc, char *argv[]) {
 
   getDiagonal(&myMat, vecLen, diag);
 
-  for(int wDof = 0; wDof <= K; ++wDof) {
-    std::cout<<"wDof = "<<wDof<<std::endl;
-    for(int wNum = 0; wNum < Nx; ++wNum) {
-      if(useSin) {
+  for(int wNum = 0; wNum < Nx; ++wNum) {
+    if(useSin) {
       setSinInputVector(wNum, wDof, K, Nx, inArr);
-      } else {
+    } else {
       setCosInputVector(wNum, wDof, K, Nx, inArr);
-      }
-      // applyJacobi(alpha, &myMat, diag, vecLen, inArr, outArr);
-      applyBlockJacobi(alpha, &myMat, diag, dofsPerNode, wDof, vecLen, inArr, outArr);
-      double norm = maxNorm(vecLen, outArr);
-      std::cout<<"wNum = "<<wNum<<" : factor = "<<std::setprecision(13)<<norm<<std::endl;
-    }//end wNum
-    std::cout<<std::endl;
-  }//end wDof
+    }
+    applyBlockJacobi(alpha, &myMat, diag, dofsPerNode, wDof, vecLen, inArr, outArr);
+    double norm = maxNorm(vecLen, outArr);
+    std::cout<<"wNum = "<<wNum<<" : factor = "<<std::setprecision(13)<<norm<<std::endl;
+  }//end wNum
 
   delete [] inArr;
   delete [] outArr;
