@@ -3,8 +3,8 @@ INCLUDE = -I.. ${PETSC_INCLUDE}
 
 LIBS = -L../common/lib -lcommon ${PETSC_LIB}
 
-EXEC =  bin/testCoarseGridCorrection
-# bin/testGMG 
+EXEC = bin/testGMG 
+#bin/testCoarseGridCorrection
 
 all : $(EXEC)
 
