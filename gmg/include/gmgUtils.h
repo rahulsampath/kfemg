@@ -11,6 +11,8 @@
 #include <vector>
 #include "mpi.h"
 
+void mySolver(Mat A, Vec rhs, Vec sol);
+
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
 
