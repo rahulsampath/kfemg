@@ -49,15 +49,15 @@ int main(int argc, char *argv[]) {
   assembleMatrix(myMat, elemMat, K, dim, Nz, Ny, Nx);
   const unsigned int vecLen = (myMat.vals).size();
   /*
-  for(int r = 0; r < vecLen; ++r) {
-    int rDof = (r%dofsPerNode);
-    for(int j = 0; j < ((myMat.nzCols)[r]).size(); ++j) {
-      int col = myMat.nzCols[r][j];
-      int cDof = (col%dofsPerNode);
-      myMat.vals[r][j] *= myIntPow((0.5*hx), (rDof + cDof));
-    }//end j
-  }//end r
-  */
+     for(int r = 0; r < vecLen; ++r) {
+     int rDof = (r%dofsPerNode);
+     for(int j = 0; j < ((myMat.nzCols)[r]).size(); ++j) {
+     int col = myMat.nzCols[r][j];
+     int cDof = (col%dofsPerNode);
+     myMat.vals[r][j] *= myIntPow((0.5*hx), (rDof + cDof));
+     }//end j
+     }//end r
+     */
   dirichletMatrixCorrection(myMat, K, dim, Nz, Ny, Nx);
 
   double* diag = new double[vecLen];
@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
   getDiagonal(&myMat, vecLen, diag);
 
   if(chkBlocked) {
+    bool strict = false;
     for(int i = 0; i < vecLen; ++i) {
       double sum = 0.0;
       for(int j = 0; j < ((myMat.nzCols)[i]).size(); ++j) {
@@ -79,7 +80,11 @@ int main(int argc, char *argv[]) {
         std::cout<<"Diag = "<<(diag[i])<<" sum = "<<sum<<std::endl;
         assert(false);
       }
+      if(diag[i] > sum) {
+        strict = true;
+      }
     }//end i
+    assert(strict);
   } else {
     for(int i = 0; i < vecLen; ++i) {
       double sum = 0.0;
