@@ -1,12 +1,13 @@
 -dim 1
--K 3
+-useMySolver 1
+%-K 3
 -useRandomRHS true
 -finestNx 33
 -finestNy 33
 -finestNz 33
 -maxNumLevels 10
 -maxCoarseNpes 1
--maxVcycles 1
+-maxVcycles 100
 -rTol 1.0e-12
 -aTol 1.0e-12
 

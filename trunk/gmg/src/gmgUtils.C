@@ -1139,7 +1139,16 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
 #ifdef DEBUG
   assert(ksp[currLev] != NULL);
 #endif
-  KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+  int useMySolver = 1;
+  PetscOptionsGetInt(PETSC_NULL, "-useMySolver", &useMySolver, PETSC_NULL);
+  if(currLev == 0) {
+    useMySolver = 0;
+  }
+  if(useMySolver) {
+    mySolver(Kmat[currLev], mgRhs[currLev], mgSol[currLev]);
+  } else {
+    KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+  }
   if(currLev > 0) {
     computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
     applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], mgRes[currLev], mgRhs[currLev - 1]);
@@ -1151,7 +1160,11 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
     }
     applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], mgSol[currLev - 1], mgRes[currLev]);
     VecAXPY(mgSol[currLev], 1.0, mgRes[currLev]);
-    KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+    if(useMySolver) {
+      mySolver(Kmat[currLev], mgRhs[currLev], mgSol[currLev]);
+    } else {
+      KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+    }
   }
   PetscLogEventEnd(vCycleEvent, 0, 0, 0, 0);
 }
@@ -1627,6 +1640,70 @@ void destroyKSP(std::vector<KSP>& ksp) {
     }
   }//end i
   ksp.clear();
+}
+
+void mySolver(Mat A, Vec rhs, Vec sol) {
+  Vec diag;
+  Vec res;
+  VecDuplicate(sol, &diag);
+  VecDuplicate(sol, &res);
+  MatGetDiagonal(A, diag);
+  PetscInt vecSz;
+  VecGetSize(sol, &vecSz);
+
+  PetscInt K;
+  PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
+
+  PetscInt numSmooth = 2;
+  PetscOptionsGetInt(PETSC_NULL, "-numSmooth", &numSmooth, PETSC_NULL);
+
+  PetscScalar alpha;
+
+  std::vector<double> omega(K + 1);
+  if(K == 0) {
+    omega[0] = (2.0/3.0);
+  } else if(K == 1) {
+    omega[0] = (2.0/3.0);
+    omega[1] = 1.0;
+  } else if(K == 2) {
+    omega[0] = 0.8;
+    omega[1] = 1.0;
+    omega[2] = 1.0;
+  } else if(K == 3) {
+    PetscOptionsGetScalar(PETSC_NULL, "-alpha0", &alpha, PETSC_NULL);
+    omega[0] = alpha;
+    PetscOptionsGetScalar(PETSC_NULL, "-alpha1", &alpha, PETSC_NULL);
+    omega[1] = alpha;
+    PetscOptionsGetScalar(PETSC_NULL, "-alpha2", &alpha, PETSC_NULL);
+    omega[2] = alpha;
+    PetscOptionsGetScalar(PETSC_NULL, "-alpha3", &alpha, PETSC_NULL);
+    omega[3] = alpha;
+  }
+
+  PetscScalar* diagArr;
+  VecGetArray(diag, &diagArr);
+
+  PetscScalar* solArr;
+  PetscScalar* resArr;
+  for(int iter = 0; iter < numSmooth; ++iter) {
+    for(int d = 0; d <= K; ++d) {
+      computeResidual(A, sol, rhs, res);
+      VecGetArray(sol, &solArr);
+      VecGetArray(res, &resArr);
+      for(int i = 0; i < vecSz; ++i) {
+        if((i%(K + 1)) == d) {
+          solArr[i] += (omega[d]*resArr[i]/diagArr[i]);
+        }
+      }//end i
+      VecRestoreArray(sol, &solArr);
+      VecRestoreArray(res, &resArr);
+    }//end d
+  }//end iter
+
+  VecRestoreArray(diag, &diagArr);
+
+  VecDestroy(diag);
+  VecDestroy(res);
 }
 
 
