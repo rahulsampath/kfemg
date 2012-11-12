@@ -43,6 +43,9 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, bool print);
 
+void buildKdiagBlocks();
+
+void buildKupperBlocks();
 
 void computeKmat(std::vector<unsigned long long int>& factorialsList,
     Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
