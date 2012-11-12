@@ -15,7 +15,6 @@ PetscLogEvent buildPmatEvent;
 PetscLogEvent PmemEvent;
 PetscLogEvent fillPmatEvent;
 PetscLogEvent buildKmatEvent;
-PetscLogEvent buildKblocksEvent;
 PetscLogEvent KmemEvent;
 PetscLogEvent fillKmatEvent;
 PetscLogEvent elemKmatEvent;
@@ -31,7 +30,6 @@ int main(int argc, char *argv[]) {
   PetscLogEventRegister("Pmem", gmgCookie, &PmemEvent);
   PetscLogEventRegister("fillP", gmgCookie, &fillPmatEvent);
   PetscLogEventRegister("Kmat", gmgCookie, &buildKmatEvent);
-  PetscLogEventRegister("Kblk", gmgCookie, &buildKblocksEvent);
   PetscLogEventRegister("Kmem", gmgCookie, &KmemEvent);
   PetscLogEventRegister("ElemKmat", gmgCookie, &elemKmatEvent);
   PetscLogEventRegister("fillK", gmgCookie, &fillKmatEvent);
@@ -97,9 +95,6 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Kmat;
   buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K,
       partZ, partY, partX, offsets, print);
-
-  std::vector<std::vector<Mat> > Kblocks;
-  buildKblocks(Kmat, dofsPerNode, Kblocks);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
@@ -186,10 +181,6 @@ int main(int argc, char *argv[]) {
   destroyVec(tmpCvec);
 
   destroyMat(Pmat);
-
-  for(int i = 0; i < Kblocks.size(); ++i) {
-    destroyMat(Kblocks[i]);
-  }//end i
 
   destroyMat(Kmat);
 
