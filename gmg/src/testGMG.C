@@ -15,6 +15,8 @@ PetscLogEvent buildPmatEvent;
 PetscLogEvent PmemEvent;
 PetscLogEvent fillPmatEvent;
 PetscLogEvent buildKmatEvent;
+PetscLogEvent buildKblkDiagEvent;
+PetscLogEvent buildKblkUpperEvent;
 PetscLogEvent KmemEvent;
 PetscLogEvent fillKmatEvent;
 PetscLogEvent elemKmatEvent;
@@ -30,6 +32,8 @@ int main(int argc, char *argv[]) {
   PetscLogEventRegister("Pmem", gmgCookie, &PmemEvent);
   PetscLogEventRegister("fillP", gmgCookie, &fillPmatEvent);
   PetscLogEventRegister("Kmat", gmgCookie, &buildKmatEvent);
+  PetscLogEventRegister("KblkD", gmgCookie, &buildKblkDiagEvent);
+  PetscLogEventRegister("KblkU", gmgCookie, &buildKblkUpperEvent);
   PetscLogEventRegister("Kmem", gmgCookie, &KmemEvent);
   PetscLogEventRegister("ElemKmat", gmgCookie, &elemKmatEvent);
   PetscLogEventRegister("fillK", gmgCookie, &fillKmatEvent);

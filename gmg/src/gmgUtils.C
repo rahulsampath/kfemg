@@ -17,11 +17,108 @@ extern PetscLogEvent buildPmatEvent;
 extern PetscLogEvent PmemEvent;
 extern PetscLogEvent fillPmatEvent;
 extern PetscLogEvent buildKmatEvent;
+extern PetscLogEvent buildKblkDiagEvent;
+extern PetscLogEvent buildKblkUpperEvent;
 extern PetscLogEvent KmemEvent;
 extern PetscLogEvent fillKmatEvent;
 extern PetscLogEvent elemKmatEvent;
 extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
+
+void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
+    std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
+    std::vector<std::vector<int> >& offsets) {
+  PetscLogEventBegin(buildKblkDiagEvent, 0, 0, 0, 0);
+
+  int factor = 3;
+  if(dim > 1) {
+    factor *= 3;
+  }
+  if(dim > 2) {
+    factor *= 3;
+  }
+  Kblk.resize((da.size()) - 1);
+  for(int i = 1; i < (da.size()); ++i) {
+    if(da[i] != NULL) {
+      PetscInt nx, ny, nz;
+      DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
+      if(dim < 2) {
+        ny = 1;
+      }
+      if(dim < 3) {
+        nz = 1;
+      }
+      PetscInt locSz = (nx*ny*nz);
+      Kblk[i - 1].resize(dofsPerNode, NULL);
+      for(int d = 0; d < dofsPerNode; ++d) {
+        MatCreate(activeComms[i], &(Kblk[i - 1][d]));
+        MatSetSizes(Kblk[i - 1][d], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
+        MatSetType(Kblk[i - 1][d], MATAIJ);
+        if(activeNpes[i] > 1) {
+          MatMPIAIJSetPreallocation(Kblk[i - 1][d], factor, PETSC_NULL, (factor - 1), PETSC_NULL);
+        } else {
+          MatSeqAIJSetPreallocation(Kblk[i - 1][d], factor, PETSC_NULL);
+        }
+        computeKblkDiag(factorialsList, Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i], coeffs, K, d);
+        if(d == 0) {
+          dirichletMatrixCorrectionBlkDiag(Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
+        }
+      }//end d
+    }
+  }//end i
+
+  PetscLogEventEnd(buildKblkDiagEvent, 0, 0, 0, 0);
+}
+
+void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
+    std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
+    std::vector<std::vector<int> >& offsets) {
+  PetscLogEventBegin(buildKblkUpperEvent, 0, 0, 0, 0);
+
+  int factor = 3;
+  if(dim > 1) {
+    factor *= 3;
+  }
+  if(dim > 2) {
+    factor *= 3;
+  }
+  Kblk.resize((da.size()) - 1);
+  for(int i = 1; i < (da.size()); ++i) {
+    if(da[i] != NULL) {
+      PetscInt nx, ny, nz;
+      DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
+      if(dim < 2) {
+        ny = 1;
+      }
+      if(dim < 3) {
+        nz = 1;
+      }
+      PetscInt locSz = (nx*ny*nz);
+      Kblk[i - 1].resize(dofsPerNode, NULL);
+      for(int d = 0; d < dofsPerNode; ++d) {
+        MatCreate(activeComms[i], &(Kblk[i - 1][d]));
+        MatSetSizes(Kblk[i - 1][d], locSz, (locSz*(dofsPerNode - d - 1)), PETSC_DETERMINE, PETSC_DETERMINE);
+        MatSetType(Kblk[i - 1][d], MATAIJ);
+        if(activeNpes[i] > 1) {
+          MatMPIAIJSetPreallocation(Kblk[i - 1][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL,
+              ((factor - 1)*(dofsPerNode - d - 1)), PETSC_NULL);
+        } else {
+          MatSeqAIJSetPreallocation(Kblk[i - 1][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL);
+        }
+        computeKblkUpper(factorialsList, Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i], coeffs, K, d);
+        if(d == 0) {
+          dirichletMatrixCorrectionBlkUpper(Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
+        }
+      }//end d
+    }
+  }//end i
+
+  PetscLogEventEnd(buildKblkUpperEvent, 0, 0, 0, 0);
+}
 
 void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
@@ -30,6 +127,13 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<int> >& offsets, bool print) {
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
+  int factor = 3;
+  if(dim > 1) {
+    factor *= 3;
+  }
+  if(dim > 2) {
+    factor *= 3;
+  }
   Kmat.resize(da.size(), NULL);
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
@@ -46,15 +150,8 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
       MatCreate(activeComms[i], &(Kmat[i]));
       MatSetSizes(Kmat[i], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
       MatSetType(Kmat[i], MATAIJ);
-      int factor = 3;
-      if(dim > 1) {
-        factor *= 3;
-      }
-      if(dim > 2) {
-        factor *= 3;
-      }
       if(activeNpes[i] > 1) {
-        MatMPIAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL, (factor*dofsPerNode), PETSC_NULL);
+        MatMPIAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL, ((factor - 1)*dofsPerNode), PETSC_NULL);
       } else {
         MatSeqAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL);
       }
@@ -574,6 +671,16 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   PetscLogEventEnd(fillKmatEvent, 0, 0, 0, 0);
 }
 
+void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
+    Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
+}
+
+void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
+    Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
+}
+
 void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets) {
   PetscLogEventBegin(dirichletMatCorrectionEvent, 0, 0, 0, 0);
@@ -861,6 +968,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
 
   PetscLogEventEnd(dirichletMatCorrectionEvent, 0, 0, 0, 0);
+}
+
+void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+    std::vector<PetscInt>& lx, std::vector<int>& offsets) {
+}
+
+void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+    std::vector<PetscInt>& lx, std::vector<int>& offsets) {
 }
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {

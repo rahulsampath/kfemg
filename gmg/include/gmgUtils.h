@@ -43,15 +43,37 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, bool print);
 
-void buildKdiagBlocks();
+void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
+    std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
+    std::vector<std::vector<int> >& offsets);
 
-void buildKupperBlocks();
+void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
+    std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
+    std::vector<std::vector<int> >& offsets);
+
+void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
+    Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof);
+
+void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
+    Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof);
 
 void computeKmat(std::vector<unsigned long long int>& factorialsList,
     Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, bool print);
 
 void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+    std::vector<PetscInt>& lx, std::vector<int>& offsets);
+
+void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+    std::vector<PetscInt>& lx, std::vector<int>& offsets);
+
+void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets);
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed);
