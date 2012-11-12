@@ -23,34 +23,6 @@ extern PetscLogEvent elemKmatEvent;
 extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
 
-/*
-void buildKblocks(std::vector<Mat>& Kmat, int dofsPerNode, std::vector<std::vector<Mat> >& Kblocks) {
-  PetscLogEventBegin(buildKblocksEvent, 0, 0, 0, 0);
-  Kblocks.resize(Kmat.size() - 1);
-  for(int i = 0; i < Kblocks.size(); ++i) {
-    if(Kmat[i + 1] != NULL) {
-      MPI_Comm comm;
-      PetscObjectGetComm(((PetscObject)(Kmat[i + 1])), &comm);
-      PetscInt start;
-      PetscInt end;
-      MatGetOwnershipRange(Kmat[i + 1], &start, &end);
-      PetscInt blkSz = (end - start)/dofsPerNode;
-      (Kblocks[i]).resize(dofsPerNode);
-      for(int d = 0; d < dofsPerNode; ++d) {
-        IS isBlock;
-        IS isBlockAll;
-        ISCreateStride(comm, blkSz, (start + d), dofsPerNode, &isBlock);
-        ISAllGather(isBlock, &isBlockAll);
-        MatGetSubMatrix(Kmat[i + 1], isBlock, isBlockAll, blkSz, MAT_INITIAL_MATRIX, &(Kblocks[i][d]));
-        ISDestroy(isBlock);
-        ISDestroy(isBlockAll);
-      }//end d
-    }
-  }//end i
-  PetscLogEventEnd(buildKblocksEvent, 0, 0, 0, 0);
-}
-*/
-
 void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
@@ -62,9 +34,6 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       PetscLogEventBegin(KmemEvent, 0, 0, 0, 0);
-#ifdef USE_STENCIL
-      DAGetMatrix(da[i], MATAIJ, &(Kmat[i]));
-#else
       PetscInt nx, ny, nz;
       DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
       if(dim < 2) {
@@ -89,7 +58,6 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
       } else {
         MatSeqAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL);
       }
-#endif
       PetscLogEventEnd(KmemEvent, 0, 0, 0, 0);
       PetscInt sz;
       MatGetSize(Kmat[i], &sz, PETSC_NULL);
@@ -540,9 +508,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
 
   unsigned int nodesPerElem = (1 << dim);
 
-#ifdef USE_STENCIL
-  std::vector<MatStencil> indices(nodesPerElem*dofsPerNode);
-#else
   std::vector<PetscInt> indices(nodesPerElem*dofsPerNode);
 
   int rank;
@@ -555,7 +520,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   int rk = rank/(px*py);
   int rj = (rank/px)%py;
   int ri = rank%px;
-#endif
 
   MatZeroEntries(Kmat);
 
@@ -564,7 +528,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
       for(unsigned int xi = xs; xi < (xs + nxe); ++xi) {
         for(int z = 0, i = 0; z < numZnodes; ++z) {
           int vk = (zi + z);
-#ifndef USE_STENCIL
           int pk = rk;
           int vZs = zs;
           if(vk >= (zs + nz)) {
@@ -572,10 +535,8 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
             vZs += nz;
           }
           int zLoc = vk - vZs;
-#endif
           for(int y = 0; y < numYnodes; ++y) {
             int vj = (yi + y);
-#ifndef USE_STENCIL
             int pj = rj;
             int vYs = ys;
             if(vj >= (ys + ny)) {
@@ -583,10 +544,8 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
               vYs += ny;
             }
             int yLoc = vj - vYs;
-#endif
             for(int x = 0; x < numXnodes; ++x) {
               int vi = (xi + x);
-#ifndef USE_STENCIL
               int pi = ri;
               int vXs = xs;
               if(vi >= (xs + nx)) {
@@ -597,27 +556,14 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
               int pid = (((pk*py) + pj)*px) + pi;
               int loc = (((zLoc*ly[pj]) + yLoc)*lx[pi]) + xLoc;
               int idBase = ((offsets[pid] + loc)*dofsPerNode);
-#endif
               for(unsigned int d = 0; d < dofsPerNode; ++i, ++d) {
-#ifdef USE_STENCIL
-                (indices[i]).k = vk;
-                (indices[i]).j = vj;
-                (indices[i]).i = vi;
-                (indices[i]).c = d;
-#else
                 indices[i] = idBase + d;
-#endif
               }//end d
             }//end x
           }//end y
         }//end z
-#ifdef USE_STENCIL
-        MatSetValuesStencil(Kmat, (indices.size()), &(indices[0]),
-            (indices.size()), &(indices[0]), &(vals[0]), ADD_VALUES);
-#else
         MatSetValues(Kmat, (indices.size()), &(indices[0]),
             (indices.size()), &(indices[0]), &(vals[0]), ADD_VALUES);
-#endif
       }//end xi
     }//end yi
   }//end zi
@@ -687,11 +633,6 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
   PetscScalar one = 1.0;
   PetscScalar zero = 0.0;
 
-#ifdef USE_STENCIL
-  MatStencil oth;
-  MatStencil bnd;
-  bnd.c = 0;
-#else
   PetscInt oth;
   PetscInt bnd;
 
@@ -705,34 +646,17 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
   int rk = rank/(px*py);
   int rj = (rank/px)%py;
   int ri = rank%px;
-#endif
 
   //x
   for(int b = 0; b < xvec.size(); ++b) {
-#ifdef USE_STENCIL
-    bnd.i = xvec[b];
-#else
     int bXloc = xvec[b] - xs;
-#endif
     for(int zi = zs; zi < (zs + nz); ++zi) {
-#ifdef USE_STENCIL
-      bnd.k = zi;
-#else
       int bZloc = zi - zs;
-#endif
       for(int yi = ys; yi < (ys + ny); ++yi) {
-#ifdef USE_STENCIL
-        bnd.j = yi;
-#else
         int bYloc = yi - ys;
         int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
         bnd = ((offsets[rank] + bLoc)*dofsPerNode);
-#endif
         for(int k = -1; k < 2; ++k) {
-#ifdef USE_STENCIL
-          int ok = (bnd.k) + k;
-          oth.k = ok;
-#else
           int ok = zi + k;
           int pk = rk;
           int oZs = zs;
@@ -744,13 +668,8 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
             oZs += nz;
           }
           int oZloc = ok - oZs;
-#endif
           if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-#ifdef USE_STENCIL
-              int oj = (bnd.j) + j;
-              oth.j = oj;
-#else
               int oj = yi + j;
               int pj = rj;
               int oYs = ys;
@@ -762,13 +681,8 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                 oYs += ny;
               }
               int oYloc = oj - oYs;
-#endif
               if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-#ifdef USE_STENCIL
-                  int oi = (bnd.i) + i; 
-                  oth.i = oi;
-#else
                   int oi =  xvec[b] + i;
                   int pi = ri;
                   int oXs = xs;
@@ -783,28 +697,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   int oPid = (((pk*py) + pj)*px) + pi;
                   int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
                   int oBase = ((offsets[oPid] + oLoc)*dofsPerNode);
-#endif
                   if( (oi >= 0) && (oi < Nx) ) {
                     for(int d = 0; d < dofsPerNode; ++d) {
-#ifdef USE_STENCIL
-                      oth.c = d;
-#else
                       oth = oBase + d;
-#endif
                       if(k || j || i || d) {
-#ifdef USE_STENCIL
-                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                        MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-#else
                         MatSetValues(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValues(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-#endif
                       } else {
-#ifdef USE_STENCIL
-                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-#else
                         MatSetValues(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-#endif
                       }
                     }//end d
                   }
@@ -819,30 +719,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 
   //y
   for(int b = 0; b < yvec.size(); ++b) {
-#ifdef USE_STENCIL
-    bnd.j = yvec[b];
-#else
     int bYloc = yvec[b] - ys;
-#endif
     for(int zi = zs; zi < (zs + nz); ++zi) {
-#ifdef USE_STENCIL
-      bnd.k = zi;
-#else
       int bZloc = zi - zs;
-#endif
       for(int xi = xs; xi < (xs + nx); ++xi) {
-#ifdef USE_STENCIL
-        bnd.i = xi; 
-#else
         int bXloc = xi - xs;
         int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
         bnd = ((offsets[rank] + bLoc)*dofsPerNode);
-#endif
         for(int k = -1; k < 2; ++k) {
-#ifdef USE_STENCIL
-          int ok = (bnd.k) + k;
-          oth.k = ok;
-#else
           int ok = zi + k;
           int pk = rk;
           int oZs = zs;
@@ -854,13 +738,8 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
             oZs += nz;
           }
           int oZloc = ok - oZs;
-#endif
           if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-#ifdef USE_STENCIL
-              int oj = (bnd.j) + j;
-              oth.j = oj;
-#else
               int oj = yvec[b] + j;
               int pj = rj;
               int oYs = ys;
@@ -872,13 +751,8 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                 oYs += ny;
               }
               int oYloc = oj - oYs;
-#endif
               if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-#ifdef USE_STENCIL
-                  int oi = (bnd.i) + i;
-                  oth.i = oi;
-#else
                   int oi = xi + i;
                   int pi = ri;
                   int oXs = xs;
@@ -893,28 +767,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   int oPid = (((pk*py) + pj)*px) + pi;
                   int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
                   int oBase = ((offsets[oPid] + oLoc)*dofsPerNode);
-#endif
                   if( (oi >= 0) && (oi < Nx) ) {
                     for(int d = 0; d < dofsPerNode; ++d) {
-#ifdef USE_STENCIL
-                      oth.c = d;
-#else
                       oth = oBase + d;
-#endif
                       if(k || j || i || d) {
-#ifdef USE_STENCIL
-                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                        MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-#else
                         MatSetValues(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValues(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-#endif
                       } else {
-#ifdef USE_STENCIL
-                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-#else
                         MatSetValues(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-#endif
                       }
                     }//end d
                   }
@@ -929,30 +789,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 
   //z
   for(int b = 0; b < zvec.size(); ++b) {
-#ifdef USE_STENCIL
-    bnd.k = zvec[b];
-#else
     int bZloc = zvec[b] - zs;
-#endif
     for(int yi = ys; yi < (ys + ny); ++yi) {
-#ifdef USE_STENCIL
-      bnd.j = yi;
-#else
       int bYloc = yi - ys;
-#endif
       for(int xi = xs; xi < (xs + nx); ++xi) {
-#ifdef USE_STENCIL
-        bnd.i = xi; 
-#else
         int bXloc = xi - xs;
         int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
         bnd = ((offsets[rank] + bLoc)*dofsPerNode);
-#endif
         for(int k = -1; k < 2; ++k) {
-#ifdef USE_STENCIL
-          int ok = (bnd.k) + k;
-          oth.k = ok;
-#else
           int ok = zvec[b] + k;
           int pk = rk;
           int oZs = zs;
@@ -964,13 +808,8 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
             oZs += nz;
           }
           int oZloc = ok - oZs;
-#endif
           if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-#ifdef USE_STENCIL
-              int oj = (bnd.j) + j; 
-              oth.j = oj;
-#else
               int oj = yi + j;
               int pj = rj;
               int oYs = ys;
@@ -982,13 +821,8 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                 oYs += ny;
               }
               int oYloc = oj - oYs;
-#endif
               if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-#ifdef USE_STENCIL
-                  int oi = (bnd.i) + i;
-                  oth.i = oi;
-#else
                   int oi = xi + i;
                   int pi = ri;
                   int oXs = xs;
@@ -1003,28 +837,14 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
                   int oPid = (((pk*py) + pj)*px) + pi;
                   int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
                   int oBase = ((offsets[oPid] + oLoc)*dofsPerNode);
-#endif
                   if( (oi >= 0) && (oi < Nx) ) {
                     for(int d = 0; d < dofsPerNode; ++d) {
-#ifdef USE_STENCIL
-                      oth.c = d;
-#else
                       oth = oBase + d;
-#endif
                       if(k || j || i || d) {
-#ifdef USE_STENCIL
-                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                        MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-#else
                         MatSetValues(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                         MatSetValues(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
-#endif
                       } else {
-#ifdef USE_STENCIL
-                        MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-#else
                         MatSetValues(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
-#endif
                       }
                     }//end d
                   }

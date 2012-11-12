@@ -7,7 +7,7 @@ PCC = mpicxx
 
 CFLAGS = -DPETSC_USE_LOG  -O3 
 
-# -DUSE_STENCIL -DDEBUG
+# -DDEBUG
 
 include ./makefileCore
 
