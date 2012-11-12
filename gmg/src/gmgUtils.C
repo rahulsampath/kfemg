@@ -17,11 +17,38 @@ extern PetscLogEvent buildPmatEvent;
 extern PetscLogEvent PmemEvent;
 extern PetscLogEvent fillPmatEvent;
 extern PetscLogEvent buildKmatEvent;
+extern PetscLogEvent buildKblocksEvent;
 extern PetscLogEvent KmemEvent;
 extern PetscLogEvent fillKmatEvent;
 extern PetscLogEvent elemKmatEvent;
 extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
+
+void buildKblocks(std::vector<Mat>& Kmat, int dofsPerNode, std::vector<std::vector<Mat> >& Kblocks) {
+  PetscLogEventBegin(buildKblocksEvent, 0, 0, 0, 0);
+  Kblocks.resize(Kmat.size() - 1);
+  for(int i = 0; i < Kblocks.size(); ++i) {
+    if(Kmat[i + 1] != NULL) {
+      MPI_Comm comm;
+      PetscObjectGetComm(((PetscObject)(Kmat[i + 1])), &comm);
+      PetscInt start;
+      PetscInt end;
+      MatGetOwnershipRange(Kmat[i + 1], &start, &end);
+      PetscInt blkSz = (end - start)/dofsPerNode;
+      (Kblocks[i]).resize(dofsPerNode);
+      for(int d = 0; d < dofsPerNode; ++d) {
+        IS isBlock;
+        IS isBlockAll;
+        ISCreateStride(comm, blkSz, (start + d), dofsPerNode, &isBlock);
+        ISAllGather(isBlock, &isBlockAll);
+        MatGetSubMatrix(Kmat[i + 1], isBlock, isBlockAll, blkSz, MAT_INITIAL_MATRIX, &(Kblocks[i][d]));
+        ISDestroy(isBlock);
+        ISDestroy(isBlockAll);
+      }//end d
+    }
+  }//end i
+  PetscLogEventEnd(buildKblocksEvent, 0, 0, 0, 0);
+}
 
 void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
