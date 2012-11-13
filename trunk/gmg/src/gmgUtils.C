@@ -1629,7 +1629,6 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& l
                     for(int d = 0; d < (dofsPerNode - 1); ++d) {
                       PetscInt oth = oBase + d;
                       MatSetValues(Kblk, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                      MatSetValues(Kblk, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
                     }//end d
                   }
                 }//end i
@@ -1695,7 +1694,6 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& l
                     for(int d = 0; d < (dofsPerNode - 1); ++d) {
                       PetscInt oth = oBase + d;
                       MatSetValues(Kblk, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                      MatSetValues(Kblk, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
                     }//end d
                   }
                 }//end i
@@ -1761,7 +1759,6 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& l
                     for(int d = 0; d < (dofsPerNode - 1); ++d) {
                       PetscInt oth = oBase + d;
                       MatSetValues(Kblk, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
-                      MatSetValues(Kblk, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
                     }//end d
                   }
                 }//end i
