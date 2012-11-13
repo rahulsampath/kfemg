@@ -674,11 +674,163 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
 void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
     Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
+
+  PetscInt dim;
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+#ifdef DEBUG
+  if(dim < 2) {
+    assert(Ny == 1);
+    assert(ys == 0);
+    assert(ny == 1);
+  }
+  if(dim < 3) {
+    assert(Nz == 1);
+    assert(zs == 0);
+    assert(nz == 1);
+  }
+#endif
+
+  PetscInt nxe = nx;
+  PetscInt nye = ny;
+  PetscInt nze = nz;
+
+  int numZnodes = 2;
+  int numYnodes = 2;
+  int numXnodes = 2;
+
+  long double hx, hy, hz;
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
+  hx = 1.0L/(static_cast<long double>(Nx - 1));
+  if(dim > 1) {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+    if((ys + ny) == Ny) {
+      nye = ny - 1;
+    }
+  } else {
+    numYnodes = 1;
+  }
+  if(dim > 2) {
+    hz = 1.0L/(static_cast<long double>(Nz - 1));
+    if((zs + nz) == Nz) {
+      nze = nz - 1;
+    }
+  } else {
+    numZnodes = 1;
+  }
+
+  std::vector<std::vector<long double> > elemMat;
+  if(dim == 1) {
+    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, false);
+  } else if(dim == 2) {
+    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, false);
+  } else {
+    createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, false);
+  }
+
+  unsigned int nodesPerElem = (1 << dim);
+
+  std::vector<PetscScalar> vals(nodesPerElem*nodesPerElem);
+  for(int r = 0, i = 0; r < nodesPerElem; ++r) {
+    for(int c = 0; c < nodesPerElem; ++c, ++i) {
+      vals[i] = elemMat[(r*dofsPerNode) + dof][(c*dofsPerNode) + dof];
+    }//end c
+  }//end r
+
+  std::vector<PetscInt> indices(nodesPerElem);
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int px = lx.size();
+  int py = ly.size();
+  int pz = lz.size();
+
+  int rk = rank/(px*py);
+  int rj = (rank/px)%py;
+  int ri = rank%px;
+
+  MatZeroEntries(Kblk);
+
+  for(unsigned int zi = zs; zi < (zs + nze); ++zi) {
+    for(unsigned int yi = ys; yi < (ys + nye); ++yi) {
+      for(unsigned int xi = xs; xi < (xs + nxe); ++xi) {
+        for(int z = 0, i = 0; z < numZnodes; ++z) {
+          int vk = (zi + z);
+          int pk = rk;
+          int vZs = zs;
+          if(vk >= (zs + nz)) {
+            ++pk;
+            vZs += nz;
+          }
+          int zLoc = vk - vZs;
+          for(int y = 0; y < numYnodes; ++y) {
+            int vj = (yi + y);
+            int pj = rj;
+            int vYs = ys;
+            if(vj >= (ys + ny)) {
+              ++pj;
+              vYs += ny;
+            }
+            int yLoc = vj - vYs;
+            for(int x = 0; x < numXnodes; ++x, ++i) {
+              int vi = (xi + x);
+              int pi = ri;
+              int vXs = xs;
+              if(vi >= (xs + nx)) {
+                ++pi;
+                vXs += nx;
+              }
+              int xLoc = vi - vXs;
+              int pid = (((pk*py) + pj)*px) + pi;
+              int loc = (((zLoc*ly[pj]) + yLoc)*lx[pi]) + xLoc;
+              indices[i] = offsets[pid] + loc;
+            }//end x
+          }//end y
+        }//end z
+        MatSetValues(Kblk, (indices.size()), &(indices[0]),
+            (indices.size()), &(indices[0]), &(vals[0]), ADD_VALUES);
+      }//end xi
+    }//end yi
+  }//end zi
+
+  if(dof == 0) {
+    MatAssemblyBegin(Kblk, MAT_FLUSH_ASSEMBLY);
+    MatAssemblyEnd(Kblk, MAT_FLUSH_ASSEMBLY);
+  } else {
+    MatAssemblyBegin(Kblk, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
+  }
+
 }
 
 void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
     Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
+
+  if(dof == 0) {
+    MatAssemblyBegin(Kblk, MAT_FLUSH_ASSEMBLY);
+    MatAssemblyEnd(Kblk, MAT_FLUSH_ASSEMBLY);
+  } else {
+    MatAssemblyBegin(Kblk, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
+  }
+
 }
 
 void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
@@ -972,10 +1124,18 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 
 void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets) {
+
+  MatAssemblyBegin(Kblk, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
+
 }
 
 void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets) {
+
+  MatAssemblyBegin(Kblk, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
+
 }
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
