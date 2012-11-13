@@ -14,15 +14,9 @@
 
 extern PetscLogEvent createDAevent;
 extern PetscLogEvent buildPmatEvent;
-extern PetscLogEvent PmemEvent;
-extern PetscLogEvent fillPmatEvent;
 extern PetscLogEvent buildKmatEvent;
 extern PetscLogEvent buildKblkDiagEvent;
 extern PetscLogEvent buildKblkUpperEvent;
-extern PetscLogEvent KmemEvent;
-extern PetscLogEvent fillKmatEvent;
-extern PetscLogEvent elemKmatEvent;
-extern PetscLogEvent dirichletMatCorrectionEvent;
 extern PetscLogEvent vCycleEvent;
 
 void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
@@ -137,7 +131,6 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
   Kmat.resize(da.size(), NULL);
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
-      PetscLogEventBegin(KmemEvent, 0, 0, 0, 0);
       PetscInt nx, ny, nz;
       DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
       if(dim < 2) {
@@ -155,7 +148,6 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
       } else {
         MatSeqAIJSetPreallocation(Kmat[i], (factor*dofsPerNode), PETSC_NULL);
       }
-      PetscLogEventEnd(KmemEvent, 0, 0, 0, 0);
       PetscInt sz;
       MatGetSize(Kmat[i], &sz, PETSC_NULL);
       if(print) {
@@ -188,7 +180,6 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
   tmpCvec.resize(Pmat.size(), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
     if(da[lev + 1] != NULL) {
-      PetscLogEventBegin(PmemEvent, 0, 0, 0, 0);
       PetscInt nxf, nyf, nzf;
       DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
       MatCreate(activeComms[lev + 1], &(Pmat[lev]));
@@ -214,7 +205,6 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
         MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
       }
       MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
-      PetscLogEventEnd(PmemEvent, 0, 0, 0, 0);
       computePmat(factorialsList, Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
           partZ[lev], partY[lev], partX[lev], partZ[lev + 1], partY[lev + 1], partX[lev + 1],
           offsets[lev], scanLz[lev], scanLy[lev], scanLx[lev],
@@ -236,8 +226,6 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<int>& cOffsets, std::vector<int>& scanClz, std::vector<int>& scanCly, std::vector<int>& scanClx,
     std::vector<int>& fOffsets, std::vector<int>& scanFlz, std::vector<int>& scanFly, std::vector<int>& scanFlx,
     int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
-  PetscLogEventBegin(fillPmatEvent, 0, 0, 0, 0);
-
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -518,15 +506,11 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
 
   MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Pmat, MAT_FINAL_ASSEMBLY);
-
-  PetscLogEventEnd(fillPmatEvent, 0, 0, 0, 0);
 }
 
 void computeKmat(std::vector<unsigned long long int>& factorialsList,
     Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
-  PetscLogEventBegin(fillKmatEvent, 0, 0, 0, 0);
-
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -586,7 +570,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
     numZnodes = 1;
   }
 
-  PetscLogEventBegin(elemKmatEvent, 0, 0, 0, 0);
   std::vector<std::vector<long double> > elemMat;
   if(dim == 1) {
     createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, print);
@@ -601,7 +584,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
       vals[i] = elemMat[r][c];
     }//end c
   }//end r
-  PetscLogEventEnd(elemKmatEvent, 0, 0, 0, 0);
 
   unsigned int nodesPerElem = (1 << dim);
 
@@ -667,14 +649,11 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
 
   MatAssemblyBegin(Kmat, MAT_FLUSH_ASSEMBLY);
   MatAssemblyEnd(Kmat, MAT_FLUSH_ASSEMBLY);
-
-  PetscLogEventEnd(fillKmatEvent, 0, 0, 0, 0);
 }
 
 void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
     Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
-
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -816,7 +795,6 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
     MatAssemblyBegin(Kblk, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
   }
-
 }
 
 void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
@@ -830,13 +808,10 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
     MatAssemblyBegin(Kblk, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
   }
-
 }
 
 void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets) {
-  PetscLogEventBegin(dirichletMatCorrectionEvent, 0, 0, 0, 0);
-
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -1118,8 +1093,6 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
 
   MatAssemblyBegin(Kmat, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
-
-  PetscLogEventEnd(dirichletMatCorrectionEvent, 0, 0, 0, 0);
 }
 
 void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
@@ -1127,7 +1100,6 @@ void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz
 
   MatAssemblyBegin(Kblk, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
-
 }
 
 void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
@@ -1135,7 +1107,6 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& l
 
   MatAssemblyBegin(Kblk, MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
-
 }
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {

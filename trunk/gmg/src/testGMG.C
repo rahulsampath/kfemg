@@ -12,15 +12,9 @@
 PetscCookie gmgCookie;
 PetscLogEvent createDAevent;
 PetscLogEvent buildPmatEvent;
-PetscLogEvent PmemEvent;
-PetscLogEvent fillPmatEvent;
 PetscLogEvent buildKmatEvent;
 PetscLogEvent buildKblkDiagEvent;
 PetscLogEvent buildKblkUpperEvent;
-PetscLogEvent KmemEvent;
-PetscLogEvent fillKmatEvent;
-PetscLogEvent elemKmatEvent;
-PetscLogEvent dirichletMatCorrectionEvent;
 PetscLogEvent vCycleEvent;
 
 int main(int argc, char *argv[]) {
@@ -29,15 +23,9 @@ int main(int argc, char *argv[]) {
   PetscCookieRegister("GMG", &gmgCookie);
   PetscLogEventRegister("DA", gmgCookie, &createDAevent);
   PetscLogEventRegister("Pmat", gmgCookie, &buildPmatEvent);
-  PetscLogEventRegister("Pmem", gmgCookie, &PmemEvent);
-  PetscLogEventRegister("fillP", gmgCookie, &fillPmatEvent);
   PetscLogEventRegister("Kmat", gmgCookie, &buildKmatEvent);
   PetscLogEventRegister("KblkD", gmgCookie, &buildKblkDiagEvent);
   PetscLogEventRegister("KblkU", gmgCookie, &buildKblkUpperEvent);
-  PetscLogEventRegister("Kmem", gmgCookie, &KmemEvent);
-  PetscLogEventRegister("ElemKmat", gmgCookie, &elemKmatEvent);
-  PetscLogEventRegister("fillK", gmgCookie, &fillKmatEvent);
-  PetscLogEventRegister("DMC", gmgCookie, &dirichletMatCorrectionEvent);
   PetscLogEventRegister("Vcycle", gmgCookie, &vCycleEvent);
 
   PetscInt dim = 1; 
