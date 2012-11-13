@@ -85,8 +85,16 @@ int main(int argc, char *argv[]) {
   initFactorials(factorialsList); 
 
   std::vector<Mat> Kmat;
-  buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K,
-      partZ, partY, partX, offsets, print);
+  buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
+      K, partZ, partY, partX, offsets, print);
+
+  std::vector<std::vector<Mat> > KblkDiag;
+  buildKdiagBlocks(factorialsList, KblkDiag, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
+      K, partZ, partY, partX, offsets);
+
+  std::vector<std::vector<Mat> > KblkUpper;
+  buildKupperBlocks(factorialsList, KblkUpper, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
+      K, partZ, partY, partX, offsets);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
@@ -173,6 +181,14 @@ int main(int argc, char *argv[]) {
   destroyVec(tmpCvec);
 
   destroyMat(Pmat);
+
+  for(int i = 0; i < KblkDiag.size(); ++i) {
+    destroyMat(KblkDiag[i]);
+  }//end i
+
+  for(int i = 0; i < KblkUpper.size(); ++i) {
+    destroyMat(KblkUpper[i]);
+  }//end i
 
   destroyMat(Kmat);
 
