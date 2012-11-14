@@ -11,7 +11,12 @@
 #include <vector>
 #include "mpi.h"
 
-void mySolver(Mat A, Vec rhs, Vec sol);
+struct PCShellData {
+};
+
+PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out);
+
+void createPCShellData(std::vector<PCShellData>& data);
 
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
@@ -78,7 +83,8 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& l
 
 void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed);
 
-void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode, bool print);
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
+    std::vector<PCShellData>& data, int dim, int dofsPerNode, bool print);
 
 void zeroBoundaries(DA da, Vec vec);
 
@@ -97,6 +103,8 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
 
 void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol, 
     std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
+
+void destroyPCShellData(std::vector<PCShellData>& data);
 
 void destroyComms(std::vector<MPI_Comm> & activeComms);
 

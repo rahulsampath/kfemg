@@ -19,6 +19,9 @@ extern PetscLogEvent buildKblkDiagEvent;
 extern PetscLogEvent buildKblkUpperEvent;
 extern PetscLogEvent vCycleEvent;
 
+void createPCShellData(std::vector<PCShellData>& data) {
+}
+
 void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
@@ -1898,16 +1901,7 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
 #ifdef DEBUG
   assert(ksp[currLev] != NULL);
 #endif
-  int useMySolver = 1;
-  PetscOptionsGetInt(PETSC_NULL, "-useMySolver", &useMySolver, PETSC_NULL);
-  if(currLev == 0) {
-    useMySolver = 0;
-  }
-  if(useMySolver) {
-    mySolver(Kmat[currLev], mgRhs[currLev], mgSol[currLev]);
-  } else {
-    KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
-  }
+  KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
   if(currLev > 0) {
     computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
     applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], mgRes[currLev], mgRhs[currLev - 1]);
@@ -1919,11 +1913,7 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
     }
     applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], mgSol[currLev - 1], mgRes[currLev]);
     VecAXPY(mgSol[currLev], 1.0, mgRes[currLev]);
-    if(useMySolver) {
-      mySolver(Kmat[currLev], mgRhs[currLev], mgSol[currLev]);
-    } else {
-      KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
-    }
+    KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
   }
   PetscLogEventEnd(vCycleEvent, 0, 0, 0, 0);
 }
@@ -1970,17 +1960,10 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
   VecAYPX(res, -1.0, rhs);
 }
 
-void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms, int dim, int dofsPerNode, bool print) {
-  /*
-     int numSmoothIters = 3*dofsPerNode;
-     if(dim > 1) {
-     numSmoothIters *= 3;
-     }
-     if(dim > 2) {
-     numSmoothIters *= 3;
-     }
-     */
-  int numSmoothIters = 2;
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
+    std::vector<PCShellData>& data, int dim, int dofsPerNode, bool print) {
+  PetscInt numSmoothIters = 2;
+  PetscOptionsGetInt(PETSC_NULL, "-numSmoothIters", &numSmoothIters, PETSC_NULL);
   if(print) {
     std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
   }
@@ -1995,21 +1978,11 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
         PCSetType(pc, PCLU);
       } else {
-        //KSPSetType(ksp[lev], KSPCG);
-        KSPSetType(ksp[lev], KSPRICHARDSON);
-        if(dim == 1) {
-          KSPRichardsonSetScale(ksp[lev], (2.0/3.0));
-        } else if (dim == 2) {
-          KSPRichardsonSetScale(ksp[lev], (4.0/5.0));
-        } else {
-          KSPRichardsonSetScale(ksp[lev], (8.0/9.0));
-        }
-        KSPSetPreconditionerSide(ksp[lev], PC_LEFT);
-        PCSetType(pc, PCJACOBI);
-        //PCSetType(pc, PCSOR);
-        //PCSORSetOmega(pc, 1.0);
-        //PCSORSetSymmetric(pc, SOR_LOCAL_SYMMETRIC_SWEEP);
-        //PCSORSetIterations(pc, 1, 1);
+        KSPSetType(ksp[lev], KSPFGMRES);
+        KSPSetPreconditionerSide(ksp[lev], PC_RIGHT);
+        PCSetType(pc, PCSHELL);
+        PCShellSetContext(pc, &(data[lev - 1]));
+        PCShellSetApply(pc, &applyShellPC);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
@@ -2401,69 +2374,77 @@ void destroyKSP(std::vector<KSP>& ksp) {
   ksp.clear();
 }
 
-void mySolver(Mat A, Vec rhs, Vec sol) {
-  Vec diag;
-  Vec res;
-  VecDuplicate(sol, &diag);
-  VecDuplicate(sol, &res);
-  MatGetDiagonal(A, diag);
-  PetscInt vecSz;
-  VecGetSize(sol, &vecSz);
-
-  PetscInt K;
-  PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
-
-  PetscInt numSmooth = 2;
-  PetscOptionsGetInt(PETSC_NULL, "-numSmooth", &numSmooth, PETSC_NULL);
-
-  PetscScalar alpha;
-
-  std::vector<double> omega(K + 1);
-  if(K == 0) {
-    omega[0] = (2.0/3.0);
-  } else if(K == 1) {
-    omega[0] = (2.0/3.0);
-    omega[1] = 1.0;
-  } else if(K == 2) {
-    omega[0] = 0.8;
-    omega[1] = 1.0;
-    omega[2] = 1.0;
-  } else if(K == 3) {
-    PetscOptionsGetScalar(PETSC_NULL, "-alpha0", &alpha, PETSC_NULL);
-    omega[0] = alpha;
-    PetscOptionsGetScalar(PETSC_NULL, "-alpha1", &alpha, PETSC_NULL);
-    omega[1] = alpha;
-    PetscOptionsGetScalar(PETSC_NULL, "-alpha2", &alpha, PETSC_NULL);
-    omega[2] = alpha;
-    PetscOptionsGetScalar(PETSC_NULL, "-alpha3", &alpha, PETSC_NULL);
-    omega[3] = alpha;
-  }
-
-  PetscScalar* diagArr;
-  VecGetArray(diag, &diagArr);
-
-  PetscScalar* solArr;
-  PetscScalar* resArr;
-  for(int iter = 0; iter < numSmooth; ++iter) {
-    for(int d = 0; d <= K; ++d) {
-      computeResidual(A, sol, rhs, res);
-      VecGetArray(sol, &solArr);
-      VecGetArray(res, &resArr);
-      for(int i = 0; i < vecSz; ++i) {
-        if((i%(K + 1)) == d) {
-          solArr[i] += (omega[d]*resArr[i]/diagArr[i]);
-        }
-      }//end i
-      VecRestoreArray(sol, &solArr);
-      VecRestoreArray(res, &resArr);
-    }//end d
-  }//end iter
-
-  VecRestoreArray(diag, &diagArr);
-
-  VecDestroy(diag);
-  VecDestroy(res);
+void destroyPCShellData(std::vector<PCShellData>& data) {
 }
 
+/*
+   void mySolver(Mat A, Vec rhs, Vec sol) {
+   Vec diag;
+   Vec res;
+   VecDuplicate(sol, &diag);
+   VecDuplicate(sol, &res);
+   MatGetDiagonal(A, diag);
+   PetscInt vecSz;
+   VecGetSize(sol, &vecSz);
+
+   PetscInt K;
+   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
+
+   PetscInt numSmooth = 2;
+   PetscOptionsGetInt(PETSC_NULL, "-numSmooth", &numSmooth, PETSC_NULL);
+
+   PetscScalar alpha;
+
+   std::vector<double> omega(K + 1);
+   if(K == 0) {
+   omega[0] = (2.0/3.0);
+   } else if(K == 1) {
+   omega[0] = (2.0/3.0);
+   omega[1] = 1.0;
+   } else if(K == 2) {
+   omega[0] = 0.8;
+   omega[1] = 1.0;
+   omega[2] = 1.0;
+   } else if(K == 3) {
+   PetscOptionsGetScalar(PETSC_NULL, "-alpha0", &alpha, PETSC_NULL);
+   omega[0] = alpha;
+   PetscOptionsGetScalar(PETSC_NULL, "-alpha1", &alpha, PETSC_NULL);
+   omega[1] = alpha;
+   PetscOptionsGetScalar(PETSC_NULL, "-alpha2", &alpha, PETSC_NULL);
+   omega[2] = alpha;
+   PetscOptionsGetScalar(PETSC_NULL, "-alpha3", &alpha, PETSC_NULL);
+   omega[3] = alpha;
+   }
+
+   PetscScalar* diagArr;
+   VecGetArray(diag, &diagArr);
+
+   PetscScalar* solArr;
+   PetscScalar* resArr;
+   for(int iter = 0; iter < numSmooth; ++iter) {
+   for(int d = 0; d <= K; ++d) {
+   computeResidual(A, sol, rhs, res);
+   VecGetArray(sol, &solArr);
+   VecGetArray(res, &resArr);
+   for(int i = 0; i < vecSz; ++i) {
+   if((i%(K + 1)) == d) {
+   solArr[i] += (omega[d]*resArr[i]/diagArr[i]);
+   }
+   }//end i
+   VecRestoreArray(sol, &solArr);
+   VecRestoreArray(res, &resArr);
+   }//end d
+   }//end iter
+
+   VecRestoreArray(diag, &diagArr);
+
+   VecDestroy(diag);
+   VecDestroy(res);
+   }
+   */
+
+PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
+  return 0;
+}
 
 
