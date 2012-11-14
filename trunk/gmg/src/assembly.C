@@ -33,8 +33,8 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
         nz = 1;
       }
       PetscInt locSz = (nx*ny*nz);
-      Kblk[i - 1].resize(dofsPerNode, NULL);
-      for(int d = 0; d < dofsPerNode; ++d) {
+      Kblk[i - 1].resize((dofsPerNode - 1), NULL);
+      for(int d = 0; d < (dofsPerNode - 1); ++d) {
         MatCreate(activeComms[i], &(Kblk[i - 1][d]));
         MatSetSizes(Kblk[i - 1][d], locSz, (locSz*(dofsPerNode - d - 1)), PETSC_DETERMINE, PETSC_DETERMINE);
         MatSetType(Kblk[i - 1][d], MATAIJ);

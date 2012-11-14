@@ -54,13 +54,55 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         PCShellSetApply(pc, &applyShellPC);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
       }
-      KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_NONZERO_PATTERN);
+      KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_PRECONDITIONER);
       KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, numSmoothIters);
     }
   }//end lev
 }
 
-void createPCShellData(std::vector<PCShellData>& data) {
+void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<Mat> >& KblkDiag,
+    std::vector<std::vector<Mat> >& KblkUpper, bool print) {
+  PetscInt numBlockIters = 2;
+  PetscOptionsGetInt(PETSC_NULL, "-numBlockIters", &numBlockIters, PETSC_NULL);
+  if(print) {
+    std::cout<<"NumBlockIters = "<<numBlockIters<<std::endl;
+  }
+  data.resize(KblkDiag.size());
+  for(int i = 0; i < data.size(); ++i) {
+    data[i].KblkDiag = KblkDiag[i];
+    data[i].KblkUpper = KblkUpper[i];
+    data[i].blkKsp.resize(KblkDiag[i].size(), NULL);
+    for(int j = 0; j < KblkDiag[i].size(); ++j) {
+      MPI_Comm comm;
+      PC pc;
+      KSP ksp;
+      PetscObjectGetComm(((PetscObject)(KblkDiag[i][j])), &comm);
+      KSPCreate(comm, &ksp);
+      KSPGetPC(ksp, &pc);
+      KSPSetType(ksp, KSPCG);
+      KSPSetPreconditionerSide(ksp, PC_LEFT);
+      PCSetType(pc, PCJACOBI);
+      KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+      KSPSetOperators(ksp, KblkDiag[i][j], KblkDiag[i][j], SAME_PRECONDITIONER);
+      KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, numBlockIters);
+      data[i].blkKsp[j] = ksp;
+    }//end j
+    if(!(KblkDiag[i].empty())) {
+      MatGetVecs(KblkDiag[i][0], &(data[i].diagIn), &(data[i].diagOut));
+    } else {
+      data[i].diagIn = NULL;
+      data[i].diagOut = NULL;
+    }
+    if(!(KblkUpper[i].empty())) {
+      MatGetVecs(KblkUpper[i][0], NULL, &(data[i].upperOut));
+    } else {
+      data[i].upperOut = NULL;
+    }
+    data[i].upperIn.resize(KblkUpper[i].size(), NULL);
+    for(int j = 0; j < KblkUpper[i].size(); ++j) {
+      MatGetVecs(KblkUpper[i][j], &(data[i].upperIn[j]), NULL);
+    }//end j
+  }//end i
 }
 
 PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
@@ -68,6 +110,21 @@ PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
 }
 
 void destroyPCShellData(std::vector<PCShellData>& data) {
+  for(int i = 0; i < data.size(); ++i) {
+    data[i].KblkDiag.clear();
+    data[i].KblkUpper.clear();
+    destroyKSP(data[i].blkKsp);
+    if((data[i].diagIn) != NULL) {
+      VecDestroy(data[i].diagIn);
+    }
+    if((data[i].diagOut) != NULL) {
+      VecDestroy(data[i].diagOut);
+    }
+    if((data[i].upperOut) != NULL) {
+      VecDestroy(data[i].upperOut);
+    }
+    destroyVec(data[i].upperIn);
+  }//end i
 }
 
 void destroyKSP(std::vector<KSP>& ksp) {

@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
       K, partZ, partY, partX, offsets);
 
   std::vector<PCShellData> shellData;
-  createPCShellData(shellData);
+  createPCShellData(shellData, KblkDiag, KblkUpper, print);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
