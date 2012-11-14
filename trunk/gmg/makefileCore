@@ -10,7 +10,8 @@ all : $(EXEC)
 ./src/%.o: ./src/%.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-bin/testGMG : ./src/testGMG.o ./src/gmgUtils.o ./src/intergrid.o ./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/solver.o
+bin/testGMG : ./src/testGMG.o ./src/gmgUtils.o ./src/intergrid.o ./src/assembly.o \
+		./src/boundary.o ./src/mesh.o ./src/solver.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 clean :
