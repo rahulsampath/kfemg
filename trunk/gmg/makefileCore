@@ -7,16 +7,10 @@ EXEC = bin/testGMG
 
 all : $(EXEC)
 
-./src/intergrid.o: ./src/intergrid.C
+./src/%.o: ./src/%.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-./src/gmgUtils.o: ./src/gmgUtils.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testGMG.o: ./src/testGMG.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-bin/testGMG : ./src/testGMG.o ./src/gmgUtils.o ./src/intergrid.o
+bin/testGMG : ./src/testGMG.o ./src/gmgUtils.o ./src/intergrid.o ./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/solver.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 clean :
