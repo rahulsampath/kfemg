@@ -36,12 +36,6 @@ int main(int argc, char *argv[]) {
   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
   PetscTruth useRandomRHS = PETSC_TRUE;
   PetscOptionsGetTruth(PETSC_NULL, "-useRandomRHS", &useRandomRHS, PETSC_NULL);
-  PetscInt maxVcycles = 1;
-  PetscOptionsGetInt(PETSC_NULL, "-maxVcycles", &maxVcycles, PETSC_NULL);
-  PetscReal rTol = 1.0e-12;
-  PetscOptionsGetReal(PETSC_NULL, "-rTol", &rTol, PETSC_NULL);
-  PetscReal aTol = 1.0e-12;
-  PetscOptionsGetReal(PETSC_NULL, "-aTol", &aTol, PETSC_NULL);
 
   int globalRank;
   MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
@@ -55,9 +49,6 @@ int main(int argc, char *argv[]) {
     std::cout<<"K = "<<K<<std::endl;
     std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
     std::cout<<"Random-RHS = "<<useRandomRHS<<std::endl;
-    std::cout<<"sizeof(double) = "<<(sizeof(double))<<std::endl;
-    std::cout<<"sizeof(long double) = "<<(sizeof(long double))<<std::endl;
-    std::cout<<"sizeof(PetscScalar) = "<<(sizeof(PetscScalar))<<std::endl;
   }
 
   std::vector<DA> da;
@@ -125,6 +116,18 @@ int main(int argc, char *argv[]) {
 
   buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
 
+  PetscInt maxVcycles = 1;
+  PetscOptionsGetInt(PETSC_NULL, "-maxVcycles", &maxVcycles, PETSC_NULL);
+  PetscReal rTol = 1.0e-12;
+  PetscOptionsGetReal(PETSC_NULL, "-mgRtol", &rTol, PETSC_NULL);
+  PetscReal aTol = 1.0e-12;
+  PetscOptionsGetReal(PETSC_NULL, "-mgAtol", &aTol, PETSC_NULL);
+  if(print) {
+    std::cout<<"maxVcycles = "<<maxVcycles<<std::endl;
+    std::cout<<"mgRtol = "<<rTol<<std::endl;
+    std::cout<<"mgAtol = "<<atol<<std::endl;
+  }
+  
   mgSol[Kmat.size() - 1] = sol;
   mgRhs[Kmat.size() - 1] = rhs;
   mgRes[Kmat.size() - 1] = res;
