@@ -11,6 +11,17 @@
 #include <vector>
 #include "mpi.h"
 
+struct MGdata {
+  PetscInt maxVcycles;
+  std::vector<Vec> mgSol;
+  std::vector<Vec> mgRhs;
+  std::vector<Vec> mgRes;
+  std::vector<Mat> Kmat;
+  std::vector<KSP> ksp;
+  std::vector<Mat> Pmat;
+  std::vector<Vec> tmpCvec;
+};
+
 struct PCShellData {
   std::vector<Mat> KblkDiag;
   std::vector<Mat> KblkUpper;
@@ -19,6 +30,8 @@ struct PCShellData {
   Vec diagOut;
   std::vector<Vec> upperIn;
 };
+
+PetscErrorCode applyMG(void* ctx, Vec in, Vec out);
 
 PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out);
 

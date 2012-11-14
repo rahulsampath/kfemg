@@ -6,6 +6,22 @@
 
 extern PetscLogEvent vCycleEvent;
 
+PetscErrorCode applyMG(void* ctx, Vec in, Vec out) {
+  MGdata* data = (MGdata*)(ctx);
+
+  VecZeroEntries(out);
+  data->mgSol[data->Kmat.size() - 1] = out;
+  data->mgRhs[data->Kmat.size() - 1] = in;
+  for(int iter = 0; iter < data->maxVcycles; ++iter) {
+    applyVcycle((data->Kmat.size() - 1), data->Kmat, data->Pmat, data->tmpCvec,
+        data->ksp, data->mgSol, data->mgRhs, data->mgRes);
+  }//end iter
+  data->mgSol[data->Kmat.size() - 1] = NULL;
+  data->mgRhs[data->Kmat.size() - 1] = NULL;
+
+  return 0;
+}
+
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
   PetscLogEventBegin(vCycleEvent, 0, 0, 0, 0);

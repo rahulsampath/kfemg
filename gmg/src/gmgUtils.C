@@ -45,6 +45,7 @@ void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol,
       VecDuplicate(mgRhs[i], &(mgRes[i]));
     }
   }//end i
+  MatGetVecs(Kmat[Kmat.size() - 1], NULL, &(mgRes[Kmat.size() - 1]));
 }
 
 void destroyVec(std::vector<Vec>& vec) {
