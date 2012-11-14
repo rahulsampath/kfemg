@@ -9,8 +9,6 @@
 -numOuterIters 20
 -numSmoothIters 2
 -numBlockIters 2
--maxVcycles 100
--mgRtol 1.0e-12
--mgAtol 1.0e-12
+-maxVcycles 1
 
 
