@@ -107,79 +107,57 @@ int main(int argc, char *argv[]) {
   Vec sol;
   VecDuplicate(rhs, &sol);
 
-  Vec res;
-  VecDuplicate(rhs, &res);
-
   std::vector<Vec> mgSol;
   std::vector<Vec> mgRhs;
   std::vector<Vec> mgRes;
 
   buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
 
+  MGdata data;
+
   PetscInt maxVcycles = 1;
   PetscOptionsGetInt(PETSC_NULL, "-maxVcycles", &maxVcycles, PETSC_NULL);
-  PetscReal rTol = 1.0e-12;
-  PetscOptionsGetReal(PETSC_NULL, "-mgRtol", &rTol, PETSC_NULL);
-  PetscReal aTol = 1.0e-12;
-  PetscOptionsGetReal(PETSC_NULL, "-mgAtol", &aTol, PETSC_NULL);
   if(print) {
     std::cout<<"maxVcycles = "<<maxVcycles<<std::endl;
-    std::cout<<"mgRtol = "<<rTol<<std::endl;
-    std::cout<<"mgAtol = "<<atol<<std::endl;
   }
-  
-  mgSol[Kmat.size() - 1] = sol;
-  mgRhs[Kmat.size() - 1] = rhs;
-  mgRes[Kmat.size() - 1] = res;
+  data.maxVcycles = maxVcycles;
+  data.mgSol = mgSol;
+  data.mgRhs = mgRhs;
+  data.mgRes = mgRes;
+  data.Kmat = Kmat;
+  data.Pmat = Pmat;
+  data.tmpCvec = tmpCvec;
+  data.ksp = ksp;
 
-  VecZeroEntries(sol);
-
-  computeResidual(Kmat[Kmat.size() - 1], sol, rhs, res);
-  PetscReal initialResNorm;
-  VecNorm(res, NORM_2, &initialResNorm);
+  PetscInt numOuterIters = 20;
+  PetscOptionsGetInt(PETSC_NULL, "-numOuterIters", &numOuterIters, PETSC_NULL);
   if(print) {
-    std::cout<<"Initial Residual Norm = "<<std::setprecision(15)<<initialResNorm<<std::endl;
+    std::cout<<"NumOuterIters = "<<numOuterIters<<std::endl;
   }
+  PC pc;
+  KSP outerKsp;
+  KSPCreate(activeComms[da.size() - 1], &outerKsp);
+  KSPGetPC(outerKsp, &pc);
+  KSPSetType(outerKsp, KSPFGMRES);
+  KSPSetPreconditionerSide(outerKsp, PC_RIGHT);
+  PCSetType(pc, PCSHELL);
+  PCShellSetContext(pc, &data);
+  PCShellSetApply(pc, &applyMG);
+  KSPSetInitialGuessNonzero(outerKsp, PETSC_FALSE);
+  KSPSetOperators(outerKsp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
+  KSPSetTolerances(outerKsp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, numOuterIters);
 
-  int iter = 0;
-  while(iter < maxVcycles) {
-    applyVcycle((Kmat.size() - 1), Kmat, Pmat, tmpCvec, ksp, mgSol, mgRhs, mgRes);
-    ++iter;
-    computeResidual(Kmat[Kmat.size() - 1], sol, rhs, res);
-    PetscReal currResNorm;
-    VecNorm(res, NORM_2, &currResNorm);
-    if(print) {
-      std::cout<<"Iter = "<<iter<<" ResNorm = "<<std::setprecision(15)<<currResNorm<<std::endl;
-    }
-    if(currResNorm < aTol) {
-      if(print) {
-        std::cout<<"Converged due to ATOL."<<std::endl;
-      }
-      break;
-    }
-    if(currResNorm < (rTol*initialResNorm)) {
-      if(print) {
-        std::cout<<"Converged due to RTOL."<<std::endl;
-      }
-      break;
-    }
-  }//end while
-  if(print) {
-    std::cout<<"Number of V-cycles = "<<iter<<std::endl;
-  }
-
-  mgSol[Kmat.size() - 1] = NULL;
-  mgRhs[Kmat.size() - 1] = NULL;
-  mgRes[Kmat.size() - 1] = NULL;
+  KSPSolve(outerKsp, rhs, sol);
 
   destroyVec(mgSol);
   destroyVec(mgRhs);
   destroyVec(mgRes);
 
+  KSPDestroy(outerKsp);
+
   destroyKSP(ksp);
 
   VecDestroy(rhs);
-  VecDestroy(res);
   VecDestroy(sol);
 
   destroyPCShellData(shellData);
