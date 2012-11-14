@@ -3,59 +3,18 @@ INCLUDE = -I.. ${ML_INCLUDE_DIRS}
 
 LIBS = -L../common/lib -lcommon ${ML_LIBRARY_DIRS} ${ML_LIBRARIES} ${ML_TPL_LIBRARIES}
 
-EXEC = bin/testSmoothing bin/testOrtho bin/testDiagonalDominance 
-# bin/testAlgo3
-#	bin/testAlgo2 bin/testMixedJacobi bin/testAlgo1 \
-	bin/testEigenValue2d bin/testEigenValue1d bin/testAMG
+EXEC = bin/testSmoothing bin/testOrtho bin/testDiagonalDominance bin/testAMG
+#	bin/testMixedJacobi bin/testEigenValue2d bin/testEigenValue1d 
 
 all : $(EXEC)
 
-./src/amgUtils.o: ./src/amgUtils.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testAMG.o: ./src/testAMG.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testOrtho.o: ./src/testOrtho.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testAlgo3.o: ./src/testAlgo3.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testAlgo2.o: ./src/testAlgo2.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testAlgo1.o: ./src/testAlgo1.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testMixedJacobi.o: ./src/testMixedJacobi.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testDiagonalDominance.o: ./src/testDiagonalDominance.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testSmoothing.o: ./src/testSmoothing.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testEigenValue2d.o: ./src/testEigenValue2d.C
-	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
-
-./src/testEigenValue1d.o: ./src/testEigenValue1d.C
+./src/%.o: ./src/%.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
 bin/testAMG : ./src/testAMG.o ./src/amgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 bin/testOrtho : ./src/testOrtho.o ./src/amgUtils.o 
-	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
-
-bin/testAlgo3 : ./src/testAlgo3.o ./src/amgUtils.o 
-	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
-
-bin/testAlgo2 : ./src/testAlgo2.o ./src/amgUtils.o 
-	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
-
-bin/testAlgo1 : ./src/testAlgo1.o ./src/amgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 bin/testMixedJacobi : ./src/testMixedJacobi.o ./src/amgUtils.o 
