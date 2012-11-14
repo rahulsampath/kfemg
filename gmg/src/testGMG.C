@@ -96,13 +96,16 @@ int main(int argc, char *argv[]) {
   buildKupperBlocks(factorialsList, KblkUpper, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
       K, partZ, partY, partX, offsets);
 
+  std::vector<PCShellData> shellData;
+  createPCShellData(shellData);
+
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
   buildPmat(factorialsList, Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, Nz, Ny, Nx,
       partZ, partY, partX, offsets, scanLz, scanLy, scanLx, print);
 
   std::vector<KSP> ksp;
-  createKSP(ksp, Kmat, activeComms, dim, dofsPerNode, print);
+  createKSP(ksp, Kmat, activeComms, shellData, dim, dofsPerNode, print);
 
   Vec rhs;
   DACreateGlobalVector(da[da.size() - 1], &rhs);
@@ -175,6 +178,8 @@ int main(int argc, char *argv[]) {
   VecDestroy(rhs);
   VecDestroy(res);
   VecDestroy(sol);
+
+  destroyPCShellData(shellData);
 
   destroyDA(da);
 
