@@ -12,11 +12,19 @@
 #include "mpi.h"
 
 struct PCShellData {
+  std::vector<Mat> KblkDiag;
+  std::vector<Mat> KblkUpper;
+  std::vector<KSP> blkKsp;
+  Vec diagIn;
+  Vec diagOut;
+  Vec upperOut;
+  std::vector<Vec> upperIn;
 };
 
 PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out);
 
-void createPCShellData(std::vector<PCShellData>& data);
+void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<Mat> >& KblkDiag,
+    std::vector<std::vector<Mat> >& KblkUpper, bool print);
 
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
