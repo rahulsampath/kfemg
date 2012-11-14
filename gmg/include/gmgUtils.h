@@ -17,7 +17,6 @@ struct PCShellData {
   std::vector<KSP> blkKsp;
   Vec diagIn;
   Vec diagOut;
-  Vec upperOut;
   std::vector<Vec> upperIn;
 };
 

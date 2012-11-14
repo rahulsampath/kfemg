@@ -82,7 +82,7 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
       KSPSetType(ksp, KSPCG);
       KSPSetPreconditionerSide(ksp, PC_LEFT);
       PCSetType(pc, PCJACOBI);
-      KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+      KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
       KSPSetOperators(ksp, KblkDiag[i][j], KblkDiag[i][j], SAME_PRECONDITIONER);
       KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, numBlockIters);
       data[i].blkKsp[j] = ksp;
@@ -93,11 +93,6 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
       data[i].diagIn = NULL;
       data[i].diagOut = NULL;
     }
-    if(!(KblkUpper[i].empty())) {
-      MatGetVecs(KblkUpper[i][0], NULL, &(data[i].upperOut));
-    } else {
-      data[i].upperOut = NULL;
-    }
     data[i].upperIn.resize(KblkUpper[i].size(), NULL);
     for(int j = 0; j < KblkUpper[i].size(); ++j) {
       MatGetVecs(KblkUpper[i][j], &(data[i].upperIn[j]), NULL);
@@ -106,6 +101,84 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
 }
 
 PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
+  PCShellData* data = (PCShellData*)(ctx);
+
+  unsigned int dofsPerNode = data->KblkDiag.size();
+
+  PetscInt locSz;
+  VecGetLocalSize(in, &locSz);
+
+  int blkSz = locSz/dofsPerNode;
+
+  PetscScalar* arr1;
+  PetscScalar* arr2;
+
+  VecGetArray(in, &arr1);
+  VecGetArray(data->diagOut, &arr2);
+  for(int i = 0; i < blkSz; ++i) {
+    arr2[i] = arr1[i*dofsPerNode];
+  }//end i
+  VecRestoreArray(data->diagOut, &arr2);
+  VecRestoreArray(in, &arr1);
+
+  KSPSolve(data->blkKsp[0], data->diagOut, data->diagIn);
+
+  VecGetArray(out, &arr1);
+  VecGetArray(data->diagIn, &arr2);
+  for(int i = 0; i < blkSz; ++i) {
+    arr1[i*dofsPerNode] = arr2[i];
+  }//end i
+  VecRestoreArray(data->diagIn, &arr2);
+  VecRestoreArray(out, &arr1);
+
+  if(dofsPerNode > 1) {
+    MatMultTranspose(data->KblkUpper[0], data->diagIn, data->upperIn[0]);
+
+    VecGetArray(in, &arr1);
+    VecGetArray(data->upperIn[0], &arr2);
+    for(int i = 0; i < blkSz; ++i) {
+      for(int d = 0; d < (dofsPerNode - 1); ++d) {
+        arr2[(i*(dofsPerNode - 1)) + d] = arr1[(i*dofsPerNode) + 1 + d] - arr2[(i*(dofsPerNode - 1)) + d];
+      }//end d
+    }//end i
+    VecRestoreArray(in, &arr1);
+    VecRestoreArray(data->upperIn[0], &arr2);
+  }
+
+  for(int dof = 1; dof < dofsPerNode; ++dof) {
+    VecGetArray(data->upperIn[dof - 1], &arr1);
+    VecGetArray(data->diagOut, &arr2);
+    for(int i = 0; i < blkSz; ++i) {
+      arr2[i] = arr1[i*(dofsPerNode - dof)];
+    }//end i
+    VecRestoreArray(data->diagOut, &arr2);
+    VecRestoreArray(data->upperIn[dof - 1], &arr1);
+
+    KSPSolve(data->blkKsp[dof], data->diagOut, data->diagIn);
+
+    VecGetArray(out, &arr1);
+    VecGetArray(data->diagIn, &arr2);
+    for(int i = 0; i < blkSz; ++i) {
+      arr1[(i*dofsPerNode) + dof] = arr2[i];
+    }//end i
+    VecRestoreArray(data->diagIn, &arr2);
+    VecRestoreArray(out, &arr1);
+
+    if(dofsPerNode > (dof + 1)) {
+      MatMultTranspose(data->KblkUpper[dof], data->diagIn, data->upperIn[dof]);
+
+      VecGetArray(data->upperIn[dof - 1], &arr1);
+      VecGetArray(data->upperIn[dof], &arr2);
+      for(int i = 0; i < blkSz; ++i) {
+        for(int d = 0; d < (dofsPerNode - 1 - dof); ++d) {
+          arr2[(i*(dofsPerNode - 1 - dof)) + d] = arr1[(i*(dofsPerNode - dof)) + 1 + d] - arr2[(i*(dofsPerNode - 1 - dof)) + d];
+        }//end d
+      }//end i
+      VecRestoreArray(data->upperIn[dof - 1], &arr1);
+      VecRestoreArray(data->upperIn[dof], &arr2);
+    }
+  }//end dof
+
   return 0;
 }
 
@@ -120,9 +193,6 @@ void destroyPCShellData(std::vector<PCShellData>& data) {
     if((data[i].diagOut) != NULL) {
       VecDestroy(data[i].diagOut);
     }
-    if((data[i].upperOut) != NULL) {
-      VecDestroy(data[i].upperOut);
-    }
     destroyVec(data[i].upperIn);
   }//end i
 }
@@ -135,72 +205,6 @@ void destroyKSP(std::vector<KSP>& ksp) {
   }//end i
   ksp.clear();
 }
-
-/*
-   void mySolver(Mat A, Vec rhs, Vec sol) {
-   Vec diag;
-   Vec res;
-   VecDuplicate(sol, &diag);
-   VecDuplicate(sol, &res);
-   MatGetDiagonal(A, diag);
-   PetscInt vecSz;
-   VecGetSize(sol, &vecSz);
-
-   PetscInt K;
-   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
-
-   PetscInt numSmooth = 2;
-   PetscOptionsGetInt(PETSC_NULL, "-numSmooth", &numSmooth, PETSC_NULL);
-
-   PetscScalar alpha;
-
-   std::vector<double> omega(K + 1);
-   if(K == 0) {
-   omega[0] = (2.0/3.0);
-   } else if(K == 1) {
-   omega[0] = (2.0/3.0);
-   omega[1] = 1.0;
-   } else if(K == 2) {
-   omega[0] = 0.8;
-   omega[1] = 1.0;
-   omega[2] = 1.0;
-   } else if(K == 3) {
-   PetscOptionsGetScalar(PETSC_NULL, "-alpha0", &alpha, PETSC_NULL);
-   omega[0] = alpha;
-   PetscOptionsGetScalar(PETSC_NULL, "-alpha1", &alpha, PETSC_NULL);
-   omega[1] = alpha;
-   PetscOptionsGetScalar(PETSC_NULL, "-alpha2", &alpha, PETSC_NULL);
-   omega[2] = alpha;
-   PetscOptionsGetScalar(PETSC_NULL, "-alpha3", &alpha, PETSC_NULL);
-   omega[3] = alpha;
-   }
-
-   PetscScalar* diagArr;
-   VecGetArray(diag, &diagArr);
-
-   PetscScalar* solArr;
-   PetscScalar* resArr;
-   for(int iter = 0; iter < numSmooth; ++iter) {
-   for(int d = 0; d <= K; ++d) {
-   computeResidual(A, sol, rhs, res);
-   VecGetArray(sol, &solArr);
-   VecGetArray(res, &resArr);
-   for(int i = 0; i < vecSz; ++i) {
-   if((i%(K + 1)) == d) {
-   solArr[i] += (omega[d]*resArr[i]/diagArr[i]);
-   }
-   }//end i
-   VecRestoreArray(sol, &solArr);
-   VecRestoreArray(res, &resArr);
-   }//end d
-   }//end iter
-
-   VecRestoreArray(diag, &diagArr);
-
-   VecDestroy(diag);
-   VecDestroy(res);
-   }
-   */
 
 
 
