@@ -47,11 +47,6 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
     std::vector<PCShellData>& data, int dim, int dofsPerNode, bool print) {
-  PetscInt numSmoothIters = 2;
-  PetscOptionsGetInt(PETSC_NULL, "-numSmoothIters", &numSmoothIters, PETSC_NULL);
-  if(print) {
-    std::cout<<"NumSmoothIters = "<<numSmoothIters<<std::endl;
-  }
   ksp.resize((Kmat.size()), NULL);
   for(int lev = 0; lev < (Kmat.size()); ++lev) {
     if(Kmat[lev] != NULL) {
@@ -62,6 +57,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetType(ksp[lev], KSPPREONLY);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_FALSE);
         PCSetType(pc, PCLU);
+        KSPSetOptionsPrefix(ksp[lev], "coarse_");
       } else {
         KSPSetType(ksp[lev], KSPFGMRES);
         KSPSetPreconditionerSide(ksp[lev], PC_RIGHT);
@@ -69,20 +65,19 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         PCShellSetContext(pc, &(data[lev - 1]));
         PCShellSetApply(pc, &applyShellPC);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
+        KSPSetOptionsPrefix(ksp[lev], "smooth_");
       }
       KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_PRECONDITIONER);
-      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, numSmoothIters);
+      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      KSPSetFromOptions(ksp[lev]);
     }
   }//end lev
 }
 
 void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<Mat> >& KblkDiag,
     std::vector<std::vector<Mat> >& KblkUpper, bool print) {
-  PetscInt numBlockIters = 2;
-  PetscOptionsGetInt(PETSC_NULL, "-numBlockIters", &numBlockIters, PETSC_NULL);
-  if(print) {
-    std::cout<<"NumBlockIters = "<<numBlockIters<<std::endl;
-  }
+  PetscTruth allBlocksSame = PETSC_TRUE;
+  PetscOptionsGetTruth(PETSC_NULL, "-allBlocksSame", &allBlocksSame, PETSC_NULL);
   data.resize(KblkDiag.size());
   for(int i = 0; i < data.size(); ++i) {
     data[i].KblkDiag = KblkDiag[i];
@@ -100,7 +95,15 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
       PCSetType(pc, PCJACOBI);
       KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
       KSPSetOperators(ksp, KblkDiag[i][j], KblkDiag[i][j], SAME_PRECONDITIONER);
-      KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, numBlockIters);
+      KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      char str[256];
+      if(allBlocksSame) {
+        sprintf(str, "block_");
+      } else {
+        sprintf(str, "block%d_", j);
+      }
+      KSPSetOptionsPrefix(ksp, str);
+      KSPSetFromOptions(ksp);
       data[i].blkKsp[j] = ksp;
     }//end j
     if(!(KblkDiag[i].empty())) {
