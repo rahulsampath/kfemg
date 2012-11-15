@@ -1,9 +1,9 @@
--dim 1
+-dim 3
 -K 1
 -useRandomRHS true
--finestNx 33
--finestNy 33
--finestNz 33
+-finestNx 17
+-finestNy 17
+-finestNz 17
 -maxNumLevels 20
 -maxCoarseNpes 1
 -numVcycles 1
@@ -11,8 +11,8 @@
 -outer_ksp_max_it 50
 -outer_ksp_monitor
 -outer_ksp_converged_reason
--outer_ksp_rtol 1.0e-6
--outer_ksp_atol 1.0e-6
+-outer_ksp_rtol 1.0e-12
+-outer_ksp_atol 1.0e-12
 -smooth_ksp_max_it 2
 -allBlocksSame true
 -block_ksp_max_it 2
