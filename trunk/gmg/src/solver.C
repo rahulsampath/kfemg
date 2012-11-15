@@ -143,7 +143,7 @@ PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
   for(int iter = 0; iter < (data->numBlkIters); ++iter) {
     PetscScalar* arr1;
     PetscScalar* arr2;
-    if(dofsPerNode > 1) {
+    if((iter > 0) && (dofsPerNode > 1)) {
       VecGetArray(out, &arr1);
       VecGetArray(data->upperIn[0], &arr2);
       for(int i = 0; i < blkSz; ++i) {
@@ -206,7 +206,7 @@ PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
     }
 
     for(int dof = 1; dof < dofsPerNode; ++dof) {
-      if(dofsPerNode > (dof + 1)) {
+      if((iter > 0) && (dofsPerNode > (dof + 1))) {
         VecGetArray(out, &arr1);
         VecGetArray(data->upperIn[dof], &arr2);
         for(int i = 0; i < blkSz; ++i) {
