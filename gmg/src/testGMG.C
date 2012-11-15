@@ -129,14 +129,9 @@ int main(int argc, char *argv[]) {
   data.tmpCvec = tmpCvec;
   data.ksp = ksp;
 
-  PetscInt numOuterIters = 20;
-  PetscOptionsGetInt(PETSC_NULL, "-numOuterIters", &numOuterIters, PETSC_NULL);
-  if(print) {
-    std::cout<<"NumOuterIters = "<<numOuterIters<<std::endl;
-  }
   PC pc;
   KSP outerKsp;
-  KSPCreate(activeComms[da.size() - 1], &outerKsp);
+  KSPCreate(PETSC_COMM_WORLD, &outerKsp);
   KSPGetPC(outerKsp, &pc);
   KSPSetType(outerKsp, KSPFGMRES);
   KSPSetPreconditionerSide(outerKsp, PC_RIGHT);
@@ -145,7 +140,7 @@ int main(int argc, char *argv[]) {
   PCShellSetApply(pc, &applyMG);
   KSPSetInitialGuessNonzero(outerKsp, PETSC_FALSE);
   KSPSetOperators(outerKsp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
-  KSPSetTolerances(outerKsp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, numOuterIters);
+  KSPSetTolerances(outerKsp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 20);
   KSPSetFromOptions(outerKsp);
 
   KSPSolve(outerKsp, rhs, sol);

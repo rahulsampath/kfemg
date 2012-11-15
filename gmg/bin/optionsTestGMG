@@ -1,14 +1,16 @@
 -dim 1
-%-K 3
+-K 1
 -useRandomRHS true
 -finestNx 33
 -finestNy 33
 -finestNz 33
 -maxNumLevels 20
 -maxCoarseNpes 1
--numOuterIters 20
 -numSmoothIters 2
 -numBlockIters 2
 -maxVcycles 1
+-ksp_max_it 20
+-ksp_monitor
+-ksp_converged_reason
 
 
