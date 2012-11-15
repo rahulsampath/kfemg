@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
   KSPSetInitialGuessNonzero(outerKsp, PETSC_FALSE);
   KSPSetOperators(outerKsp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
   KSPSetTolerances(outerKsp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, numOuterIters);
+  KSPSetFromOptions(outerKsp);
 
   KSPSolve(outerKsp, rhs, sol);
 
