@@ -115,12 +115,12 @@ int main(int argc, char *argv[]) {
 
   MGdata data;
 
-  PetscInt maxVcycles = 1;
-  PetscOptionsGetInt(PETSC_NULL, "-maxVcycles", &maxVcycles, PETSC_NULL);
+  PetscInt numVcycles = 1;
+  PetscOptionsGetInt(PETSC_NULL, "-numVcycles", &numVcycles, PETSC_NULL);
   if(print) {
-    std::cout<<"maxVcycles = "<<maxVcycles<<std::endl;
+    std::cout<<"numVcycles = "<<numVcycles<<std::endl;
   }
-  data.maxVcycles = maxVcycles;
+  data.numVcycles = numVcycles;
   data.mgSol = mgSol;
   data.mgRhs = mgRhs;
   data.mgRes = mgRes;
