@@ -12,7 +12,7 @@
 #include "mpi.h"
 
 struct MGdata {
-  PetscInt maxVcycles;
+  PetscInt numVcycles;
   std::vector<Vec> mgSol;
   std::vector<Vec> mgRhs;
   std::vector<Vec> mgRes;
@@ -23,6 +23,7 @@ struct MGdata {
 };
 
 struct PCShellData {
+  PetscInt numBlkIters;
   std::vector<Mat> KblkDiag;
   std::vector<Mat> KblkUpper;
   std::vector<KSP> blkKsp;

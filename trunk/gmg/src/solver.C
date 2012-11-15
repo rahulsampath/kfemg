@@ -12,7 +12,7 @@ PetscErrorCode applyMG(void* ctx, Vec in, Vec out) {
   VecZeroEntries(out);
   data->mgSol[data->Kmat.size() - 1] = out;
   data->mgRhs[data->Kmat.size() - 1] = in;
-  for(int iter = 0; iter < data->maxVcycles; ++iter) {
+  for(int iter = 0; iter < data->numVcycles; ++iter) {
     applyVcycle((data->Kmat.size() - 1), data->Kmat, data->Pmat, data->tmpCvec,
         data->ksp, data->mgSol, data->mgRhs, data->mgRes);
   }//end iter
@@ -76,10 +76,19 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
 
 void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<Mat> >& KblkDiag,
     std::vector<std::vector<Mat> >& KblkUpper, bool print) {
+  PetscInt numBlkIters = 2;
+  PetscOptionsGetInt(PETSC_NULL, "-numBlkIters", &numBlkIters, PETSC_NULL);
+  if(print) {
+    std::cout<<"numBlkIters = "<<numBlkIters<<std::endl;
+  }
   PetscTruth allBlocksSame = PETSC_TRUE;
   PetscOptionsGetTruth(PETSC_NULL, "-allBlocksSame", &allBlocksSame, PETSC_NULL);
+  if(print) {
+    std::cout<<"allBlocksSame = "<<allBlocksSame<<std::endl; 
+  }
   data.resize(KblkDiag.size());
   for(int i = 0; i < data.size(); ++i) {
+    data[i].numBlkIters = numBlkIters; 
     data[i].KblkDiag = KblkDiag[i];
     data[i].KblkUpper = KblkUpper[i];
     data[i].blkKsp.resize(KblkDiag[i].size(), NULL);
@@ -131,134 +140,135 @@ PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
 
   VecZeroEntries(out);
 
-  PetscScalar* arr1;
-  PetscScalar* arr2;
+  for(int iter = 0; iter < (data->numBlkIters); ++iter) {
+    PetscScalar* arr1;
+    PetscScalar* arr2;
+    if(dofsPerNode > 1) {
+      VecGetArray(out, &arr1);
+      VecGetArray(data->upperIn[0], &arr2);
+      for(int i = 0; i < blkSz; ++i) {
+        for(int d = 0; d < (dofsPerNode - 1); ++d) {
+          arr2[(i*(dofsPerNode - 1)) + d] = arr1[(i*dofsPerNode) + 1 + d]; 
+        }//end d
+      }//end i
+      VecRestoreArray(data->upperIn[0], &arr2);
+      VecRestoreArray(out, &arr1);
 
-  if(dofsPerNode > 1) {
+      MatMult(data->KblkUpper[0], data->upperIn[0], data->diagOut);
+
+      VecGetArray(in, &arr1);
+      VecGetArray(data->diagOut, &arr2);
+      for(int i = 0; i < blkSz; ++i) {
+        arr2[i] = arr1[i*dofsPerNode] - arr2[i];
+      }//end i
+      VecRestoreArray(data->diagOut, &arr2);
+      VecRestoreArray(in, &arr1);
+    } else {
+      VecGetArray(in, &arr1);
+      VecGetArray(data->diagOut, &arr2);
+      for(int i = 0; i < blkSz; ++i) {
+        arr2[i] = arr1[i*dofsPerNode];
+      }//end i
+      VecRestoreArray(data->diagOut, &arr2);
+      VecRestoreArray(in, &arr1);
+    }
+
     VecGetArray(out, &arr1);
-    VecGetArray(data->upperIn[0], &arr2);
-    for(int i = 0; i < blkSz; ++i) {
-      for(int d = 0; d < (dofsPerNode - 1); ++d) {
-        arr2[(i*(dofsPerNode - 1)) + d] = arr1[(i*dofsPerNode) + 1 + d]; 
-      }//end d
-    }//end i
-    VecRestoreArray(data->upperIn[0], &arr2);
-    VecRestoreArray(out, &arr1);
-
-    MatMult(data->KblkUpper[0], data->upperIn[0], data->diagOut);
-
-    VecGetArray(in, &arr1);
-    VecGetArray(data->diagOut, &arr2);
-    for(int i = 0; i < blkSz; ++i) {
-      arr2[i] = arr1[i*dofsPerNode] - arr2[i];
-    }//end i
-    VecRestoreArray(data->diagOut, &arr2);
-    VecRestoreArray(in, &arr1);
-  } else {
-    VecGetArray(in, &arr1);
-    VecGetArray(data->diagOut, &arr2);
+    VecGetArray(data->diagIn, &arr2);
     for(int i = 0; i < blkSz; ++i) {
       arr2[i] = arr1[i*dofsPerNode];
     }//end i
-    VecRestoreArray(data->diagOut, &arr2);
-    VecRestoreArray(in, &arr1);
-  }
+    VecRestoreArray(data->diagIn, &arr2);
+    VecRestoreArray(out, &arr1);
 
-  VecGetArray(out, &arr1);
-  VecGetArray(data->diagIn, &arr2);
-  for(int i = 0; i < blkSz; ++i) {
-    arr2[i] = arr1[i*dofsPerNode];
-  }//end i
-  VecRestoreArray(data->diagIn, &arr2);
-  VecRestoreArray(out, &arr1);
+    KSPSolve(data->blkKsp[0], data->diagOut, data->diagIn);
 
-  KSPSolve(data->blkKsp[0], data->diagOut, data->diagIn);
-
-  VecGetArray(out, &arr1);
-  VecGetArray(data->diagIn, &arr2);
-  for(int i = 0; i < blkSz; ++i) {
-    arr1[i*dofsPerNode] = arr2[i];
-  }//end i
-  VecRestoreArray(data->diagIn, &arr2);
-  VecRestoreArray(out, &arr1);
-
-  if(dofsPerNode > 1) {
-    MatMultTranspose(data->KblkUpper[0], data->diagIn, data->upperIn[0]);
-
-    VecGetArray(in, &arr1);
-    VecGetArray(data->upperIn[0], &arr2);
+    VecGetArray(out, &arr1);
+    VecGetArray(data->diagIn, &arr2);
     for(int i = 0; i < blkSz; ++i) {
-      for(int d = 0; d < (dofsPerNode - 1); ++d) {
-        arr2[(i*(dofsPerNode - 1)) + d] = arr1[(i*dofsPerNode) + 1 + d] - arr2[(i*(dofsPerNode - 1)) + d];
-      }//end d
+      arr1[i*dofsPerNode] = arr2[i];
     }//end i
-    VecRestoreArray(data->upperIn[0], &arr2);
-    VecRestoreArray(in, &arr1);
-  }
+    VecRestoreArray(data->diagIn, &arr2);
+    VecRestoreArray(out, &arr1);
 
-  for(int dof = 1; dof < dofsPerNode; ++dof) {
-    if(dofsPerNode > (dof + 1)) {
-      VecGetArray(out, &arr1);
-      VecGetArray(data->upperIn[dof], &arr2);
+    if(dofsPerNode > 1) {
+      MatMultTranspose(data->KblkUpper[0], data->diagIn, data->upperIn[0]);
+
+      VecGetArray(in, &arr1);
+      VecGetArray(data->upperIn[0], &arr2);
       for(int i = 0; i < blkSz; ++i) {
-        for(int d = 0; d < (dofsPerNode - 1 - dof); ++d) {
-          arr2[(i*(dofsPerNode - 1 - dof)) + d] = arr1[(i*dofsPerNode) + 1 + dof + d];
+        for(int d = 0; d < (dofsPerNode - 1); ++d) {
+          arr2[(i*(dofsPerNode - 1)) + d] = arr1[(i*dofsPerNode) + 1 + d] - arr2[(i*(dofsPerNode - 1)) + d];
         }//end d
       }//end i
-      VecRestoreArray(data->upperIn[dof], &arr2);
+      VecRestoreArray(data->upperIn[0], &arr2);
+      VecRestoreArray(in, &arr1);
+    }
+
+    for(int dof = 1; dof < dofsPerNode; ++dof) {
+      if(dofsPerNode > (dof + 1)) {
+        VecGetArray(out, &arr1);
+        VecGetArray(data->upperIn[dof], &arr2);
+        for(int i = 0; i < blkSz; ++i) {
+          for(int d = 0; d < (dofsPerNode - 1 - dof); ++d) {
+            arr2[(i*(dofsPerNode - 1 - dof)) + d] = arr1[(i*dofsPerNode) + 1 + dof + d];
+          }//end d
+        }//end i
+        VecRestoreArray(data->upperIn[dof], &arr2);
+        VecRestoreArray(out, &arr1);
+
+        MatMult(data->KblkUpper[dof], data->upperIn[dof], data->diagOut);
+
+        VecGetArray(data->upperIn[dof - 1], &arr1);
+        VecGetArray(data->diagOut, &arr2);
+        for(int i = 0; i < blkSz; ++i) {
+          arr2[i] = arr1[i*(dofsPerNode - dof)] - arr2[i];
+        }//end i
+        VecRestoreArray(data->diagOut, &arr2);
+        VecRestoreArray(data->upperIn[dof - 1], &arr1);
+      } else {
+        VecGetArray(data->upperIn[dof - 1], &arr1);
+        VecGetArray(data->diagOut, &arr2);
+        for(int i = 0; i < blkSz; ++i) {
+          arr2[i] = arr1[i*(dofsPerNode - dof)];
+        }//end i
+        VecRestoreArray(data->diagOut, &arr2);
+        VecRestoreArray(data->upperIn[dof - 1], &arr1);
+      }
+
+      VecGetArray(out, &arr1);
+      VecGetArray(data->diagIn, &arr2);
+      for(int i = 0; i < blkSz; ++i) {
+        arr2[i] = arr1[(i*dofsPerNode) + dof];
+      }//end i
+      VecRestoreArray(data->diagIn, &arr2);
       VecRestoreArray(out, &arr1);
 
-      MatMult(data->KblkUpper[dof], data->upperIn[dof], data->diagOut);
+      KSPSolve(data->blkKsp[dof], data->diagOut, data->diagIn);
 
-      VecGetArray(data->upperIn[dof - 1], &arr1);
-      VecGetArray(data->diagOut, &arr2);
+      VecGetArray(out, &arr1);
+      VecGetArray(data->diagIn, &arr2);
       for(int i = 0; i < blkSz; ++i) {
-        arr2[i] = arr1[i*(dofsPerNode - dof)] - arr2[i];
+        arr1[(i*dofsPerNode) + dof] = arr2[i];
       }//end i
-      VecRestoreArray(data->diagOut, &arr2);
-      VecRestoreArray(data->upperIn[dof - 1], &arr1);
-    } else {
-      VecGetArray(data->upperIn[dof - 1], &arr1);
-      VecGetArray(data->diagOut, &arr2);
-      for(int i = 0; i < blkSz; ++i) {
-        arr2[i] = arr1[i*(dofsPerNode - dof)];
-      }//end i
-      VecRestoreArray(data->diagOut, &arr2);
-      VecRestoreArray(data->upperIn[dof - 1], &arr1);
-    }
+      VecRestoreArray(data->diagIn, &arr2);
+      VecRestoreArray(out, &arr1);
 
-    VecGetArray(out, &arr1);
-    VecGetArray(data->diagIn, &arr2);
-    for(int i = 0; i < blkSz; ++i) {
-      arr2[i] = arr1[(i*dofsPerNode) + dof];
-    }//end i
-    VecRestoreArray(data->diagIn, &arr2);
-    VecRestoreArray(out, &arr1);
+      if(dofsPerNode > (dof + 1)) {
+        MatMultTranspose(data->KblkUpper[dof], data->diagIn, data->upperIn[dof]);
 
-    KSPSolve(data->blkKsp[dof], data->diagOut, data->diagIn);
-
-    VecGetArray(out, &arr1);
-    VecGetArray(data->diagIn, &arr2);
-    for(int i = 0; i < blkSz; ++i) {
-      arr1[(i*dofsPerNode) + dof] = arr2[i];
-    }//end i
-    VecRestoreArray(data->diagIn, &arr2);
-    VecRestoreArray(out, &arr1);
-
-    if(dofsPerNode > (dof + 1)) {
-      MatMultTranspose(data->KblkUpper[dof], data->diagIn, data->upperIn[dof]);
-
-      VecGetArray(data->upperIn[dof - 1], &arr1);
-      VecGetArray(data->upperIn[dof], &arr2);
-      for(int i = 0; i < blkSz; ++i) {
-        for(int d = 0; d < (dofsPerNode - 1 - dof); ++d) {
-          arr2[(i*(dofsPerNode - 1 - dof)) + d] = arr1[(i*(dofsPerNode - dof)) + 1 + d] - arr2[(i*(dofsPerNode - 1 - dof)) + d];
-        }//end d
-      }//end i
-      VecRestoreArray(data->upperIn[dof], &arr2);
-      VecRestoreArray(data->upperIn[dof - 1], &arr1);
-    }
-  }//end dof
+        VecGetArray(data->upperIn[dof - 1], &arr1);
+        VecGetArray(data->upperIn[dof], &arr2);
+        for(int i = 0; i < blkSz; ++i) {
+          for(int d = 0; d < (dofsPerNode - 1 - dof); ++d) {
+            arr2[(i*(dofsPerNode - 1 - dof)) + d] = arr1[(i*(dofsPerNode - dof)) + 1 + d] - arr2[(i*(dofsPerNode - 1 - dof)) + d];
+          }//end d
+        }//end i
+        VecRestoreArray(data->upperIn[dof], &arr2);
+        VecRestoreArray(data->upperIn[dof - 1], &arr1);
+      }
+    }//end dof
+  }//end iter
 
   return 0;
 }

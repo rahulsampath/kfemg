@@ -6,7 +6,8 @@
 -finestNz 33
 -maxNumLevels 20
 -maxCoarseNpes 1
--maxVcycles 1
+-numVcycles 1
+-numBlkIters 2
 -outer_ksp_max_it 50
 -outer_ksp_monitor
 -outer_ksp_converged_reason
