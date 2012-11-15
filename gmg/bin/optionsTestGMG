@@ -6,12 +6,13 @@
 -finestNz 33
 -maxNumLevels 20
 -maxCoarseNpes 1
--numSmoothIters 2
--numBlockIters 2
 -maxVcycles 1
--ksp_max_it 50
--ksp_monitor
--ksp_converged_reason
--ksp_rtol 1.0e-6
--kap_atol 1.0e-6
+-outer_ksp_max_it 50
+-outer_ksp_monitor
+-outer_ksp_converged_reason
+-outer_ksp_rtol 1.0e-6
+-outer_ksp_atol 1.0e-6
+-smooth_ksp_max_it 2
+-allBlocksSame true
+-block_ksp_max_it 2
 
