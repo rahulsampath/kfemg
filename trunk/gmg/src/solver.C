@@ -93,7 +93,7 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
       KSPSetType(ksp, KSPCG);
       KSPSetPreconditionerSide(ksp, PC_LEFT);
       PCSetType(pc, PCJACOBI);
-      KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+      KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
       KSPSetOperators(ksp, KblkDiag[i][j], KblkDiag[i][j], SAME_PRECONDITIONER);
       KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
       char str[256];
@@ -129,16 +129,48 @@ PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
 
   int blkSz = locSz/dofsPerNode;
 
+  VecZeroEntries(out);
+
   PetscScalar* arr1;
   PetscScalar* arr2;
 
-  VecGetArray(in, &arr1);
-  VecGetArray(data->diagOut, &arr2);
+  if(dofsPerNode > 1) {
+    VecGetArray(out, &arr1);
+    VecGetArray(data->upperIn[0], &arr2);
+    for(int i = 0; i < blkSz; ++i) {
+      for(int d = 0; d < (dofsPerNode - 1); ++d) {
+        arr2[(i*(dofsPerNode - 1)) + d] = arr1[(i*dofsPerNode) + 1 + d]; 
+      }//end d
+    }//end i
+    VecRestoreArray(data->upperIn[0], &arr2);
+    VecRestoreArray(out, &arr1);
+
+    MatMult(data->KblkUpper[0], data->upperIn[0], data->diagOut);
+
+    VecGetArray(in, &arr1);
+    VecGetArray(data->diagOut, &arr2);
+    for(int i = 0; i < blkSz; ++i) {
+      arr2[i] = arr1[i*dofsPerNode] - arr2[i];
+    }//end i
+    VecRestoreArray(data->diagOut, &arr2);
+    VecRestoreArray(in, &arr1);
+  } else {
+    VecGetArray(in, &arr1);
+    VecGetArray(data->diagOut, &arr2);
+    for(int i = 0; i < blkSz; ++i) {
+      arr2[i] = arr1[i*dofsPerNode];
+    }//end i
+    VecRestoreArray(data->diagOut, &arr2);
+    VecRestoreArray(in, &arr1);
+  }
+
+  VecGetArray(out, &arr1);
+  VecGetArray(data->diagIn, &arr2);
   for(int i = 0; i < blkSz; ++i) {
     arr2[i] = arr1[i*dofsPerNode];
   }//end i
-  VecRestoreArray(data->diagOut, &arr2);
-  VecRestoreArray(in, &arr1);
+  VecRestoreArray(data->diagIn, &arr2);
+  VecRestoreArray(out, &arr1);
 
   KSPSolve(data->blkKsp[0], data->diagOut, data->diagIn);
 
@@ -160,18 +192,48 @@ PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
         arr2[(i*(dofsPerNode - 1)) + d] = arr1[(i*dofsPerNode) + 1 + d] - arr2[(i*(dofsPerNode - 1)) + d];
       }//end d
     }//end i
-    VecRestoreArray(in, &arr1);
     VecRestoreArray(data->upperIn[0], &arr2);
+    VecRestoreArray(in, &arr1);
   }
 
   for(int dof = 1; dof < dofsPerNode; ++dof) {
-    VecGetArray(data->upperIn[dof - 1], &arr1);
-    VecGetArray(data->diagOut, &arr2);
+    if(dofsPerNode > (dof + 1)) {
+      VecGetArray(out, &arr1);
+      VecGetArray(data->upperIn[dof], &arr2);
+      for(int i = 0; i < blkSz; ++i) {
+        for(int d = 0; d < (dofsPerNode - 1 - dof); ++d) {
+          arr2[(i*(dofsPerNode - 1 - dof)) + d] = arr1[(i*dofsPerNode) + 1 + dof + d];
+        }//end d
+      }//end i
+      VecRestoreArray(data->upperIn[dof], &arr2);
+      VecRestoreArray(out, &arr1);
+
+      MatMult(data->KblkUpper[dof], data->upperIn[dof], data->diagOut);
+
+      VecGetArray(data->upperIn[dof - 1], &arr1);
+      VecGetArray(data->diagOut, &arr2);
+      for(int i = 0; i < blkSz; ++i) {
+        arr2[i] = arr1[i*(dofsPerNode - dof)] - arr2[i];
+      }//end i
+      VecRestoreArray(data->diagOut, &arr2);
+      VecRestoreArray(data->upperIn[dof - 1], &arr1);
+    } else {
+      VecGetArray(data->upperIn[dof - 1], &arr1);
+      VecGetArray(data->diagOut, &arr2);
+      for(int i = 0; i < blkSz; ++i) {
+        arr2[i] = arr1[i*(dofsPerNode - dof)];
+      }//end i
+      VecRestoreArray(data->diagOut, &arr2);
+      VecRestoreArray(data->upperIn[dof - 1], &arr1);
+    }
+
+    VecGetArray(out, &arr1);
+    VecGetArray(data->diagIn, &arr2);
     for(int i = 0; i < blkSz; ++i) {
-      arr2[i] = arr1[i*(dofsPerNode - dof)];
+      arr2[i] = arr1[(i*dofsPerNode) + dof];
     }//end i
-    VecRestoreArray(data->diagOut, &arr2);
-    VecRestoreArray(data->upperIn[dof - 1], &arr1);
+    VecRestoreArray(data->diagIn, &arr2);
+    VecRestoreArray(out, &arr1);
 
     KSPSolve(data->blkKsp[dof], data->diagOut, data->diagIn);
 
@@ -193,8 +255,8 @@ PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
           arr2[(i*(dofsPerNode - 1 - dof)) + d] = arr1[(i*(dofsPerNode - dof)) + 1 + d] - arr2[(i*(dofsPerNode - 1 - dof)) + d];
         }//end d
       }//end i
-      VecRestoreArray(data->upperIn[dof - 1], &arr1);
       VecRestoreArray(data->upperIn[dof], &arr2);
+      VecRestoreArray(data->upperIn[dof - 1], &arr1);
     }
   }//end dof
 
