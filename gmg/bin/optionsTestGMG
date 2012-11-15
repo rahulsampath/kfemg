@@ -9,8 +9,9 @@
 -numSmoothIters 2
 -numBlockIters 2
 -maxVcycles 1
--ksp_max_it 20
+-ksp_max_it 50
 -ksp_monitor
 -ksp_converged_reason
-
+-ksp_rtol 1.0e-6
+-kap_atol 1.0e-6
 

@@ -274,7 +274,7 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
     std::cout<<"MaxNumLevels = "<<maxNumLevels<<std::endl;
   }
 
-  const unsigned int minGridSize = 9;
+  const unsigned int minGridSize = 17;
 
   Nx.clear();
   Ny.clear();
