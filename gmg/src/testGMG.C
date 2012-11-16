@@ -18,6 +18,10 @@ PetscLogEvent buildKblkUpperEvent;
 PetscLogEvent vCycleEvent;
 
 int main(int argc, char *argv[]) {
+  MPI_Init(&argc, &argv);
+
+  PETSC_COMM_WORLD = MPI_COMM_WORLD;
+
   PetscInitialize(&argc, &argv, "optionsTestGMG", PETSC_NULL);
 
   PetscCookieRegister("GMG", &gmgCookie);
@@ -175,9 +179,11 @@ int main(int argc, char *argv[]) {
 
   destroyMat(Kmat);
 
+  PetscFinalize();
+
   destroyComms(activeComms);
 
-  PetscFinalize();
+  MPI_Finalize();
 
   return 0;
 }
