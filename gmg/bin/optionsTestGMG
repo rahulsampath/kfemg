@@ -20,8 +20,8 @@
 -coarse_ksp_max_it 100
 -coarse_ksp_gmres_modifiedgramschmidt
 -coarse_ksp_gmres_restart 40
--coarse_ksp_rtol 1.0e-10
--coarse_ksp_atol 1.0e-10
+-coarse_ksp_rtol 1.0e-12
+-coarse_ksp_atol 1.0e-12
 -coarse_ksp_converged_reason
 -coarse_pc_type cholesky
 
