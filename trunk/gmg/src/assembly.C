@@ -197,13 +197,10 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   int numYnodes = 2;
   int numXnodes = 2;
 
-  long double hx, hy, hz;
-  hx = 1.0L/(static_cast<long double>(Nx - 1));
   if((xs + nx) == Nx) {
     nxe = nx - 1;
   }
   if(dim > 1) {
-    hy = 1.0L/(static_cast<long double>(Ny - 1));
     if((ys + ny) == Ny) {
       nye = ny - 1;
     }
@@ -211,7 +208,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
     numYnodes = 1;
   }
   if(dim > 2) {
-    hz = 1.0L/(static_cast<long double>(Nz - 1));
     if((zs + nz) == Nz) {
       nze = nz - 1;
     }
@@ -333,13 +329,10 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
   int numYnodes = 2;
   int numXnodes = 2;
 
-  long double hx, hy, hz;
   if((xs + nx) == Nx) {
     nxe = nx - 1;
   }
-  hx = 1.0L/(static_cast<long double>(Nx - 1));
   if(dim > 1) {
-    hy = 1.0L/(static_cast<long double>(Ny - 1));
     if((ys + ny) == Ny) {
       nye = ny - 1;
     }
@@ -347,7 +340,6 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
     numYnodes = 1;
   }
   if(dim > 2) {
-    hz = 1.0L/(static_cast<long double>(Nz - 1));
     if((zs + nz) == Nz) {
       nze = nz - 1;
     }
@@ -471,13 +463,10 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
   int numYnodes = 2;
   int numXnodes = 2;
 
-  long double hx, hy, hz;
   if((xs + nx) == Nx) {
     nxe = nx - 1;
   }
-  hx = 1.0L/(static_cast<long double>(Nx - 1));
   if(dim > 1) {
-    hy = 1.0L/(static_cast<long double>(Ny - 1));
     if((ys + ny) == Ny) {
       nye = ny - 1;
     }
@@ -485,7 +474,6 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
     numYnodes = 1;
   }
   if(dim > 2) {
-    hz = 1.0L/(static_cast<long double>(Nz - 1));
     if((zs + nz) == Nz) {
       nze = nz - 1;
     }
