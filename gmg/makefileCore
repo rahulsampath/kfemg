@@ -1,5 +1,5 @@
 
-INCLUDE = -I.. ${PETSC_INCLUDE}
+INCLUDE = -I.. ${PETSC_CC_INCLUDES} 
 
 LIBS = -L../common/lib -lcommon ${PETSC_LIB}
 

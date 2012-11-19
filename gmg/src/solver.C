@@ -6,8 +6,9 @@
 
 extern PetscLogEvent vCycleEvent;
 
-PetscErrorCode applyMG(void* ctx, Vec in, Vec out) {
-  MGdata* data = (MGdata*)(ctx);
+PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
+  MGdata* data;
+  PCShellGetContext(pc, (void**)(&data));
 
   VecZeroEntries(out);
   data->mgSol[data->Kmat.size() - 1] = out;
@@ -60,7 +61,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetOptionsPrefix(ksp[lev], "coarse_");
       } else {
         KSPSetType(ksp[lev], KSPFGMRES);
-        KSPSetPreconditionerSide(ksp[lev], PC_RIGHT);
+        KSPSetPCSide(ksp[lev], PC_RIGHT);
         PCSetType(pc, PCSHELL);
         PCShellSetContext(pc, &(data[lev]));
         PCShellSetApply(pc, &applyShellPC);
@@ -81,8 +82,8 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
   if(print) {
     std::cout<<"numBlkIters = "<<numBlkIters<<std::endl;
   }
-  PetscTruth allBlocksSame = PETSC_TRUE;
-  PetscOptionsGetTruth(PETSC_NULL, "-allBlocksSame", &allBlocksSame, PETSC_NULL);
+  PetscBool allBlocksSame = PETSC_TRUE;
+  PetscOptionsGetBool(PETSC_NULL, "-allBlocksSame", &allBlocksSame, PETSC_NULL);
   if(print) {
     std::cout<<"allBlocksSame = "<<allBlocksSame<<std::endl; 
   }
@@ -100,7 +101,7 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
       KSPCreate(comm, &ksp);
       KSPGetPC(ksp, &pc);
       KSPSetType(ksp, KSPCG);
-      KSPSetPreconditionerSide(ksp, PC_LEFT);
+      KSPSetPCSide(ksp, PC_LEFT);
       PCSetType(pc, PCJACOBI);
       KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
       KSPSetOperators(ksp, KblkDiag[i][j], KblkDiag[i][j], SAME_PRECONDITIONER);
@@ -128,8 +129,9 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
   }//end i
 }
 
-PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out) {
-  PCShellData* data = (PCShellData*)(ctx);
+PetscErrorCode applyShellPC(PC pc, Vec in, Vec out) {
+  PCShellData* data;
+  PCShellGetContext(pc, (void**)(&data));
 
   unsigned int dofsPerNode = data->KblkDiag.size();
 
@@ -279,10 +281,10 @@ void destroyPCShellData(std::vector<PCShellData>& data) {
     data[i].KblkUpper.clear();
     destroyKSP(data[i].blkKsp);
     if((data[i].diagIn) != NULL) {
-      VecDestroy(data[i].diagIn);
+      VecDestroy(&(data[i].diagIn));
     }
     if((data[i].diagOut) != NULL) {
-      VecDestroy(data[i].diagOut);
+      VecDestroy(&(data[i].diagOut));
     }
     destroyVec(data[i].upperIn);
   }//end i
@@ -291,7 +293,7 @@ void destroyPCShellData(std::vector<PCShellData>& data) {
 void destroyKSP(std::vector<KSP>& ksp) {
   for(int i = 0; i < ksp.size(); ++i) {
     if(ksp[i] != NULL) {
-      KSPDestroy(ksp[i]);
+      KSPDestroy(&(ksp[i]));
     }
   }//end i
   ksp.clear();

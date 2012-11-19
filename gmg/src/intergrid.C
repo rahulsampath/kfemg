@@ -42,7 +42,7 @@ void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
 }
 
 void buildPmat(std::vector<unsigned long long int>& factorialsList, 
-    std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ,
     std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
@@ -54,12 +54,12 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
     if(da[lev + 1] != NULL) {
       PetscInt nxf, nyf, nzf;
-      DAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
+      DMDAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
       MatCreate(activeComms[lev + 1], &(Pmat[lev]));
       PetscInt nxc, nyc, nzc;
       nxc = nyc = nzc = 0;
       if(da[lev] != NULL) {
-        DAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
+        DMDAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
       }
       if(dim < 3) {
         nzf = nzc = 1;
@@ -231,7 +231,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           int zfd = fd/((K + 1)*(K + 1));
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
-          int rowId = ((fOff + fLoc)*dofsPerNode) + fd;
+          PetscInt rowId = ((fOff + fLoc)*dofsPerNode) + fd;
           for(int k = 0; k < zVec.size(); ++k) {
             int zLoc;
             if(zPid[k] > 0) {
@@ -274,7 +274,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
                   int zcd = d/((K + 1)*(K + 1));
                   int ycd = (d/(K + 1))%(K + 1);
                   int xcd = d%(K + 1);
-                  int colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
+                  PetscInt colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
                   int xNodeId;
                   if( (xVec[i] == (Nxc - 1)) || i ) {
                     xNodeId = 1;
