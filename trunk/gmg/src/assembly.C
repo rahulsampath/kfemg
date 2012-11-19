@@ -570,20 +570,31 @@ void createElementMatrices(std::vector<unsigned long long int>& factorialsList, 
     std::vector<long long int>& coeffs, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<std::vector<std::vector<long double> > >& elemMats, bool print) {
   elemMats.resize(Nx.size());
-  for(int i = 0; i < elemMats.size(); ++i) {
-    if(dim == 1) {
-      long double hx = 1.0L/(static_cast<long double>(Nx[i] - 1));
-      createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMats[i], print);
-    } else if(dim == 2) {
-      long double hx = 1.0L/(static_cast<long double>(Nx[i] - 1));
-      long double hy = 1.0L/(static_cast<long double>(Ny[i] - 1));
-      createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMats[i], print);
-    } else {
-      long double hx = 1.0L/(static_cast<long double>(Nx[i] - 1));
-      long double hy = 1.0L/(static_cast<long double>(Ny[i] - 1));
-      long double hz = 1.0L/(static_cast<long double>(Nz[i] - 1));
-      createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMats[i], print);
-    }
+  long double scaling;
+  if(dim == 1) {
+    long double hx = 1.0L/(static_cast<long double>(Nx[0] - 1));
+    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMats[0], print);
+    scaling = 2.0;
+  } else if(dim == 2) {
+    long double hx = 1.0L/(static_cast<long double>(Nx[0] - 1));
+    long double hy = 1.0L/(static_cast<long double>(Ny[0] - 1));
+    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMats[0], print);
+    scaling = 1.0;
+  } else {
+    long double hx = 1.0L/(static_cast<long double>(Nx[0] - 1));
+    long double hy = 1.0L/(static_cast<long double>(Ny[0] - 1));
+    long double hz = 1.0L/(static_cast<long double>(Nz[0] - 1));
+    createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMats[0], print);
+    scaling = 0.5;
+  }
+  for(int i = 1; i < elemMats.size(); ++i) {
+    elemMats[i].resize(elemMats[i-1].size());
+    for(int j = 0; j < elemMats[i].size(); ++j) {
+      elemMats[i][j].resize(elemMats[i-1][j].size());
+      for(int k = 0; k < elemMats[i][j].size(); ++k) {
+        elemMats[i][j][k] = scaling*elemMats[i - 1][j][k];
+      }//end k
+    }//end j
   }//end i
 }
 
