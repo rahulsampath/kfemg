@@ -1,7 +1,7 @@
 
 SHELL = /bin/sh
 
-PCC = mpicxx
+PCC = ${MPI_DIR}/bin/mpicxx
 AR = /usr/bin/ar
 AR_FLAGS = cr
 RANLIB = /usr/bin/ranlib

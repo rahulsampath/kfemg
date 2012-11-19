@@ -9,7 +9,7 @@
 #include "common/include/commonUtils.h"
 #include "gmg/include/gmgUtils.h"
 
-PetscCookie gmgCookie;
+PetscClassId gmgCookie;
 PetscLogEvent createDAevent;
 PetscLogEvent buildPmatEvent;
 PetscLogEvent buildKmatEvent;
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 
   PetscInitialize(&argc, &argv, "optionsTestGMG", PETSC_NULL);
 
-  PetscCookieRegister("GMG", &gmgCookie);
+  PetscClassIdRegister("GMG", &gmgCookie);
   PetscLogEventRegister("DA", gmgCookie, &createDAevent);
   PetscLogEventRegister("Pmat", gmgCookie, &buildPmatEvent);
   PetscLogEventRegister("Kmat", gmgCookie, &buildKmatEvent);
@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
   assert(dim <= 3);
   PetscInt K;
   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
-  PetscTruth useRandomRHS = PETSC_TRUE;
-  PetscOptionsGetTruth(PETSC_NULL, "-useRandomRHS", &useRandomRHS, PETSC_NULL);
+  PetscBool useRandomRHS = PETSC_TRUE;
+  PetscOptionsGetBool(PETSC_NULL, "-useRandomRHS", &useRandomRHS, PETSC_NULL);
 
   int globalRank;
   MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     std::cout<<"Random-RHS = "<<useRandomRHS<<std::endl;
   }
 
-  std::vector<DA> da;
+  std::vector<DM> da;
   std::vector<PetscInt> Nx;
   std::vector<PetscInt> Ny;
   std::vector<PetscInt> Nz;
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
   createKSP(ksp, Kmat, activeComms, shellData, dim, dofsPerNode, print);
 
   Vec rhs;
-  DACreateGlobalVector(da[da.size() - 1], &rhs);
+  DMCreateGlobalVector(da[da.size() - 1], &rhs);
 
   const unsigned int seed = (0x3456782  + (54763*globalRank));
   computeRandomRHS(da[da.size() - 1], Kmat[Kmat.size() - 1], rhs, seed);
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
   KSPCreate(PETSC_COMM_WORLD, &outerKsp);
   KSPGetPC(outerKsp, &pc);
   KSPSetType(outerKsp, KSPFGMRES);
-  KSPSetPreconditionerSide(outerKsp, PC_RIGHT);
+  KSPSetPCSide(outerKsp, PC_RIGHT);
   PCSetType(pc, PCSHELL);
   PCShellSetContext(pc, &data);
   PCShellSetApply(pc, &applyMG);
@@ -161,12 +161,12 @@ int main(int argc, char *argv[]) {
   destroyVec(mgRhs);
   destroyVec(mgRes);
 
-  KSPDestroy(outerKsp);
+  KSPDestroy(&outerKsp);
 
   destroyKSP(ksp);
 
-  VecDestroy(rhs);
-  VecDestroy(sol);
+  VecDestroy(&rhs);
+  VecDestroy(&sol);
 
   destroyPCShellData(shellData);
 

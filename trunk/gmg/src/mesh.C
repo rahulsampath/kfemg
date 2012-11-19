@@ -7,7 +7,7 @@
 
 extern PetscLogEvent createDAevent;
 
-void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
+void createDA(std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
     int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
     std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
@@ -22,7 +22,7 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
   MPI_Comm_rank(globalComm, &globalRank);
   MPI_Comm_size(globalComm, &globalNpes);
 
-  int maxCoarseNpes = globalNpes;
+  PetscInt maxCoarseNpes = globalNpes;
   PetscOptionsGetInt(PETSC_NULL, "-maxCoarseNpes", &maxCoarseNpes, PETSC_NULL);
   if(maxCoarseNpes > globalNpes) {
     maxCoarseNpes = globalNpes;
@@ -82,8 +82,16 @@ void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vect
       MPI_Group_incl(globalGroup, (activeNpes[lev]), rankList, &subGroup);
       MPI_Comm_create(globalComm, subGroup, &(activeComms[lev]));
       MPI_Group_free(&subGroup);
-      DACreate(activeComms[lev], dim, DA_NONPERIODIC, DA_STENCIL_BOX, (Nx[lev]), (Ny[lev]), (Nz[lev]),
-          px, py, pz, dofsPerNode, 1, &(partX[lev][0]), &(partY[lev][0]), &(partZ[lev][0]), (&(da[lev])));
+      if(dim == 1) {
+        DMDACreate1d(activeComms[lev], DMDA_BOUNDARY_NONE, (Nx[lev]), dofsPerNode, 1, &(partX[lev][0]), &(da[lev]));
+      } else if(dim == 2) {
+        DMDACreate2d(activeComms[lev], DMDA_BOUNDARY_NONE, DMDA_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+            (Nx[lev]), (Ny[lev]), px, py, dofsPerNode, 1, &(partX[lev][0]), &(partY[lev][0]), &(da[lev]));
+      } else {
+        DMDACreate3d(activeComms[lev], DMDA_BOUNDARY_NONE, DMDA_BOUNDARY_NONE, DMDA_BOUNDARY_NONE,
+            DMDA_STENCIL_BOX, (Nx[lev]), (Ny[lev]), (Nz[lev]), px, py, pz, dofsPerNode, 1,
+            &(partX[lev][0]), &(partY[lev][0]), &(partZ[lev][0]), &(da[lev]));
+      }
     } else {
       MPI_Comm_create(globalComm, MPI_GROUP_EMPTY, &(activeComms[lev]));
 #ifdef DEBUG
@@ -332,10 +340,10 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
   }
 }
 
-void destroyDA(std::vector<DA>& da) {
+void destroyDA(std::vector<DM>& da) {
   for(int i = 0; i < da.size(); ++i) {
     if(da[i] != NULL) {
-      DADestroy(da[i]);
+      DMDestroy(&(da[i]));
     }
   }//end i
   da.clear();

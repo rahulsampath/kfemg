@@ -9,7 +9,7 @@
 #include <cassert>
 #endif
 
-void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
+void computeRandomRHS(DM da, Mat Kmat, Vec rhs, const unsigned int seed) {
   PetscRandom rndCtx;
   PetscRandomCreate(MPI_COMM_WORLD, &rndCtx);
   PetscRandomSetType(rndCtx, PETSCRAND48);
@@ -18,14 +18,13 @@ void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed) {
   Vec tmpSol;
   VecDuplicate(rhs, &tmpSol);
   VecSetRandom(tmpSol, rndCtx);
-  //VecSet(tmpSol, 10.0);
-  PetscRandomDestroy(rndCtx);
+  PetscRandomDestroy(&rndCtx);
   zeroBoundaries(da, tmpSol);
 #ifdef DEBUG
   assert(Kmat != NULL);
 #endif
   MatMult(Kmat, tmpSol, rhs);
-  VecDestroy(tmpSol);
+  VecDestroy(&tmpSol);
 }
 
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res) {
@@ -51,7 +50,7 @@ void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol,
 void destroyVec(std::vector<Vec>& vec) {
   for(int i = 0; i < vec.size(); ++i) {
     if(vec[i] != NULL) {
-      VecDestroy(vec[i]);
+      VecDestroy(&(vec[i]));
     }
   }//end i
   vec.clear();
@@ -60,7 +59,7 @@ void destroyVec(std::vector<Vec>& vec) {
 void destroyMat(std::vector<Mat> & mat) {
   for(int i = 0; i < mat.size(); ++i) {
     if(mat[i] != NULL) {
-      MatDestroy(mat[i]);
+      MatDestroy(&(mat[i]));
     }
   }//end i
   mat.clear();

@@ -8,7 +8,7 @@ extern PetscLogEvent buildKblkDiagEvent;
 extern PetscLogEvent buildKblkUpperEvent;
 
 void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
-    std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats) {
@@ -25,7 +25,7 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       PetscInt nx, ny, nz;
-      DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
+      DMDAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
       if(dim < 2) {
         ny = 1;
       }
@@ -56,7 +56,7 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
 }
 
 void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
-    std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats) {
@@ -73,7 +73,7 @@ void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       PetscInt nx, ny, nz;
-      DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
+      DMDAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
       if(dim < 2) {
         ny = 1;
       }
@@ -103,7 +103,7 @@ void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
 }
 
 void buildKmat(std::vector<unsigned long long int>& factorialsList,
-    std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<Mat>& Kmat, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats, bool print) {
@@ -120,7 +120,7 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       PetscInt nx, ny, nz;
-      DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
+      DMDAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
       if(dim < 2) {
         ny = 1;
       }
@@ -157,7 +157,7 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
 }
 
 void computeKmat(std::vector<unsigned long long int>& factorialsList,
-    Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    Mat Kmat, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, 
     std::vector<long long int>& coeffs, const unsigned int K, bool print) {
   PetscInt dim;
@@ -165,8 +165,8 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
   PetscInt ys;
@@ -174,7 +174,7 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   PetscInt nx;
   PetscInt ny;
   PetscInt nz;
-  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
 #ifdef DEBUG
   if(dim < 2) {
@@ -289,7 +289,7 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
 }
 
 void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
-    Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, 
     std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
   PetscInt dim;
@@ -297,8 +297,8 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
   PetscInt ys;
@@ -306,7 +306,7 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
   PetscInt nx;
   PetscInt ny;
   PetscInt nz;
-  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
 #ifdef DEBUG
   if(dim < 2) {
@@ -423,7 +423,7 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
 }
 
 void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
-    Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, 
     std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
   PetscInt dim;
@@ -431,8 +431,8 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
   PetscInt ys;
@@ -440,7 +440,7 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
   PetscInt nx;
   PetscInt ny;
   PetscInt nz;
-  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
 #ifdef DEBUG
   if(dim < 2) {

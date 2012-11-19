@@ -2,15 +2,15 @@
 #include "gmg/include/gmgUtils.h"
 #include "common/include/commonUtils.h"
 
-void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
   PetscInt ys;
@@ -18,7 +18,7 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& l
   PetscInt nx;
   PetscInt ny;
   PetscInt nz;
-  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   std::vector<PetscInt> xvec;
   if(xs == 0) {
@@ -268,14 +268,14 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& l
   MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
 }
 
-void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets) {
   PetscInt dim;
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
   PetscInt ys;
@@ -283,7 +283,7 @@ void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz
   PetscInt nx;
   PetscInt ny;
   PetscInt nz;
-  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   std::vector<PetscInt> xvec;
   if(xs == 0) {
@@ -540,15 +540,15 @@ void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz
   MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
 }
 
-void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+void dirichletMatrixCorrection(Mat Kmat, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
   PetscInt ys;
@@ -556,7 +556,7 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
   PetscInt nx;
   PetscInt ny;
   PetscInt nz;
-  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   std::vector<PetscInt> xvec;
   if(xs == 0) {
@@ -822,13 +822,13 @@ void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
 }
 
-void zeroBoundaries(DA da, Vec vec) {
+void zeroBoundaries(DM da, Vec vec) {
   PetscInt dim;
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
   PetscInt ys;
@@ -836,21 +836,21 @@ void zeroBoundaries(DA da, Vec vec) {
   PetscInt nx;
   PetscInt ny;
   PetscInt nz;
-  DAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   if(dim == 1) {
     PetscScalar** arr; 
-    DAVecGetArrayDOF(da, vec, &arr);
+    DMDAVecGetArrayDOF(da, vec, &arr);
     if(xs == 0) {
       arr[0][0] = 0.0;
     }
     if((xs + nx) == Nx) {
       arr[Nx - 1][0] = 0.0;
     }
-    DAVecRestoreArrayDOF(da, vec, &arr);
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
   } else if(dim == 2) {
     PetscScalar*** arr; 
-    DAVecGetArrayDOF(da, vec, &arr);
+    DMDAVecGetArrayDOF(da, vec, &arr);
     if(xs == 0) {
       for(int yi = ys; yi < (ys + ny); ++yi) {
         arr[yi][0][0] = 0.0;
@@ -871,10 +871,10 @@ void zeroBoundaries(DA da, Vec vec) {
         arr[Ny - 1][xi][0] = 0.0;
       }//end xi
     }
-    DAVecRestoreArrayDOF(da, vec, &arr);
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
   } else {
     PetscScalar**** arr; 
-    DAVecGetArrayDOF(da, vec, &arr);
+    DMDAVecGetArrayDOF(da, vec, &arr);
     if(xs == 0) {
       for(int zi = zs; zi < (zs + nz); ++zi) {
         for(int yi = ys; yi < (ys + ny); ++yi) {
@@ -917,7 +917,7 @@ void zeroBoundaries(DA da, Vec vec) {
         }//end xi
       }//end yi
     }
-    DAVecRestoreArrayDOF(da, vec, &arr);
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
   }
 }
 

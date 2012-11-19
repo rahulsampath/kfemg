@@ -5,7 +5,7 @@
 #include "petsc.h"
 #include "petscvec.h"
 #include "petscmat.h"
-#include "petscda.h"
+#include "petscdmda.h"
 #include "petscksp.h"
 #include "petscpc.h"
 #include <vector>
@@ -32,9 +32,9 @@ struct PCShellData {
   std::vector<Vec> upperIn;
 };
 
-PetscErrorCode applyMG(void* ctx, Vec in, Vec out);
+PetscErrorCode applyMG(PC pc, Vec in, Vec out);
 
-PetscErrorCode applyShellPC(void* ctx, Vec in, Vec out);
+PetscErrorCode applyShellPC(PC pc, Vec in, Vec out);
 
 void createElementMatrices(std::vector<unsigned long long int>& factorialsList, int dim, int K, 
     std::vector<long long int>& coeffs, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
@@ -53,7 +53,7 @@ void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
 
 void buildPmat(std::vector<unsigned long long int>& factorialsList,
-    std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms,
+    std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms,
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ,
     std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
@@ -68,55 +68,55 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
     int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
 
 void buildKmat(std::vector<unsigned long long int>& factorialsList,
-    std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<Mat>& Kmat, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats, bool print);
 
 void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
-    std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats);
 
 void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
-    std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
+    std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats);
 
 void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
-    Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, std::vector<long long int>& coeffs, 
     const unsigned int K, const unsigned int dof);
 
 void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
-    Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, std::vector<long long int>& coeffs, 
     const unsigned int K, const unsigned int dof);
 
 void computeKmat(std::vector<unsigned long long int>& factorialsList,
-    Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    Mat Kmat, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, std::vector<long long int>& coeffs,
     const unsigned int K, bool print);
 
-void dirichletMatrixCorrection(Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+void dirichletMatrixCorrection(Mat Kmat, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets);
 
-void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets);
 
-void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
+void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<int>& offsets);
 
-void computeRandomRHS(DA da, Mat Kmat, Vec rhs, const unsigned int seed);
+void computeRandomRHS(DM da, Mat Kmat, Vec rhs, const unsigned int seed);
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
     std::vector<PCShellData>& data, int dim, int dofsPerNode, bool print);
 
-void zeroBoundaries(DA da, Vec vec);
+void zeroBoundaries(DM da, Vec vec);
 
-void createDA(std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
+void createDA(std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
     int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> & Ny, std::vector<PetscInt> & Nx, 
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
     std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
@@ -140,7 +140,7 @@ void destroyMat(std::vector<Mat> & mat);
 
 void destroyVec(std::vector<Vec>& vec);
 
-void destroyDA(std::vector<DA>& da); 
+void destroyDA(std::vector<DM>& da); 
 
 void destroyKSP(std::vector<KSP>& ksp);
 
