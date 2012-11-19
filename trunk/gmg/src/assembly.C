@@ -21,8 +21,8 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
   if(dim > 2) {
     factor *= 3;
   }
-  Kblk.resize((da.size()) - 1);
-  for(int i = 1; i < (da.size()); ++i) {
+  Kblk.resize(da.size());
+  for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       PetscInt nx, ny, nz;
       DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
@@ -33,20 +33,20 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
         nz = 1;
       }
       PetscInt locSz = (nx*ny*nz);
-      Kblk[i - 1].resize((dofsPerNode - 1), NULL);
+      Kblk[i].resize((dofsPerNode - 1), NULL);
       for(int d = 0; d < (dofsPerNode - 1); ++d) {
-        MatCreate(activeComms[i], &(Kblk[i - 1][d]));
-        MatSetSizes(Kblk[i - 1][d], locSz, (locSz*(dofsPerNode - d - 1)), PETSC_DETERMINE, PETSC_DETERMINE);
-        MatSetType(Kblk[i - 1][d], MATAIJ);
+        MatCreate(activeComms[i], &(Kblk[i][d]));
+        MatSetSizes(Kblk[i][d], locSz, (locSz*(dofsPerNode - d - 1)), PETSC_DETERMINE, PETSC_DETERMINE);
+        MatSetType(Kblk[i][d], MATAIJ);
         if(activeNpes[i] > 1) {
-          MatMPIAIJSetPreallocation(Kblk[i - 1][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL,
+          MatMPIAIJSetPreallocation(Kblk[i][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL,
               ((factor - 1)*(dofsPerNode - d - 1)), PETSC_NULL);
         } else {
-          MatSeqAIJSetPreallocation(Kblk[i - 1][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL);
+          MatSeqAIJSetPreallocation(Kblk[i][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL);
         }
-        computeKblkUpper(factorialsList, Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, d);
+        computeKblkUpper(factorialsList, Kblk[i][d], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, d);
         if(d == 0) {
-          dirichletMatrixCorrectionBlkUpper(Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
+          dirichletMatrixCorrectionBlkUpper(Kblk[i][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
         }
       }//end d
     }
@@ -69,8 +69,8 @@ void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
   if(dim > 2) {
     factor *= 3;
   }
-  Kblk.resize((da.size()) - 1);
-  for(int i = 1; i < (da.size()); ++i) {
+  Kblk.resize(da.size());
+  for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
       PetscInt nx, ny, nz;
       DAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
@@ -81,19 +81,19 @@ void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
         nz = 1;
       }
       PetscInt locSz = (nx*ny*nz);
-      Kblk[i - 1].resize(dofsPerNode, NULL);
+      Kblk[i].resize(dofsPerNode, NULL);
       for(int d = 0; d < dofsPerNode; ++d) {
-        MatCreate(activeComms[i], &(Kblk[i - 1][d]));
-        MatSetSizes(Kblk[i - 1][d], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
-        MatSetType(Kblk[i - 1][d], MATAIJ);
+        MatCreate(activeComms[i], &(Kblk[i][d]));
+        MatSetSizes(Kblk[i][d], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
+        MatSetType(Kblk[i][d], MATAIJ);
         if(activeNpes[i] > 1) {
-          MatMPIAIJSetPreallocation(Kblk[i - 1][d], factor, PETSC_NULL, (factor - 1), PETSC_NULL);
+          MatMPIAIJSetPreallocation(Kblk[i][d], factor, PETSC_NULL, (factor - 1), PETSC_NULL);
         } else {
-          MatSeqAIJSetPreallocation(Kblk[i - 1][d], factor, PETSC_NULL);
+          MatSeqAIJSetPreallocation(Kblk[i][d], factor, PETSC_NULL);
         }
-        computeKblkDiag(factorialsList, Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, d);
+        computeKblkDiag(factorialsList, Kblk[i][d], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, d);
         if(d == 0) {
-          dirichletMatrixCorrectionBlkDiag(Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
+          dirichletMatrixCorrectionBlkDiag(Kblk[i][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
         }
       }//end d
     }

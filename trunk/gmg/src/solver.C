@@ -62,7 +62,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetType(ksp[lev], KSPFGMRES);
         KSPSetPreconditionerSide(ksp[lev], PC_RIGHT);
         PCSetType(pc, PCSHELL);
-        PCShellSetContext(pc, &(data[lev - 1]));
+        PCShellSetContext(pc, &(data[lev]));
         PCShellSetApply(pc, &applyShellPC);
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
         KSPSetOptionsPrefix(ksp[lev], "smooth_");
