@@ -79,17 +79,20 @@ int main(int argc, char *argv[]) {
   std::vector<unsigned long long int> factorialsList;
   initFactorials(factorialsList); 
 
+  std::vector<std::vector<std::vector<long double> > > elemMats;
+  createElementMatrices(factorialsList, dim, K, coeffs, Nz, Ny, Nx, elemMats, print);
+
   std::vector<Mat> Kmat;
   buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
-      K, partZ, partY, partX, offsets, print);
+      K, partZ, partY, partX, offsets, elemMats, print);
 
   std::vector<std::vector<Mat> > KblkDiag;
   buildKdiagBlocks(factorialsList, KblkDiag, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
-      K, partZ, partY, partX, offsets);
+      K, partZ, partY, partX, offsets, elemMats);
 
   std::vector<std::vector<Mat> > KblkUpper;
   buildKupperBlocks(factorialsList, KblkUpper, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
-      K, partZ, partY, partX, offsets);
+      K, partZ, partY, partX, offsets, elemMats);
 
   std::vector<PCShellData> shellData;
   createPCShellData(shellData, KblkDiag, KblkUpper, print);

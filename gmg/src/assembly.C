@@ -11,7 +11,7 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
-    std::vector<std::vector<int> >& offsets) {
+    std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats) {
   PetscLogEventBegin(buildKblkUpperEvent, 0, 0, 0, 0);
 
   int factor = 3;
@@ -44,7 +44,7 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
         } else {
           MatSeqAIJSetPreallocation(Kblk[i - 1][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL);
         }
-        computeKblkUpper(factorialsList, Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i], coeffs, K, d);
+        computeKblkUpper(factorialsList, Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, d);
         if(d == 0) {
           dirichletMatrixCorrectionBlkUpper(Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
         }
@@ -59,7 +59,7 @@ void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<Mat> >& Kblk, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
-    std::vector<std::vector<int> >& offsets) {
+    std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats) {
   PetscLogEventBegin(buildKblkDiagEvent, 0, 0, 0, 0);
 
   int factor = 3;
@@ -91,7 +91,7 @@ void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
         } else {
           MatSeqAIJSetPreallocation(Kblk[i - 1][d], factor, PETSC_NULL);
         }
-        computeKblkDiag(factorialsList, Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i], coeffs, K, d);
+        computeKblkDiag(factorialsList, Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, d);
         if(d == 0) {
           dirichletMatrixCorrectionBlkDiag(Kblk[i - 1][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
         }
@@ -106,7 +106,7 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<Mat>& Kmat, std::vector<DA>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
-    std::vector<std::vector<int> >& offsets, bool print) {
+    std::vector<std::vector<int> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats, bool print) {
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
   int factor = 3;
@@ -145,7 +145,7 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
       if(i > 0) {
         printInt = false;
       }
-      computeKmat(factorialsList, Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i], coeffs, K, printInt);
+      computeKmat(factorialsList, Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, printInt);
       dirichletMatrixCorrection(Kmat[i], da[i], lz[i], ly[i], lx[i], offsets[i]);
     }
     if(print) {
@@ -158,7 +158,8 @@ void buildKmat(std::vector<unsigned long long int>& factorialsList,
 
 void computeKmat(std::vector<unsigned long long int>& factorialsList,
     Mat Kmat, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
-    std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, bool print) {
+    std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, 
+    std::vector<long long int>& coeffs, const unsigned int K, bool print) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -197,10 +198,10 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   int numXnodes = 2;
 
   long double hx, hy, hz;
+  hx = 1.0L/(static_cast<long double>(Nx - 1));
   if((xs + nx) == Nx) {
     nxe = nx - 1;
   }
-  hx = 1.0L/(static_cast<long double>(Nx - 1));
   if(dim > 1) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
     if((ys + ny) == Ny) {
@@ -216,15 +217,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
     }
   } else {
     numZnodes = 1;
-  }
-
-  std::vector<std::vector<long double> > elemMat;
-  if(dim == 1) {
-    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, print);
-  } else if(dim == 2) {
-    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, print);
-  } else {
-    createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, print);
   }
 
   std::vector<PetscScalar> vals((elemMat.size())*(elemMat.size()));
@@ -302,7 +294,8 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
 
 void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
     Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
-    std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
+    std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, 
+    std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -360,15 +353,6 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
     }
   } else {
     numZnodes = 1;
-  }
-
-  std::vector<std::vector<long double> > elemMat;
-  if(dim == 1) {
-    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, false);
-  } else if(dim == 2) {
-    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, false);
-  } else {
-    createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, false);
   }
 
   unsigned int nodesPerElem = (1 << dim);
@@ -448,7 +432,8 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
 
 void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
     Mat Kblk, DA da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
-    std::vector<int>& offsets, std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
+    std::vector<int>& offsets, std::vector<std::vector<long double> >& elemMat, 
+    std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -506,15 +491,6 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
     }
   } else {
     numZnodes = 1;
-  }
-
-  std::vector<std::vector<long double> > elemMat;
-  if(dim == 1) {
-    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, false);
-  } else if(dim == 2) {
-    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, false);
-  } else {
-    createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, false);
   }
 
   unsigned int nodesPerElem = (1 << dim);
@@ -601,5 +577,28 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
     MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
   }
 }
+
+void createElementMatrices(std::vector<unsigned long long int>& factorialsList, int dim, int K, 
+    std::vector<long long int>& coeffs, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
+    std::vector<std::vector<std::vector<long double> > >& elemMats, bool print) {
+  elemMats.resize(Nx.size());
+  for(int i = 0; i < elemMats.size(); ++i) {
+    if(dim == 1) {
+      long double hx = 1.0L/(static_cast<long double>(Nx[i] - 1));
+      createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMats[i], print);
+    } else if(dim == 2) {
+      long double hx = 1.0L/(static_cast<long double>(Nx[i] - 1));
+      long double hy = 1.0L/(static_cast<long double>(Ny[i] - 1));
+      createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMats[i], print);
+    } else {
+      long double hx = 1.0L/(static_cast<long double>(Nx[i] - 1));
+      long double hy = 1.0L/(static_cast<long double>(Ny[i] - 1));
+      long double hz = 1.0L/(static_cast<long double>(Nz[i] - 1));
+      createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMats[i], print);
+    }
+  }//end i
+}
+
+
 
 
