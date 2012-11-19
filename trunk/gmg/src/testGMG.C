@@ -82,6 +82,10 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<std::vector<long double> > > elemMats;
   createElementMatrices(factorialsList, dim, K, coeffs, Nz, Ny, Nx, elemMats, print);
 
+  if(print) {
+    std::cout<<"Created Element Matrices!"<<std::endl;
+  }
+
   std::vector<Mat> Kmat;
   buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
       K, partZ, partY, partX, offsets, elemMats, print);
