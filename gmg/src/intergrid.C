@@ -47,7 +47,7 @@ void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
 
 void buildPmat(std::vector<unsigned long long int>& factorialsList, 
     std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
-    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<int>& activeNpes, int dim, PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY, 
     std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets,
@@ -77,11 +77,11 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
       PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
       MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
       MatSetType(Pmat[lev], MATAIJ);
-      int dofsPerElem = (1 << dim);
+      int nodesPerElem = (1 << dim);
       if(activeNpes[lev + 1] > 1) {
-        MatMPIAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL, (dofsPerElem*dofsPerNode), PETSC_NULL);
+        MatMPIAIJSetPreallocation(Pmat[lev], (nodesPerElem*dofsPerNode), PETSC_NULL, (nodesPerElem*dofsPerNode), PETSC_NULL);
       } else {
-        MatSeqAIJSetPreallocation(Pmat[lev], (dofsPerElem*dofsPerNode), PETSC_NULL);
+        MatSeqAIJSetPreallocation(Pmat[lev], (nodesPerElem*dofsPerNode), PETSC_NULL);
       }
       MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
       computePmat(factorialsList, Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
@@ -106,7 +106,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<PetscInt>& scanCly, std::vector<PetscInt>& scanClx,
     std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanFlz, 
     std::vector<PetscInt>& scanFly, std::vector<PetscInt>& scanFlx,
-    int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
+    int dim, PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -218,7 +218,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           }
         }
         PetscInt fLoc = ((((fzi - fzs)*fny) + (fyi - fys))*fnx) + (fxi - fxs);
-        for(int fd = 0; fd < dofsPerNode; ++fd) {
+        for(PetscInt fd = 0; fd < dofsPerNode; ++fd) {
           bool isFineBoundary = false;
           if(fd == 0) {
             if( (fxi == 0) || (fxi == (Nxf - 1)) ) {
@@ -234,9 +234,9 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           if(isFineBoundary) {
             continue;
           }
-          int zfd = fd/((K + 1)*(K + 1));
-          int yfd = (fd/(K + 1))%(K + 1);
-          int xfd = fd%(K + 1);
+          PetscInt zfd = fd/((K + 1)*(K + 1));
+          PetscInt yfd = (fd/(K + 1))%(K + 1);
+          PetscInt xfd = fd%(K + 1);
           PetscInt rowId = ((fOff + fLoc)*dofsPerNode) + fd;
           for(size_t k = 0; k < zVec.size(); ++k) {
             PetscInt zLoc;
@@ -261,7 +261,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
                 }
                 int cPid = (((zPid[k]*cpy) + yPid[j])*cpx) + xPid[i];
                 PetscInt cLoc = (((zLoc*lyc[yPid[j]]) + yLoc)*lxc[xPid[i]]) + xLoc;
-                for(int d = 0; d < dofsPerNode; ++d) {
+                for(PetscInt d = 0; d < dofsPerNode; ++d) {
                   bool isCoarseBoundary = false;
                   if(d == 0) {
                     if( (xVec[i] == 0) || (xVec[i] == (Nxc - 1)) ) {
@@ -277,9 +277,9 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
                   if(isCoarseBoundary) {
                     continue;
                   }
-                  int zcd = d/((K + 1)*(K + 1));
-                  int ycd = (d/(K + 1))%(K + 1);
-                  int xcd = d%(K + 1);
+                  PetscInt zcd = d/((K + 1)*(K + 1));
+                  PetscInt ycd = (d/(K + 1))%(K + 1);
+                  PetscInt xcd = d%(K + 1);
                   PetscInt colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + d;
                   int xNodeId;
                   if( (xVec[i] == (Nxc - 1)) || i ) {

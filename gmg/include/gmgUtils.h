@@ -54,7 +54,7 @@ void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
 
 void buildPmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms,
-    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<int>& activeNpes, int dim, PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, 
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY, 
     std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets,
@@ -69,7 +69,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<PetscInt>& scanCly, std::vector<PetscInt>& scanClx,
     std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanFlz, 
     std::vector<PetscInt>& scanFly, std::vector<PetscInt>& scanFlx,
-    int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
+    int dim, PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
 
 void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<Mat>& Kmat, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
