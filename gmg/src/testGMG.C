@@ -64,10 +64,10 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<PetscInt> > partZ;
   std::vector<std::vector<PetscInt> > partY;
   std::vector<std::vector<PetscInt> > partX;
-  std::vector<std::vector<int> > offsets;
-  std::vector<std::vector<int> > scanLz;
-  std::vector<std::vector<int> > scanLy;
-  std::vector<std::vector<int> > scanLx;
+  std::vector<std::vector<PetscInt> > offsets;
+  std::vector<std::vector<PetscInt> > scanLz;
+  std::vector<std::vector<PetscInt> > scanLy;
+  std::vector<std::vector<PetscInt> > scanLx;
   createDA(da, activeComms, activeNpes, dofsPerNode, dim, Nz, Ny, Nx, partZ, partY, partX,
       offsets, scanLz, scanLy, scanLx, MPI_COMM_WORLD, print);
 
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
   createElementMatrices(factorialsList, dim, K, coeffs, Nz, Ny, Nx, elemMats, print);
 
   if(print) {
-    std::cout<<"Created Element Matrices!"<<std::endl;
+    std::cout<<"Created Element Matrices."<<std::endl;
   }
 
   std::vector<Mat> Kmat;

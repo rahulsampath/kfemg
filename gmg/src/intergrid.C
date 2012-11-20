@@ -48,9 +48,11 @@ void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
 void buildPmat(std::vector<unsigned long long int>& factorialsList, 
     std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
-    std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ,
-    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
-    std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, std::vector<std::vector<int> >& scanLx, bool print) {
+    std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
+    std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY, 
+    std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets,
+    std::vector<std::vector<PetscInt> >& scanLz, std::vector<std::vector<PetscInt> >& scanLy,
+    std::vector<std::vector<PetscInt> >& scanLx, bool print) {
   PetscLogEventBegin(buildPmatEvent, 0, 0, 0, 0);
 
   Pmat.resize((da.size() - 1), NULL);
@@ -97,18 +99,19 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
 }
 
 void computePmat(std::vector<unsigned long long int>& factorialsList, 
-    Mat Pmat, int Nzc, int Nyc, int Nxc, int Nzf, int Nyf, int Nxf,
+    Mat Pmat, PetscInt Nzc, PetscInt Nyc, PetscInt Nxc, PetscInt Nzf, PetscInt Nyf, PetscInt Nxf,
     std::vector<PetscInt>& lzc, std::vector<PetscInt>& lyc, std::vector<PetscInt>& lxc,
     std::vector<PetscInt>& lzf, std::vector<PetscInt>& lyf, std::vector<PetscInt>& lxf,
-    std::vector<int>& cOffsets, std::vector<int>& scanClz, std::vector<int>& scanCly, std::vector<int>& scanClx,
-    std::vector<int>& fOffsets, std::vector<int>& scanFlz, std::vector<int>& scanFly, std::vector<int>& scanFlx,
+    std::vector<PetscInt>& cOffsets, std::vector<PetscInt>& scanClz, 
+    std::vector<PetscInt>& scanCly, std::vector<PetscInt>& scanClx,
+    std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanFlz, 
+    std::vector<PetscInt>& scanFly, std::vector<PetscInt>& scanFlx,
     int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   int fpx = lxf.size();
   int fpy = lyf.size();
-  int fpz = lzf.size();
 
   int fpk = rank/(fpx*fpy);
   int fpj = (rank/fpx)%fpy;
@@ -144,11 +147,11 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
   std::vector<std::vector<std::vector<std::vector<long double> > > > eval1Dderivatives(2);
   for(int nodeId = 0; nodeId < 2; ++nodeId) {
     eval1Dderivatives[nodeId].resize(K + 1);
-    for(int cdof = 0; cdof <= K; ++cdof) {
+    for(unsigned int cdof = 0; cdof <= K; ++cdof) {
       eval1Dderivatives[nodeId][cdof].resize(3);
       for(int ptId = 0; ptId < 3; ++ptId) {
         eval1Dderivatives[nodeId][cdof][ptId].resize(K + 1);
-        for(int fdof = 0; fdof <= K; ++fdof) {
+        for(unsigned int fdof = 0; fdof <= K; ++fdof) {
           eval1Dderivatives[nodeId][cdof][ptId][fdof] = eval1DshFnLderivative(factorialsList, 
               nodeId, cdof, K, coeffs, pt[ptId], fdof);
         }//end fdof
@@ -161,7 +164,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
   for(int fzi = fzs; fzi < (fzs + fnz); ++fzi) {
     int czi = fzi/2;
     bool oddZ = ((fzi%2) != 0);
-    std::vector<int>::iterator zIt = std::lower_bound(scanClz.begin(), scanClz.end(), czi);
+    std::vector<PetscInt>::iterator zIt = std::lower_bound(scanClz.begin(), scanClz.end(), czi);
 #ifdef DEBUG
     assert(zIt != scanClz.end());
 #endif
@@ -180,7 +183,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
     for(int fyi = fys; fyi < (fys + fny); ++fyi) {
       int cyi = fyi/2;
       bool oddY = ((fyi%2) != 0);
-      std::vector<int>::iterator yIt = std::lower_bound(scanCly.begin(), scanCly.end(), cyi);
+      std::vector<PetscInt>::iterator yIt = std::lower_bound(scanCly.begin(), scanCly.end(), cyi);
 #ifdef DEBUG
       assert(yIt != scanCly.end());
 #endif
@@ -199,7 +202,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
       for(int fxi = fxs; fxi < (fxs + fnx); ++fxi) {
         int cxi = fxi/2;
         bool oddX = ((fxi%2) != 0);
-        std::vector<int>::iterator xIt = std::lower_bound(scanClx.begin(), scanClx.end(), cxi);
+        std::vector<PetscInt>::iterator xIt = std::lower_bound(scanClx.begin(), scanClx.end(), cxi);
 #ifdef DEBUG
         assert(xIt != scanClx.end());
 #endif
@@ -236,21 +239,21 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           int yfd = (fd/(K + 1))%(K + 1);
           int xfd = fd%(K + 1);
           PetscInt rowId = ((fOff + fLoc)*dofsPerNode) + fd;
-          for(int k = 0; k < zVec.size(); ++k) {
+          for(size_t k = 0; k < zVec.size(); ++k) {
             int zLoc;
             if(zPid[k] > 0) {
               zLoc = zVec[k] - (1 + scanClz[zPid[k] - 1]);
             } else {
               zLoc = zVec[k];
             }
-            for(int j = 0; j < yVec.size(); ++j) {
+            for(size_t j = 0; j < yVec.size(); ++j) {
               int yLoc;
               if(yPid[j] > 0) {
                 yLoc = yVec[j] - (1 + scanCly[yPid[j] - 1]);
               } else {
                 yLoc = yVec[j];
               }
-              for(int i = 0; i < xVec.size(); ++i) {
+              for(size_t i = 0; i < xVec.size(); ++i) {
                 int xLoc;
                 if(xPid[i] > 0) {
                   xLoc = xVec[i] - (1 + scanClx[xPid[i] - 1]);
