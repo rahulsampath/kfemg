@@ -38,7 +38,7 @@ void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol,
   mgSol.resize(Kmat.size(), NULL);
   mgRhs.resize(Kmat.size(), NULL);
   mgRes.resize(Kmat.size(), NULL);
-  for(int i = 0; i < (Kmat.size() - 1); ++i) {
+  for(size_t i = 0; i < (Kmat.size() - 1); ++i) {
     if(Kmat[i] != NULL) {
       MatGetVecs(Kmat[i], &(mgSol[i]), &(mgRhs[i]));
       VecDuplicate(mgRhs[i], &(mgRes[i]));
@@ -48,7 +48,7 @@ void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol,
 }
 
 void destroyVec(std::vector<Vec>& vec) {
-  for(int i = 0; i < vec.size(); ++i) {
+  for(size_t i = 0; i < vec.size(); ++i) {
     if(vec[i] != NULL) {
       VecDestroy(&(vec[i]));
     }
@@ -57,7 +57,7 @@ void destroyVec(std::vector<Vec>& vec) {
 }
 
 void destroyMat(std::vector<Mat> & mat) {
-  for(int i = 0; i < mat.size(); ++i) {
+  for(size_t i = 0; i < mat.size(); ++i) {
     if(mat[i] != NULL) {
       MatDestroy(&(mat[i]));
     }
