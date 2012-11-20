@@ -117,26 +117,26 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
   int fpj = (rank/fpx)%fpy;
   int fpi = rank%fpx;
 
-  int fnz = lzf[fpk];
-  int fny = lyf[fpj];
-  int fnx = lxf[fpi];
+  PetscInt fnz = lzf[fpk];
+  PetscInt fny = lyf[fpj];
+  PetscInt fnx = lxf[fpi];
 
-  int fzs = 0;
+  PetscInt fzs = 0;
   if(fpk > 0) {
     fzs = 1 + scanFlz[fpk - 1];
   }
 
-  int fys = 0;
+  PetscInt fys = 0;
   if(fpj > 0) {
     fys = 1 + scanFly[fpj - 1];
   }
 
-  int fxs = 0;
+  PetscInt fxs = 0;
   if(fpi > 0) {
     fxs = 1 + scanFlx[fpi - 1];
   }
 
-  int fOff = fOffsets[rank];
+  PetscInt fOff = fOffsets[rank];
 
   int cpx = lxc.size();
   int cpy = lyc.size();
@@ -160,14 +160,14 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
 
   MatZeroEntries(Pmat);
 
-  for(int fzi = fzs; fzi < (fzs + fnz); ++fzi) {
-    int czi = fzi/2;
+  for(PetscInt fzi = fzs; fzi < (fzs + fnz); ++fzi) {
+    PetscInt czi = fzi/2;
     bool oddZ = ((fzi%2) != 0);
     std::vector<PetscInt>::iterator zIt = std::lower_bound(scanClz.begin(), scanClz.end(), czi);
 #ifdef DEBUG
     assert(zIt != scanClz.end());
 #endif
-    std::vector<int> zVec;
+    std::vector<PetscInt> zVec;
     std::vector<int> zPid;
     zVec.push_back(czi);
     zPid.push_back((zIt - scanClz.begin()));
@@ -179,14 +179,14 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
         zPid.push_back((zIt - scanClz.begin()));
       }
     }
-    for(int fyi = fys; fyi < (fys + fny); ++fyi) {
-      int cyi = fyi/2;
+    for(PetscInt fyi = fys; fyi < (fys + fny); ++fyi) {
+      PetscInt cyi = fyi/2;
       bool oddY = ((fyi%2) != 0);
       std::vector<PetscInt>::iterator yIt = std::lower_bound(scanCly.begin(), scanCly.end(), cyi);
 #ifdef DEBUG
       assert(yIt != scanCly.end());
 #endif
-      std::vector<int> yVec;
+      std::vector<PetscInt> yVec;
       std::vector<int> yPid;
       yVec.push_back(cyi);
       yPid.push_back((yIt - scanCly.begin()));
@@ -198,14 +198,14 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           yPid.push_back((yIt - scanCly.begin()));
         }
       }
-      for(int fxi = fxs; fxi < (fxs + fnx); ++fxi) {
-        int cxi = fxi/2;
+      for(PetscInt fxi = fxs; fxi < (fxs + fnx); ++fxi) {
+        PetscInt cxi = fxi/2;
         bool oddX = ((fxi%2) != 0);
         std::vector<PetscInt>::iterator xIt = std::lower_bound(scanClx.begin(), scanClx.end(), cxi);
 #ifdef DEBUG
         assert(xIt != scanClx.end());
 #endif
-        std::vector<int> xVec;
+        std::vector<PetscInt> xVec;
         std::vector<int> xPid;
         xVec.push_back(cxi);
         xPid.push_back((xIt - scanClx.begin()));
@@ -217,7 +217,7 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
             xPid.push_back((xIt - scanClx.begin()));
           }
         }
-        int fLoc = ((((fzi - fzs)*fny) + (fyi - fys))*fnx) + (fxi - fxs);
+        PetscInt fLoc = ((((fzi - fzs)*fny) + (fyi - fys))*fnx) + (fxi - fxs);
         for(int fd = 0; fd < dofsPerNode; ++fd) {
           bool isFineBoundary = false;
           if(fd == 0) {
@@ -239,28 +239,28 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
           int xfd = fd%(K + 1);
           PetscInt rowId = ((fOff + fLoc)*dofsPerNode) + fd;
           for(size_t k = 0; k < zVec.size(); ++k) {
-            int zLoc;
+            PetscInt zLoc;
             if(zPid[k] > 0) {
               zLoc = zVec[k] - (1 + scanClz[zPid[k] - 1]);
             } else {
               zLoc = zVec[k];
             }
             for(size_t j = 0; j < yVec.size(); ++j) {
-              int yLoc;
+              PetscInt yLoc;
               if(yPid[j] > 0) {
                 yLoc = yVec[j] - (1 + scanCly[yPid[j] - 1]);
               } else {
                 yLoc = yVec[j];
               }
               for(size_t i = 0; i < xVec.size(); ++i) {
-                int xLoc;
+                PetscInt xLoc;
                 if(xPid[i] > 0) {
                   xLoc = xVec[i] - (1 + scanClx[xPid[i] - 1]);
                 } else {
                   xLoc = xVec[i];
                 }
                 int cPid = (((zPid[k]*cpy) + yPid[j])*cpx) + xPid[i];
-                int cLoc = (((zLoc*lyc[yPid[j]]) + yLoc)*lxc[xPid[i]]) + xLoc;
+                PetscInt cLoc = (((zLoc*lyc[yPid[j]]) + yLoc)*lxc[xPid[i]]) + xLoc;
                 for(int d = 0; d < dofsPerNode; ++d) {
                   bool isCoarseBoundary = false;
                   if(d == 0) {
