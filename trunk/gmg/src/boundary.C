@@ -3,7 +3,7 @@
 #include "common/include/commonUtils.h"
 
 void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
-    std::vector<PetscInt>& lx, std::vector<int>& offsets) {
+    std::vector<PetscInt>& lx, std::vector<PetscInt>& offsets) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -63,7 +63,6 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
 
   int px = lx.size();
   int py = ly.size();
-  int pz = lz.size();
 
   int rk = rank/(px*py);
   int rj = (rank/px)%py;
@@ -269,7 +268,7 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
 }
 
 void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
-    std::vector<PetscInt>& lx, std::vector<int>& offsets) {
+    std::vector<PetscInt>& lx, std::vector<PetscInt>& offsets) {
   PetscInt dim;
   PetscInt Nx;
   PetscInt Ny;
@@ -541,7 +540,7 @@ void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz
 }
 
 void dirichletMatrixCorrection(Mat Kmat, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
-    std::vector<PetscInt>& lx, std::vector<int>& offsets) {
+    std::vector<PetscInt>& lx, std::vector<PetscInt>& offsets) {
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -602,7 +601,6 @@ void dirichletMatrixCorrection(Mat Kmat, DM da, std::vector<PetscInt>& lz, std::
 
   int px = lx.size();
   int py = ly.size();
-  int pz = lz.size();
 
   int rk = rank/(px*py);
   int rj = (rank/px)%py;

@@ -92,12 +92,12 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
     std::cout<<"allBlocksSame = "<<allBlocksSame<<std::endl; 
   }
   data.resize(KblkDiag.size());
-  for(int i = 0; i < data.size(); ++i) {
+  for(size_t i = 0; i < data.size(); ++i) {
     data[i].numBlkIters = numBlkIters; 
     data[i].KblkDiag = KblkDiag[i];
     data[i].KblkUpper = KblkUpper[i];
     data[i].blkKsp.resize(KblkDiag[i].size(), NULL);
-    for(int j = 0; j < KblkDiag[i].size(); ++j) {
+    for(unsigned int j = 0; j < KblkDiag[i].size(); ++j) {
       MPI_Comm comm;
       PC pc;
       KSP ksp;
@@ -114,7 +114,7 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
       if(allBlocksSame) {
         sprintf(str, "block_");
       } else {
-        sprintf(str, "block%d_", j);
+        sprintf(str, "block%u_", j);
       }
       KSPSetOptionsPrefix(ksp, str);
       KSPSetFromOptions(ksp);
@@ -127,7 +127,7 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
       data[i].diagOut = NULL;
     }
     data[i].upperIn.resize(KblkUpper[i].size(), NULL);
-    for(int j = 0; j < KblkUpper[i].size(); ++j) {
+    for(size_t j = 0; j < KblkUpper[i].size(); ++j) {
       MatGetVecs(KblkUpper[i][j], &(data[i].upperIn[j]), NULL);
     }//end j
   }//end i
@@ -211,7 +211,7 @@ PetscErrorCode applyShellPC(PC pc, Vec in, Vec out) {
       VecRestoreArray(in, &arr1);
     }
 
-    for(int dof = 1; dof < dofsPerNode; ++dof) {
+    for(unsigned int dof = 1; dof < dofsPerNode; ++dof) {
       if((iter > 0) && (dofsPerNode > (dof + 1))) {
         VecGetArray(out, &arr1);
         VecGetArray(data->upperIn[dof], &arr2);
@@ -280,7 +280,7 @@ PetscErrorCode applyShellPC(PC pc, Vec in, Vec out) {
 }
 
 void destroyPCShellData(std::vector<PCShellData>& data) {
-  for(int i = 0; i < data.size(); ++i) {
+  for(size_t i = 0; i < data.size(); ++i) {
     data[i].KblkDiag.clear();
     data[i].KblkUpper.clear();
     destroyKSP(data[i].blkKsp);
@@ -295,7 +295,7 @@ void destroyPCShellData(std::vector<PCShellData>& data) {
 }
 
 void destroyKSP(std::vector<KSP>& ksp) {
-  for(int i = 0; i < ksp.size(); ++i) {
+  for(size_t i = 0; i < ksp.size(); ++i) {
     if(ksp[i] != NULL) {
       KSPDestroy(&(ksp[i]));
     }

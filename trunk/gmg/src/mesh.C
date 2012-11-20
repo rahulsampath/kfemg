@@ -14,9 +14,9 @@ extern PetscLogEvent createDAevent;
 void createDA(std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
     int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
-    std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<int> >& offsets,
-    std::vector<std::vector<int> >& scanLz, std::vector<std::vector<int> >& scanLy, 
-    std::vector<std::vector<int> >& scanLx, MPI_Comm globalComm, bool print) {
+    std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets,
+    std::vector<std::vector<PetscInt> >& scanLz, std::vector<std::vector<PetscInt> >& scanLy, 
+    std::vector<std::vector<PetscInt> >& scanLx, MPI_Comm globalComm, bool print) {
   PetscLogEventBegin(createDAevent, 0, 0, 0, 0);
 
   createGridSizes(dim, Nz, Ny, Nx, print);
@@ -113,7 +113,8 @@ void createDA(std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vect
 
 void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
     std::vector<PetscInt> &lz, std::vector<PetscInt> &ly, std::vector<PetscInt> &lx,
-    std::vector<int>& offsets, std::vector<int>& scanLz, std::vector<int>& scanLy, std::vector<int>& scanLx) {
+    std::vector<PetscInt>& offsets, std::vector<PetscInt>& scanLz,
+    std::vector<PetscInt>& scanLy, std::vector<PetscInt>& scanLx) {
 #ifdef DEBUG
   if(dim < 3) {
     assert(Nz == 1);
@@ -165,7 +166,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
     }//end d
   } while(partChanged);
 
-  int px;
+  int px = -1;
   for(int d = 0; d < 3; ++d) {
     if(Nx == Nlist[d]) {
       px = pList[d];
@@ -175,7 +176,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
     }
   }//end d
 
-  int py;
+  int py = -1;
   for(int d = 0; d < 2; ++d) {
     if(Ny == Nlist[d]) {
       py = pList[d];
@@ -189,8 +190,7 @@ void computePartition(int dim, PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpe
   assert(Nz == Nlist[0]);
 #endif
 
-  int pz;
-  pz = pList[0];
+  int pz = pList[0];
 
 #ifdef DEBUG
   assert((px*py*pz) <= maxNpes);
