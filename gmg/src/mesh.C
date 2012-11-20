@@ -5,6 +5,10 @@
 #include "gmg/include/gmgUtils.h"
 #include "common/include/commonUtils.h"
 
+#ifdef DEBUG
+#include <cassert>
+#endif
+
 extern PetscLogEvent createDAevent;
 
 void createDA(std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,
