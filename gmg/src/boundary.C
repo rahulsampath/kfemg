@@ -69,7 +69,7 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
   int ri = rank%px;
 
   //x
-  for(int b = 0; b < xvec.size(); ++b) {
+  for(size_t b = 0; b < xvec.size(); ++b) {
     int bXloc = xvec[b] - xs;
     for(int zi = zs; zi < (zs + nz); ++zi) {
       int bZloc = zi - zs;
@@ -134,7 +134,7 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
   }//end b
 
   //y
-  for(int b = 0; b < yvec.size(); ++b) {
+  for(size_t b = 0; b < yvec.size(); ++b) {
     int bYloc = yvec[b] - ys;
     for(int zi = zs; zi < (zs + nz); ++zi) {
       int bZloc = zi - zs;
@@ -199,7 +199,7 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
   }//end b
 
   //z
-  for(int b = 0; b < zvec.size(); ++b) {
+  for(size_t b = 0; b < zvec.size(); ++b) {
     int bZloc = zvec[b] - zs;
     for(int yi = ys; yi < (ys + ny); ++yi) {
       int bYloc = yi - ys;
@@ -328,14 +328,13 @@ void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz
 
   int px = lx.size();
   int py = ly.size();
-  int pz = lz.size();
 
   int rk = rank/(px*py);
   int rj = (rank/px)%py;
   int ri = rank%px;
 
   //x
-  for(int b = 0; b < xvec.size(); ++b) {
+  for(size_t b = 0; b < xvec.size(); ++b) {
     int bXloc = xvec[b] - xs;
     for(int zi = zs; zi < (zs + nz); ++zi) {
       int bZloc = zi - zs;
@@ -402,7 +401,7 @@ void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz
   }//end b
 
   //y
-  for(int b = 0; b < yvec.size(); ++b) {
+  for(size_t b = 0; b < yvec.size(); ++b) {
     int bYloc = yvec[b] - ys;
     for(int zi = zs; zi < (zs + nz); ++zi) {
       int bZloc = zi - zs;
@@ -469,7 +468,7 @@ void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz
   }//end b
 
   //z
-  for(int b = 0; b < zvec.size(); ++b) {
+  for(size_t b = 0; b < zvec.size(); ++b) {
     int bZloc = zvec[b] - zs;
     for(int yi = ys; yi < (ys + ny); ++yi) {
       int bYloc = yi - ys;
@@ -607,7 +606,7 @@ void dirichletMatrixCorrection(Mat Kmat, DM da, std::vector<PetscInt>& lz, std::
   int ri = rank%px;
 
   //x
-  for(int b = 0; b < xvec.size(); ++b) {
+  for(size_t b = 0; b < xvec.size(); ++b) {
     int bXloc = xvec[b] - xs;
     for(int zi = zs; zi < (zs + nz); ++zi) {
       int bZloc = zi - zs;
@@ -677,7 +676,7 @@ void dirichletMatrixCorrection(Mat Kmat, DM da, std::vector<PetscInt>& lz, std::
   }//end b
 
   //y
-  for(int b = 0; b < yvec.size(); ++b) {
+  for(size_t b = 0; b < yvec.size(); ++b) {
     int bYloc = yvec[b] - ys;
     for(int zi = zs; zi < (zs + nz); ++zi) {
       int bZloc = zi - zs;
@@ -747,7 +746,7 @@ void dirichletMatrixCorrection(Mat Kmat, DM da, std::vector<PetscInt>& lz, std::
   }//end b
 
   //z
-  for(int b = 0; b < zvec.size(); ++b) {
+  for(size_t b = 0; b < zvec.size(); ++b) {
     int bZloc = zvec[b] - zs;
     for(int yi = ys; yi < (ys + ny); ++yi) {
       int bYloc = yi - ys;

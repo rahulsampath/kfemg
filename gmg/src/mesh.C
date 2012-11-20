@@ -345,7 +345,7 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
 }
 
 void destroyDA(std::vector<DM>& da) {
-  for(int i = 0; i < da.size(); ++i) {
+  for(size_t i = 0; i < da.size(); ++i) {
     if(da[i] != NULL) {
       DMDestroy(&(da[i]));
     }
@@ -354,7 +354,7 @@ void destroyDA(std::vector<DM>& da) {
 }
 
 void destroyComms(std::vector<MPI_Comm> & activeComms) {
-  for(int i = 0; i < activeComms.size(); ++i) {
+  for(size_t i = 0; i < activeComms.size(); ++i) {
     if(activeComms[i] != MPI_COMM_NULL) {
       MPI_Comm_free(&(activeComms[i]));
     }
