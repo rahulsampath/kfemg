@@ -235,7 +235,6 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
 
   int px = lx.size();
   int py = ly.size();
-  int pz = lz.size();
 
   int rk = rank/(px*py);
   int rj = (rank/px)%py;
@@ -354,8 +353,8 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
   unsigned int nodesPerElem = (1 << dim);
 
   std::vector<PetscScalar> vals(nodesPerElem*nodesPerElem);
-  for(int r = 0, i = 0; r < nodesPerElem; ++r) {
-    for(int c = 0; c < nodesPerElem; ++c, ++i) {
+  for(unsigned int r = 0, i = 0; r < nodesPerElem; ++r) {
+    for(unsigned int c = 0; c < nodesPerElem; ++c, ++i) {
       vals[i] = elemMat[(r*dofsPerNode) + dof][(c*dofsPerNode) + dof];
     }//end c
   }//end r
@@ -367,7 +366,6 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
 
   int px = lx.size();
   int py = ly.size();
-  int pz = lz.size();
 
   int rk = rank/(px*py);
   int rj = (rank/px)%py;
@@ -494,7 +492,7 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
   std::vector<PetscScalar> vals((rIndices.size())*(cIndices.size()));
   for(size_t r = 0, i = 0; r < nodesPerElem; ++r) {
     for(size_t c = 0; c < nodesPerElem; ++c) {
-      for(size_t d = (dof + 1); d < dofsPerNode; ++d, ++i) {
+      for(int d = (dof + 1); d < dofsPerNode; ++d, ++i) {
         vals[i] = elemMat[(r*dofsPerNode) + dof][(c*dofsPerNode) + d];
       }//end d
     }//end c
@@ -505,7 +503,6 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
 
   int px = lx.size();
   int py = ly.size();
-  int pz = lz.size();
 
   int rk = rank/(px*py);
   int rj = (rank/px)%py;
@@ -549,9 +546,9 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
             }//end x
           }//end y
         }//end z
-        for(int r = 0, c = 0; r < nodesPerElem; ++r) {
-          int idBase = (rIndices[r])*colIdFactor;
-          for(unsigned int d = 0; d < colIdFactor; ++c, ++d) {
+        for(unsigned int r = 0, c = 0; r < nodesPerElem; ++r) {
+          PetscInt idBase = (rIndices[r])*colIdFactor;
+          for(PetscInt d = 0; d < colIdFactor; ++c, ++d) {
             cIndices[c] = idBase + d;
           }//end d
         }//end r
@@ -591,11 +588,11 @@ void createElementMatrices(std::vector<unsigned long long int>& factorialsList, 
     createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMats[0], print);
     scaling = 0.5;
   }
-  for(int i = 1; i < elemMats.size(); ++i) {
+  for(size_t i = 1; i < elemMats.size(); ++i) {
     elemMats[i].resize(elemMats[i-1].size());
-    for(int j = 0; j < elemMats[i].size(); ++j) {
+    for(size_t j = 0; j < elemMats[i].size(); ++j) {
       elemMats[i][j].resize(elemMats[i-1][j].size());
-      for(int k = 0; k < elemMats[i][j].size(); ++k) {
+      for(size_t k = 0; k < elemMats[i][j].size(); ++k) {
         elemMats[i][j][k] = scaling*elemMats[i - 1][j][k];
       }//end k
     }//end j

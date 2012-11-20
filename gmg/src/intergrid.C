@@ -140,7 +140,6 @@ void computePmat(std::vector<unsigned long long int>& factorialsList,
 
   int cpx = lxc.size();
   int cpy = lyc.size();
-  int cpz = lzc.size();
 
   long double pt[] = {-1.0, 0.0, 1.0};
 
