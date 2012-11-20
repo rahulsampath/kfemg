@@ -91,8 +91,8 @@ int main(int argc, char *argv[]) {
       K, partZ, partY, partX, offsets, elemMats, print);
 
   std::vector<std::vector<Mat> > KblkDiag;
-  buildKdiagBlocks(factorialsList, KblkDiag, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
-      K, partZ, partY, partX, offsets, elemMats);
+  buildKdiagBlocks(factorialsList, KblkDiag, da, activeComms, activeNpes, coeffs, K, 
+      partZ, partY, partX, offsets, elemMats);
 
   std::vector<std::vector<Mat> > KblkUpper;
   buildKupperBlocks(factorialsList, KblkUpper, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
