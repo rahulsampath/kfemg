@@ -13,12 +13,12 @@ extern PetscLogEvent buildKblkUpperEvent;
 
 void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
-    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<int>& activeNpes, int dim, PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<PetscInt> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats) {
   PetscLogEventBegin(buildKblkUpperEvent, 0, 0, 0, 0);
 
-  int factor = 3;
+  PetscInt factor = 3;
   if(dim > 1) {
     factor *= 3;
   }
@@ -38,7 +38,7 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
       }
       PetscInt locSz = (nx*ny*nz);
       Kblk[i].resize((dofsPerNode - 1), NULL);
-      for(int d = 0; d < (dofsPerNode - 1); ++d) {
+      for(PetscInt d = 0; d < (dofsPerNode - 1); ++d) {
         MatCreate(activeComms[i], &(Kblk[i][d]));
         MatSetSizes(Kblk[i][d], locSz, (locSz*(dofsPerNode - d - 1)), PETSC_DETERMINE, PETSC_DETERMINE);
         MatSetType(Kblk[i][d], MATAIJ);
@@ -61,12 +61,12 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
 
 void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
-    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<int>& activeNpes, int dim, PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<PetscInt> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats) {
   PetscLogEventBegin(buildKblkDiagEvent, 0, 0, 0, 0);
 
-  int factor = 3;
+  PetscInt factor = 3;
   if(dim > 1) {
     factor *= 3;
   }
@@ -86,7 +86,7 @@ void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
       }
       PetscInt locSz = (nx*ny*nz);
       Kblk[i].resize(dofsPerNode, NULL);
-      for(int d = 0; d < dofsPerNode; ++d) {
+      for(PetscInt d = 0; d < dofsPerNode; ++d) {
         MatCreate(activeComms[i], &(Kblk[i][d]));
         MatSetSizes(Kblk[i][d], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
         MatSetType(Kblk[i][d], MATAIJ);
@@ -108,12 +108,12 @@ void buildKdiagBlocks(std::vector<unsigned long long int>& factorialsList,
 
 void buildKmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<Mat>& Kmat, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
-    std::vector<int>& activeNpes, int dim, int dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<int>& activeNpes, int dim, PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<PetscInt> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats, bool print) {
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
-  int factor = 3;
+  PetscInt factor = 3;
   if(dim > 1) {
     factor *= 3;
   }
@@ -233,8 +233,8 @@ void computeKmat(std::vector<unsigned long long int>& factorialsList,
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  size_t px = lx.size();
-  size_t py = ly.size();
+  int px = lx.size();
+  int py = ly.size();
 
   int rk = rank/(px*py);
   int rj = (rank/px)%py;
@@ -328,9 +328,9 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
   PetscInt nye = ny;
   PetscInt nze = nz;
 
-  int numZnodes = 2;
-  int numYnodes = 2;
-  int numXnodes = 2;
+  PetscInt numZnodes = 2;
+  PetscInt numYnodes = 2;
+  PetscInt numXnodes = 2;
 
   if((xs + nx) == Nx) {
     nxe = nx - 1;
@@ -373,28 +373,28 @@ void computeKblkDiag(std::vector<unsigned long long int>& factorialsList,
 
   MatZeroEntries(Kblk);
 
-  for(unsigned int zi = zs; zi < (zs + nze); ++zi) {
-    for(unsigned int yi = ys; yi < (ys + nye); ++yi) {
-      for(unsigned int xi = xs; xi < (xs + nxe); ++xi) {
-        for(int z = 0, i = 0; z < numZnodes; ++z) {
-          int vk = (zi + z);
+  for(PetscInt zi = zs; zi < (zs + nze); ++zi) {
+    for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+      for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+        for(PetscInt z = 0, i = 0; z < numZnodes; ++z) {
+          PetscInt vk = (zi + z);
           int pk = rk;
-          int vZs = zs;
+          PetscInt vZs = zs;
           if(vk >= (zs + nz)) {
             ++pk;
             vZs += nz;
           }
-          int zLoc = vk - vZs;
-          for(int y = 0; y < numYnodes; ++y) {
-            int vj = (yi + y);
+          PetscInt zLoc = vk - vZs;
+          for(PetscInt y = 0; y < numYnodes; ++y) {
+            PetscInt vj = (yi + y);
             int pj = rj;
-            int vYs = ys;
+            PetscInt vYs = ys;
             if(vj >= (ys + ny)) {
               ++pj;
               vYs += ny;
             }
-            int yLoc = vj - vYs;
-            for(int x = 0; x < numXnodes; ++x, ++i) {
+            PetscInt yLoc = vj - vYs;
+            for(PetscInt x = 0; x < numXnodes; ++x, ++i) {
               PetscInt vi = (xi + x);
               int pi = ri;
               PetscInt vXs = xs;
@@ -461,9 +461,9 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
   PetscInt nye = ny;
   PetscInt nze = nz;
 
-  int numZnodes = 2;
-  int numYnodes = 2;
-  int numXnodes = 2;
+  PetscInt numZnodes = 2;
+  PetscInt numYnodes = 2;
+  PetscInt numXnodes = 2;
 
   if((xs + nx) == Nx) {
     nxe = nx - 1;
@@ -484,14 +484,14 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
   }
 
   unsigned int nodesPerElem = (1 << dim);
-  unsigned int colIdFactor = dofsPerNode - dof - 1;
+  PetscInt colIdFactor = dofsPerNode - dof - 1;
 
   std::vector<PetscInt> rIndices(nodesPerElem);
   std::vector<PetscInt> cIndices(nodesPerElem*colIdFactor);
 
   std::vector<PetscScalar> vals((rIndices.size())*(cIndices.size()));
-  for(size_t r = 0, i = 0; r < nodesPerElem; ++r) {
-    for(size_t c = 0; c < nodesPerElem; ++c) {
+  for(unsigned int r = 0, i = 0; r < nodesPerElem; ++r) {
+    for(unsigned int c = 0; c < nodesPerElem; ++c) {
       for(int d = (dof + 1); d < dofsPerNode; ++d, ++i) {
         vals[i] = elemMat[(r*dofsPerNode) + dof][(c*dofsPerNode) + d];
       }//end d
@@ -510,38 +510,38 @@ void computeKblkUpper(std::vector<unsigned long long int>& factorialsList,
 
   MatZeroEntries(Kblk);
 
-  for(unsigned int zi = zs; zi < (zs + nze); ++zi) {
-    for(unsigned int yi = ys; yi < (ys + nye); ++yi) {
-      for(unsigned int xi = xs; xi < (xs + nxe); ++xi) {
-        for(int z = 0, r = 0; z < numZnodes; ++z) {
-          int vk = (zi + z);
+  for(PetscInt zi = zs; zi < (zs + nze); ++zi) {
+    for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+      for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+        for(PetscInt z = 0, r = 0; z < numZnodes; ++z) {
+          PetscInt vk = (zi + z);
           int pk = rk;
-          int vZs = zs;
+          PetscInt vZs = zs;
           if(vk >= (zs + nz)) {
             ++pk;
             vZs += nz;
           }
-          int zLoc = vk - vZs;
-          for(int y = 0; y < numYnodes; ++y) {
-            int vj = (yi + y);
+          PetscInt zLoc = vk - vZs;
+          for(PetscInt y = 0; y < numYnodes; ++y) {
+            PetscInt vj = (yi + y);
             int pj = rj;
-            int vYs = ys;
+            PetscInt vYs = ys;
             if(vj >= (ys + ny)) {
               ++pj;
               vYs += ny;
             }
-            int yLoc = vj - vYs;
-            for(int x = 0; x < numXnodes; ++x, ++r) {
-              int vi = (xi + x);
+            PetscInt yLoc = vj - vYs;
+            for(PetscInt x = 0; x < numXnodes; ++x, ++r) {
+              PetscInt vi = (xi + x);
               int pi = ri;
-              int vXs = xs;
+              PetscInt vXs = xs;
               if(vi >= (xs + nx)) {
                 ++pi;
                 vXs += nx;
               }
-              int xLoc = vi - vXs;
+              PetscInt xLoc = vi - vXs;
               int pid = (((pk*py) + pj)*px) + pi;
-              int loc = (((zLoc*ly[pj]) + yLoc)*lx[pi]) + xLoc;
+              PetscInt loc = (((zLoc*ly[pj]) + yLoc)*lx[pi]) + xLoc;
               rIndices[r] = offsets[pid] + loc;
             }//end x
           }//end y
