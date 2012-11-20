@@ -3,6 +3,10 @@
 #include "gmg/include/gmgUtils.h"
 #include "common/include/commonUtils.h"
 
+#ifdef DEBUG
+#include <cassert>
+#endif
+
 extern PetscLogEvent buildPmatEvent;
 
 void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
