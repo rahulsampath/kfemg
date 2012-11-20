@@ -70,17 +70,17 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
 
   //x
   for(size_t b = 0; b < xvec.size(); ++b) {
-    int bXloc = xvec[b] - xs;
-    for(int zi = zs; zi < (zs + nz); ++zi) {
-      int bZloc = zi - zs;
-      for(int yi = ys; yi < (ys + ny); ++yi) {
-        int bYloc = yi - ys;
-        int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
+    PetscInt bXloc = xvec[b] - xs;
+    for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+      PetscInt bZloc = zi - zs;
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        PetscInt bYloc = yi - ys;
+        PetscInt bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
         PetscInt bnd = offsets[rank] + bLoc;
         for(int k = -1; k < 2; ++k) {
-          int ok = zi + k;
+          PetscInt ok = zi + k;
           int pk = rk;
-          int oZs = zs;
+          PetscInt oZs = zs;
           if(ok < zs) {
             --pk;
             oZs -= lz[pk];
@@ -88,12 +88,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
             ++pk;
             oZs += nz;
           }
-          int oZloc = ok - oZs;
+          PetscInt oZloc = ok - oZs;
           if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-              int oj = yi + j;
+              PetscInt oj = yi + j;
               int pj = rj;
-              int oYs = ys;
+              PetscInt oYs = ys;
               if(oj < ys) {
                 --pj;
                 oYs -= ly[pj];
@@ -101,12 +101,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
                 ++pj;
                 oYs += ny;
               }
-              int oYloc = oj - oYs;
+              PetscInt oYloc = oj - oYs;
               if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-                  int oi =  xvec[b] + i;
+                  PetscInt oi =  xvec[b] + i;
                   int pi = ri;
-                  int oXs = xs;
+                  PetscInt oXs = xs;
                   if(oi < xs) {
                     --pi;
                     oXs -= lx[pi];
@@ -114,12 +114,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
                     ++pi;
                     oXs += nx;
                   }
-                  int oXloc = oi - oXs;
+                  PetscInt oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
-                  int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
-                  int oBase = (offsets[oPid] + oLoc)*(dofsPerNode - 1);
+                  PetscInt oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
+                  PetscInt oBase = (offsets[oPid] + oLoc)*(dofsPerNode - 1);
                   if( (oi >= 0) && (oi < Nx) ) {
-                    for(int d = 0; d < (dofsPerNode - 1); ++d) {
+                    for(PetscInt d = 0; d < (dofsPerNode - 1); ++d) {
                       PetscInt oth = oBase + d;
                       MatSetValues(Kblk, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                     }//end d
@@ -135,17 +135,17 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
 
   //y
   for(size_t b = 0; b < yvec.size(); ++b) {
-    int bYloc = yvec[b] - ys;
-    for(int zi = zs; zi < (zs + nz); ++zi) {
-      int bZloc = zi - zs;
-      for(int xi = xs; xi < (xs + nx); ++xi) {
-        int bXloc = xi - xs;
-        int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
+    PetscInt bYloc = yvec[b] - ys;
+    for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+      PetscInt bZloc = zi - zs;
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        PetscInt bXloc = xi - xs;
+        PetscInt bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
         PetscInt bnd = offsets[rank] + bLoc;
         for(int k = -1; k < 2; ++k) {
-          int ok = zi + k;
+          PetscInt ok = zi + k;
           int pk = rk;
-          int oZs = zs;
+          PetscInt oZs = zs;
           if(ok < zs) {
             --pk;
             oZs -= lz[pk];
@@ -153,12 +153,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
             ++pk;
             oZs += nz;
           }
-          int oZloc = ok - oZs;
+          PetscInt oZloc = ok - oZs;
           if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-              int oj = yvec[b] + j;
+              PetscInt oj = yvec[b] + j;
               int pj = rj;
-              int oYs = ys;
+              PetscInt oYs = ys;
               if(oj < ys) {
                 --pj;
                 oYs -= ly[pj];
@@ -166,12 +166,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
                 ++pj;
                 oYs += ny;
               }
-              int oYloc = oj - oYs;
+              PetscInt oYloc = oj - oYs;
               if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-                  int oi = xi + i;
+                  PetscInt oi = xi + i;
                   int pi = ri;
-                  int oXs = xs;
+                  PetscInt oXs = xs;
                   if(oi < xs) {
                     --pi;
                     oXs -= lx[pi];
@@ -179,12 +179,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
                     ++pi;
                     oXs += nx;
                   }
-                  int oXloc = oi - oXs;
+                  PetscInt oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
-                  int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
-                  int oBase = (offsets[oPid] + oLoc)*(dofsPerNode - 1);
+                  PetscInt oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
+                  PetscInt oBase = (offsets[oPid] + oLoc)*(dofsPerNode - 1);
                   if( (oi >= 0) && (oi < Nx) ) {
-                    for(int d = 0; d < (dofsPerNode - 1); ++d) {
+                    for(PetscInt d = 0; d < (dofsPerNode - 1); ++d) {
                       PetscInt oth = oBase + d;
                       MatSetValues(Kblk, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                     }//end d
@@ -200,17 +200,17 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
 
   //z
   for(size_t b = 0; b < zvec.size(); ++b) {
-    int bZloc = zvec[b] - zs;
-    for(int yi = ys; yi < (ys + ny); ++yi) {
-      int bYloc = yi - ys;
-      for(int xi = xs; xi < (xs + nx); ++xi) {
-        int bXloc = xi - xs;
-        int bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
+    PetscInt bZloc = zvec[b] - zs;
+    for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+      PetscInt bYloc = yi - ys;
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        PetscInt bXloc = xi - xs;
+        PetscInt bLoc = (((bZloc*ny) + bYloc)*nx) + bXloc;
         PetscInt bnd = offsets[rank] + bLoc;
         for(int k = -1; k < 2; ++k) {
-          int ok = zvec[b] + k;
+          PetscInt ok = zvec[b] + k;
           int pk = rk;
-          int oZs = zs;
+          PetscInt oZs = zs;
           if(ok < zs) {
             --pk;
             oZs -= lz[pk];
@@ -218,12 +218,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
             ++pk;
             oZs += nz;
           }
-          int oZloc = ok - oZs;
+          PetscInt oZloc = ok - oZs;
           if( (ok >= 0) && (ok < Nz) ) {
             for(int j = -1; j < 2; ++j) {
-              int oj = yi + j;
+              PetscInt oj = yi + j;
               int pj = rj;
-              int oYs = ys;
+              PetscInt oYs = ys;
               if(oj < ys) {
                 --pj;
                 oYs -= ly[pj];
@@ -231,12 +231,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
                 ++pj;
                 oYs += ny;
               }
-              int oYloc = oj - oYs;
+              PetscInt oYloc = oj - oYs;
               if( (oj >= 0) && (oj < Ny) ) {
                 for(int i = -1; i < 2; ++i) {
-                  int oi = xi + i;
+                  PetscInt oi = xi + i;
                   int pi = ri;
-                  int oXs = xs;
+                  PetscInt oXs = xs;
                   if(oi < xs) {
                     --pi;
                     oXs -= lx[pi];
@@ -244,12 +244,12 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
                     ++pi;
                     oXs += nx;
                   }
-                  int oXloc = oi - oXs;
+                  PetscInt oXloc = oi - oXs;
                   int oPid = (((pk*py) + pj)*px) + pi;
-                  int oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
-                  int oBase = (offsets[oPid] + oLoc)*(dofsPerNode - 1);
+                  PetscInt oLoc = (((oZloc*ly[pj]) + oYloc)*lx[pi]) + oXloc;
+                  PetscInt oBase = (offsets[oPid] + oLoc)*(dofsPerNode - 1);
                   if( (oi >= 0) && (oi < Nx) ) {
-                    for(int d = 0; d < (dofsPerNode - 1); ++d) {
+                    for(PetscInt d = 0; d < (dofsPerNode - 1); ++d) {
                       PetscInt oth = oBase + d;
                       MatSetValues(Kblk, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
                     }//end d
