@@ -176,11 +176,11 @@ int main(int argc, char *argv[]) {
 
   destroyMat(Pmat);
 
-  for(int i = 0; i < KblkDiag.size(); ++i) {
+  for(size_t i = 0; i < KblkDiag.size(); ++i) {
     destroyMat(KblkDiag[i]);
   }//end i
 
-  for(int i = 0; i < KblkUpper.size(); ++i) {
+  for(size_t i = 0; i < KblkUpper.size(); ++i) {
     destroyMat(KblkUpper[i]);
   }//end i
 
