@@ -48,6 +48,8 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
         } else {
           MatSeqAIJSetPreallocation(Kblk[i][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL);
         }
+      }//end d
+      for(PetscInt d = 0; d < (dofsPerNode - 1); ++d) {
         computeKblkUpper(factorialsList, Kblk[i][d], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, d);
         if(d == 0) {
           dirichletMatrixCorrectionBlkUpper(Kblk[i][d], da[i], lz[i], ly[i], lx[i], offsets[i]);
