@@ -59,29 +59,87 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
   tmpCvec.resize(Pmat.size(), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
     if(da[lev + 1] != NULL) {
+      PetscInt xsf, ysf, zsf;
       PetscInt nxf, nyf, nzf;
-      DMDAGetCorners(da[lev + 1], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxf, &nyf, &nzf);
-      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
+      DMDAGetCorners(da[lev + 1], &xsf, &ysf, &zsf, &nxf, &nyf, &nzf);
+      PetscInt xsc, ysc, zsc;
       PetscInt nxc, nyc, nzc;
+      xsc = ysc = zsc = 0;
       nxc = nyc = nzc = 0;
       if(da[lev] != NULL) {
-        DMDAGetCorners(da[lev], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nxc, &nyc, &nzc);
+        DMDAGetCorners(da[lev], &xsc, &ysc, &zsc, &nxc, &nyc, &nzc);
       }
       if(dim < 3) {
         nzf = nzc = 1;
+        zsf = zsc = 0;
       }
       if(dim < 2) {
         nyf = nyc = 1;
+        ysf = ysc = 0;
       }
       PetscInt locRowSz = dofsPerNode*nxf*nyf*nzf;
       PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
+      PetscInt* d_nnz = new PetscInt[locRowSz];
+      PetscInt* o_nnz = NULL;
+      if(activeNpes[lev + 1] > 1) {
+        o_nnz = new PetscInt[locRowSz];
+      }
+      for(PetscInt zi = zsf, cnt = 0; zi < (zsf + nzf); ++zi) {
+        bool oddZ = ((zi%2) != 0);
+        std::vector<PetscInt> oz;
+        oz.push_back((zi/2));
+        if(oddZ) {
+          oz.push_back((zi/2) + 1);
+        }
+        for(PetscInt yi = ysf; yi < (ysf + nyf); ++yi) {
+          bool oddY = ((yi%2) != 0);
+          std::vector<PetscInt> oy;
+          oy.push_back((yi/2));
+          if(oddY) {
+            oy.push_back((yi/2) + 1);
+          }
+          for(PetscInt xi = xsf; xi < (xsf + nxf); ++xi) {
+            bool oddX = ((xi%2) != 0);
+            std::vector<PetscInt> ox;
+            ox.push_back((xi/2));
+            if(oddX) {
+              ox.push_back((xi/2) + 1);
+            }
+            PetscInt diagVal = 0;
+            PetscInt offVal = 0;
+            for(size_t kk = 0; kk < oz.size(); ++kk) {
+              for(size_t jj = 0; jj < oy.size(); ++jj) {
+                for(size_t ii = 0; ii < ox.size(); ++ii) {
+                  if((oz[kk] >= zsc) && (oz[kk] < (zsc + nzc)) &&  
+                      (oy[jj] >= ysc) && (oy[jj] < (ysc + nyc)) &&
+                      (ox[ii] >= xsc) && (ox[ii] < (xsc + nxc))) {
+                    diagVal += dofsPerNode;
+                  } else {
+                    offVal += dofsPerNode;
+                  }                
+                }//end ii
+              }//end jj
+            }//end kk
+            for(int d = 0; d < dofsPerNode; ++d, ++cnt) {
+              d_nnz[cnt] = diagVal;
+              if(o_nnz) {
+                o_nnz[cnt] = offVal;
+              }
+            }//end d
+          }//end xi
+        }//end yi
+      }//end zi
+      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
       MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
       MatSetType(Pmat[lev], MATAIJ);
-      int nodesPerElem = (1 << dim);
       if(activeNpes[lev + 1] > 1) {
-        MatMPIAIJSetPreallocation(Pmat[lev], (nodesPerElem*dofsPerNode), PETSC_NULL, (nodesPerElem*dofsPerNode), PETSC_NULL);
+        MatMPIAIJSetPreallocation(Pmat[lev], -1, d_nnz, -1, o_nnz);
       } else {
-        MatSeqAIJSetPreallocation(Pmat[lev], (nodesPerElem*dofsPerNode), PETSC_NULL);
+        MatSeqAIJSetPreallocation(Pmat[lev], -1, d_nnz);
+      }
+      delete [] d_nnz;
+      if(activeNpes[lev + 1] > 1) {
+        delete [] o_nnz;
       }
       MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
       computePmat(factorialsList, Pmat[lev], Nz[lev], Ny[lev], Nx[lev], Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
