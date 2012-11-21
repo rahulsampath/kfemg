@@ -13,42 +13,100 @@ extern PetscLogEvent buildKblkUpperEvent;
 
 void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
-    std::vector<int>& activeNpes, int dim, PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K, 
+    std::vector<int>& activeNpes, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
     std::vector<std::vector<PetscInt> >& offsets, std::vector<std::vector<std::vector<long double> > >& elemMats) {
   PetscLogEventBegin(buildKblkUpperEvent, 0, 0, 0, 0);
 
-  PetscInt factor = 3;
-  if(dim > 1) {
-    factor *= 3;
-  }
-  if(dim > 2) {
-    factor *= 3;
-  }
   Kblk.resize(da.size());
   for(int i = 0; i < (da.size()); ++i) {
     if(da[i] != NULL) {
+      PetscInt xs, ys, zs;
       PetscInt nx, ny, nz;
-      DMDAGetCorners(da[i], PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, &ny, &nz);
+      DMDAGetCorners(da[i], &xs, &ys, &zs, &nx, &ny, &nz);
+      PetscInt dim;
+      PetscInt dofsPerNode;
+      PetscInt Nx;
+      PetscInt Ny;
+      PetscInt Nz;
+      DMDAGetInfo(da[i], &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+          &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
       if(dim < 2) {
+        Ny = 1;
         ny = 1;
+        ys = 0;
       }
       if(dim < 3) {
+        Nz = 1;
         nz = 1;
+        zs = 0;
       }
       PetscInt locSz = (nx*ny*nz);
+      PetscInt* d_nnz = new PetscInt[locSz];
+      PetscInt* o_nnz = NULL;
+      if(activeNpes[i] > 1) {
+        o_nnz = new PetscInt[locSz];
+      }
+      for(PetscInt zi = zs, cnt = 0; zi < (zs + nz); ++zi) {
+        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+          for(PetscInt xi = xs; xi < (xs + nx); ++xi, ++cnt) {
+            d_nnz[cnt] = 0;
+            if(o_nnz) {
+              o_nnz[cnt] = 0;
+            }
+            for(int kk = -1; kk < 2; ++kk) {
+              PetscInt oz = zi + kk;
+              if((oz >= 0) && (oz < Nz)) {
+                for(int jj = -1; jj < 2; ++jj) {
+                  PetscInt oy = yi + jj;
+                  if((oy >= 0) && (oy < Ny)) {
+                    for(int ii = -1; ii < 2; ++ii) {
+                      PetscInt ox = xi + ii;
+                      if((ox >= 0) && (ox < Nx)) {
+                        if((oz >= zs) && (oz < (zs + nz)) &&  
+                            (oy >= ys) && (oy < (ys + ny)) &&
+                            (ox >= xs) && (ox < (xs + nx))) {
+                          ++(d_nnz[cnt]);
+                        } else {
+                          ++(o_nnz[cnt]);
+                        }                
+                      }
+                    }//end ii
+                  }
+                }//end jj
+              }
+            }//end kk
+          }//end xi
+        }//end yi
+      }//end zi
       Kblk[i].resize((dofsPerNode - 1), NULL);
       for(PetscInt d = 0; d < (dofsPerNode - 1); ++d) {
+        PetscInt colIdFac = dofsPerNode - d - 1;
+        for(PetscInt j = 0; j < locSz; ++j) {
+          d_nnz[j] *= colIdFac;
+          if(o_nnz) {
+            o_nnz[j] *= colIdFac;
+          }
+        }//end j
         MatCreate(activeComms[i], &(Kblk[i][d]));
-        MatSetSizes(Kblk[i][d], locSz, (locSz*(dofsPerNode - d - 1)), PETSC_DETERMINE, PETSC_DETERMINE);
+        MatSetSizes(Kblk[i][d], locSz, (locSz*colIdFac), PETSC_DETERMINE, PETSC_DETERMINE);
         MatSetType(Kblk[i][d], MATAIJ);
         if(activeNpes[i] > 1) {
-          MatMPIAIJSetPreallocation(Kblk[i][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL,
-              ((factor - 1)*(dofsPerNode - d - 1)), PETSC_NULL);
+          MatMPIAIJSetPreallocation(Kblk[i][d], -1, d_nnz, -1, o_nnz);
         } else {
-          MatSeqAIJSetPreallocation(Kblk[i][d], (factor*(dofsPerNode - d - 1)), PETSC_NULL);
+          MatSeqAIJSetPreallocation(Kblk[i][d], -1, d_nnz);
         }
+        for(PetscInt j = 0; j < locSz; ++j) {
+          d_nnz[j] /= colIdFac;
+          if(o_nnz) {
+            o_nnz[j] /= colIdFac;
+          }
+        }//end j
       }//end d
+      delete [] d_nnz;
+      if(activeNpes[i] > 1) {
+        delete [] o_nnz;
+      }
       for(PetscInt d = 0; d < (dofsPerNode - 1); ++d) {
         computeKblkUpper(factorialsList, Kblk[i][d], da[i], lz[i], ly[i], lx[i], offsets[i], elemMats[i], coeffs, K, d);
         if(d == 0) {

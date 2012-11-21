@@ -86,25 +86,25 @@ int main(int argc, char *argv[]) {
     std::cout<<"Created Element Matrices."<<std::endl;
   }
 
-  std::vector<Mat> Kmat;
-  buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
-      K, partZ, partY, partX, offsets, elemMats, print);
-
   std::vector<std::vector<Mat> > KblkDiag;
   buildKdiagBlocks(factorialsList, KblkDiag, da, activeComms, activeNpes, coeffs, K, 
       partZ, partY, partX, offsets, elemMats);
 
   std::vector<std::vector<Mat> > KblkUpper;
-  buildKupperBlocks(factorialsList, KblkUpper, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
-      K, partZ, partY, partX, offsets, elemMats);
+  buildKupperBlocks(factorialsList, KblkUpper, da, activeComms, activeNpes, coeffs, K,
+      partZ, partY, partX, offsets, elemMats);
 
-  std::vector<PCShellData> shellData;
-  createPCShellData(shellData, KblkDiag, KblkUpper, print);
+  std::vector<Mat> Kmat;
+  buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
+      K, partZ, partY, partX, offsets, elemMats, print);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
   buildPmat(factorialsList, Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, Nz, Ny, Nx,
       partZ, partY, partX, offsets, scanLz, scanLy, scanLx, print);
+
+  std::vector<PCShellData> shellData;
+  createPCShellData(shellData, KblkDiag, KblkUpper, print);
 
   std::vector<KSP> ksp;
   createKSP(ksp, Kmat, activeComms, shellData, dim, dofsPerNode, print);
