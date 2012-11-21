@@ -11,7 +11,7 @@
 #endif
 
 void suppressSmallValues(const unsigned int len, double* vec) {
-  for(int i = 0; i < len; ++i) {
+  for(unsigned int i = 0; i < len; ++i) {
     if(softEquals(vec[i], 0.0)) {
       vec[i] = 0.0;
     }
