@@ -52,7 +52,7 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY, 
     std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets,
     std::vector<std::vector<PetscInt> >& scanLz, std::vector<std::vector<PetscInt> >& scanLy,
-    std::vector<std::vector<PetscInt> >& scanLx, bool print) {
+    std::vector<std::vector<PetscInt> >& scanLx) {
   PetscLogEventBegin(buildPmatEvent, 0, 0, 0, 0);
 
   Pmat.resize((da.size() - 1), NULL);
@@ -89,9 +89,6 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
           offsets[lev], scanLz[lev], scanLy[lev], scanLx[lev],
           offsets[lev + 1], scanLz[lev + 1], scanLy[lev + 1], scanLx[lev + 1],
           dim, dofsPerNode, coeffs, K);
-    }
-    if(print) {
-      std::cout<<"Built Pmat for level = "<<lev<<std::endl;
     }
   }//end lev
 
