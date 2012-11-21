@@ -90,13 +90,21 @@ int main(int argc, char *argv[]) {
   buildKdiagBlocks(factorialsList, KblkDiag, da, activeComms, activeNpes, coeffs, K, 
       partZ, partY, partX, offsets, elemMats);
 
+  if(print) {
+    std::cout<<"Built K-diag."<<std::endl;
+  }
+
   std::vector<std::vector<Mat> > KblkUpper;
   buildKupperBlocks(factorialsList, KblkUpper, da, activeComms, activeNpes, coeffs, K,
       partZ, partY, partX, offsets, elemMats);
 
+  if(print) {
+    std::cout<<"Built K-upper."<<std::endl;
+  }
+
   std::vector<Mat> Kmat;
-  buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, dim, dofsPerNode, coeffs,
-      K, partZ, partY, partX, offsets, elemMats, print);
+  buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, coeffs, K,
+      partZ, partY, partX, offsets, elemMats, print);
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
