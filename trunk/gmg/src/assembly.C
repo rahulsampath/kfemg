@@ -81,15 +81,15 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
       }//end zi
       Kblk[i].resize((dofsPerNode - 1), NULL);
       for(PetscInt d = 0; d < (dofsPerNode - 1); ++d) {
-        PetscInt colIdFac = dofsPerNode - d - 1;
+        PetscInt colFac = dofsPerNode - d - 1;
         for(PetscInt j = 0; j < locSz; ++j) {
-          d_nnz[j] *= colIdFac;
+          d_nnz[j] *= colFac;
           if(o_nnz) {
-            o_nnz[j] *= colIdFac;
+            o_nnz[j] *= colFac;
           }
         }//end j
         MatCreate(activeComms[i], &(Kblk[i][d]));
-        MatSetSizes(Kblk[i][d], locSz, (locSz*colIdFac), PETSC_DETERMINE, PETSC_DETERMINE);
+        MatSetSizes(Kblk[i][d], locSz, (locSz*colFac), PETSC_DETERMINE, PETSC_DETERMINE);
         MatSetType(Kblk[i][d], MATAIJ);
         if(activeNpes[i] > 1) {
           MatMPIAIJSetPreallocation(Kblk[i][d], -1, d_nnz, -1, o_nnz);
@@ -97,9 +97,9 @@ void buildKupperBlocks(std::vector<unsigned long long int>& factorialsList,
           MatSeqAIJSetPreallocation(Kblk[i][d], -1, d_nnz);
         }
         for(PetscInt j = 0; j < locSz; ++j) {
-          d_nnz[j] /= colIdFac;
+          d_nnz[j] /= colFac;
           if(o_nnz) {
-            o_nnz[j] /= colIdFac;
+            o_nnz[j] /= colFac;
           }
         }//end j
       }//end d
