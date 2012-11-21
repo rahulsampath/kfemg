@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
       partZ, partY, partX, offsets, elemMats);
 
   if(print) {
-    std::cout<<"Built K-diag."<<std::endl;
+    std::cout<<"Built K-diag blocks."<<std::endl;
   }
 
   std::vector<std::vector<Mat> > KblkUpper;
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
       partZ, partY, partX, offsets, elemMats);
 
   if(print) {
-    std::cout<<"Built K-upper."<<std::endl;
+    std::cout<<"Built K-upper blocks."<<std::endl;
   }
 
   std::vector<Mat> Kmat;
@@ -109,7 +109,11 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
   buildPmat(factorialsList, Pmat, tmpCvec, da, activeComms, activeNpes, dim, dofsPerNode, coeffs, K, Nz, Ny, Nx,
-      partZ, partY, partX, offsets, scanLz, scanLy, scanLx, print);
+      partZ, partY, partX, offsets, scanLz, scanLy, scanLx);
+
+  if(print) {
+    std::cout<<"Built P matrices."<<std::endl;
+  }
 
   std::vector<PCShellData> shellData;
   createPCShellData(shellData, KblkDiag, KblkUpper, print);

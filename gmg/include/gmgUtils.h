@@ -59,7 +59,7 @@ void buildPmat(std::vector<unsigned long long int>& factorialsList,
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY, 
     std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets,
     std::vector<std::vector<PetscInt> >& scanLz, std::vector<std::vector<PetscInt> >& scanLy,
-    std::vector<std::vector<PetscInt> >& scanLx, bool print);
+    std::vector<std::vector<PetscInt> >& scanLx);
 
 void computePmat(std::vector<unsigned long long int>& factorialsList,
     Mat Pmat, PetscInt Nzc, PetscInt Nyc, PetscInt Nxc, PetscInt Nzf, PetscInt Nyf, PetscInt Nxf,
