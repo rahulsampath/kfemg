@@ -167,6 +167,8 @@ void destroyDA(std::vector<DM>& da);
 
 void destroyKSP(std::vector<KSP>& ksp);
 
+void destroyKmatData(std::vector<KmatData>& data);
+
 #endif
 
 
