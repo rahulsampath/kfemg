@@ -358,5 +358,22 @@ void destroyKSP(std::vector<KSP>& ksp) {
   ksp.clear();
 }
 
+void destroyKmatData(std::vector<KmatData>& data) {
+  for(size_t i = 0; i < data.size(); ++i) {
+    if((data[i].aIn) != NULL) {
+      VecDestroy(&(data[i].aIn));
+    }
+    if((data[i].aOut) != NULL) {
+      VecDestroy(&(data[i].aOut));
+    }
+    if((data[i].bIn) != NULL) {
+      VecDestroy(&(data[i].bIn));
+    }
+    if((data[i].cOut) != NULL) {
+      VecDestroy(&(data[i].cOut));
+    }
+  }//end i
+}
+
 
 
