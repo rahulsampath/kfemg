@@ -68,7 +68,8 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
         KSPSetPCSide(ksp[lev], PC_RIGHT);
         PCSetType(pc, PCSHELL);
         PCShellSetContext(pc, &(data[lev]));
-        PCShellSetApply(pc, &applyShellPC);
+        PCShellSetApply(pc, &applyBlockPC);
+        PCShellSetName(pc, "MyBlockPC");
         KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
         KSPSetOptionsPrefix(ksp[lev], "smooth_");
       }
@@ -133,7 +134,7 @@ void createBlockPCdata(std::vector<BlockPCdata>& data, std::vector<std::vector<M
   }//end i
 }
 
-PetscErrorCode applyShellPC(PC pc, Vec in, Vec out) {
+PetscErrorCode applyBlockPC(PC pc, Vec in, Vec out) {
   BlockPCdata* data;
   PCShellGetContext(pc, (void**)(&data));
 
