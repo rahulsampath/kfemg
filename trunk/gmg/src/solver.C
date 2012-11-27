@@ -280,6 +280,63 @@ PetscErrorCode applyBlockPC(PC pc, Vec in, Vec out) {
   return 0;
 }
 
+PetscErrorCode applySchurPC(PC pc, Vec in, Vec out) {
+  SchurPCdata* data;
+  PCShellGetContext(pc, (void**)(&data));
+
+  PetscInt subLocSz;
+  PetscInt fullLocSz;
+  VecGetLocalSize(data->sSol, &subLocSz);
+  VecGetLocalSize(in, &fullLocSz);
+  PetscInt numDofs = fullLocSz/subLocSz;
+
+  PetscScalar* inArr;
+  PetscScalar* cRhsArr;
+  PetscScalar* sRhsArr;
+  VecGetArray(in, &inArr);
+  VecGetArray(data->cRhs, &cRhsArr);
+  VecGetArray(data->sRhs, &sRhsArr);
+  for(PetscInt i = 0; i < subLocSz; ++i) {
+    PetscInt inBase = i*numDofs;
+    sRhsArr[i] = inArr[inBase];
+    PetscInt cRhsBase = i*(numDofs - 1);
+    for(PetscInt d = 1; d < numDofs; ++d) {
+      cRhsArr[cRhsBase + d - 1] = inArr[inBase + d];
+    }//end d
+  }//end i
+  VecRestoreArray(data->sRhs, &sRhsArr);
+  VecRestoreArray(data->cRhs, &cRhsArr);
+  VecRestoreArray(in, &inArr);
+
+  KSPSolve(data->cKsp, data->cRhs, data->x);
+  VecScale(data->x, -1.0);
+  MatMultAdd(data->B, data->x, data->sRhs, data->sRhs);
+  KSPSolve(data->sKsp, data->sRhs, data->sSol);
+  MatMultTranspose(data->B, data->sSol, data->cRhs);
+  KSPSolve(data->cKsp, data->cRhs, data->z);
+  VecAXPBY(data->x, -1.0, -1.0, data->z);
+
+  PetscScalar* outArr;
+  PetscScalar* xArr;
+  PetscScalar* sSolArr;
+  VecGetArray(out, &outArr);
+  VecGetArray(data->x, &xArr);
+  VecGetArray(data->sSol, &sSolArr);
+  for(PetscInt i = 0; i < subLocSz; ++i) {
+    PetscInt outBase = i*numDofs;
+    outArr[outBase] = sSolArr[i];
+    PetscInt xBase = i*(numDofs - 1);
+    for(PetscInt d = 1; d < numDofs; ++d) {
+      outArr[outBase + d] = xArr[xBase + d - 1];
+    }//end d
+  }//end i
+  VecRestoreArray(data->sSol, &sSolArr);
+  VecRestoreArray(data->x, &xArr);
+  VecRestoreArray(out, &outArr);
+
+  return 0;
+}
+
 PetscErrorCode applyKmatvec(Mat Kmat, Vec in, Vec out) {
   KmatData* data;
   MatShellGetContext(Kmat, &data);
@@ -347,6 +404,15 @@ PetscErrorCode applySmatvec(Mat Smat, Vec in, Vec out) {
   return 0;
 }
 
+PetscErrorCode applySgetDiagonal(Mat Smat, Vec diag) {
+  SmatData* data;
+  MatShellGetContext(Smat, &data);
+
+  MatGetDiagonal(data->A, diag);
+
+  return 0;
+}
+
 void destroyBlockPCdata(std::vector<BlockPCdata>& data) {
   for(size_t i = 0; i < data.size(); ++i) {
     data[i].KblkDiag.clear();
@@ -407,12 +473,35 @@ void destroySmatData(std::vector<SmatData>& data) {
     if((data[i].cSol) != NULL) {
       VecDestroy(&(data[i].cSol));
     }
-    if((data[i].cKsp) != NULL) {
-      KSPDestroy(&(data[i].cKsp));
-    }
   }//end i
   data.clear();
 }
 
+void destroySchurPCdata(std::vector<SchurPCdata>& data) {
+  for(size_t i = 0; i < data.size(); ++i) {
+    if((data[i].cKsp) != NULL) {
+      KSPDestroy(&(data[i].cKsp));
+    }
+    if((data[i].sKsp) != NULL) {
+      KSPDestroy(&(data[i].sKsp));
+    }
+    if((data[i].cRhs) != NULL) {
+      VecDestroy(&(data[i].cRhs));
+    }
+    if((data[i].x) != NULL) {
+      VecDestroy(&(data[i].x));
+    }
+    if((data[i].z) != NULL) {
+      VecDestroy(&(data[i].z));
+    }
+    if((data[i].sRhs) != NULL) {
+      VecDestroy(&(data[i].sRhs));
+    }
+    if((data[i].sSol) != NULL) {
+      VecDestroy(&(data[i].sSol));
+    }
+  }//end i
+  data.clear();
+}
 
 

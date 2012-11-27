@@ -52,13 +52,25 @@ struct SmatData {
 };
 
 struct SchurPCdata {
+  Mat B;
+  KSP cKsp;
+  KSP sKsp;
+  Vec cRhs;
+  Vec x;
+  Vec z;
+  Vec sRhs;
+  Vec sSol;
 };
+
+PetscErrorCode applySgetDiagonal(Mat Smat, Vec diag);
 
 PetscErrorCode applySmatvec(Mat Smat, Vec in, Vec out);
 
 PetscErrorCode applyKmatvec(Mat Kmat, Vec in, Vec out);
 
 PetscErrorCode applyMG(PC pc, Vec in, Vec out);
+
+PetscErrorCode applySchurPC(PC pc, Vec in, Vec out);
 
 PetscErrorCode applyBlockPC(PC pc, Vec in, Vec out);
 
@@ -178,6 +190,8 @@ void destroyKSP(std::vector<KSP>& ksp);
 void destroyKmatData(std::vector<KmatData>& data);
 
 void destroySmatData(std::vector<SmatData>& data);
+
+void destroySchurPCdata(std::vector<SchurPCdata>& data);
 
 #endif
 
