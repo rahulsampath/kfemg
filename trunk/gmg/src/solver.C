@@ -334,6 +334,19 @@ PetscErrorCode applyKmatvec(Mat Kmat, Vec in, Vec out) {
   return 0;
 }
 
+PetscErrorCode applySmatvec(Mat Smat, Vec in, Vec out) {
+  SmatData* data;
+  MatShellGetContext(Smat, &data);
+
+  MatMult(data->A, in, data->aOut);
+  MatMultTranspose(data->B, in, data->cRhs);
+  KSPSolve(data->cKsp, data->cRhs, data->cSol);
+  VecScale(data->cSol, -1.0);
+  MatMultAdd(data->B, data->cSol, data->aOut, out);
+
+  return 0;
+}
+
 void destroyBlockPCdata(std::vector<BlockPCdata>& data) {
   for(size_t i = 0; i < data.size(); ++i) {
     data[i].KblkDiag.clear();
@@ -372,7 +385,33 @@ void destroyKmatData(std::vector<KmatData>& data) {
     if((data[i].cOut) != NULL) {
       VecDestroy(&(data[i].cOut));
     }
+    if((data[i].C) != NULL) {
+      PetscBool same;
+      PetscObjectTypeCompare(((PetscObject)(data[i].C)), MATSHELL, &same);
+      if(same) {
+        MatDestroy(&(data[i].C));
+      }
+    }
   }//end i
+  data.clear();
+}
+
+void destroySmatData(std::vector<SmatData>& data) {
+  for(size_t i = 0; i < data.size(); ++i) {
+    if((data[i].aOut) != NULL) {
+      VecDestroy(&(data[i].aOut));
+    }
+    if((data[i].cRhs) != NULL) {
+      VecDestroy(&(data[i].cRhs));
+    }
+    if((data[i].cSol) != NULL) {
+      VecDestroy(&(data[i].cSol));
+    }
+    if((data[i].cKsp) != NULL) {
+      KSPDestroy(&(data[i].cKsp));
+    }
+  }//end i
+  data.clear();
 }
 
 
