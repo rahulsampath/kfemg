@@ -33,6 +33,13 @@ struct BlockPCdata {
 };
 
 struct KmatData {
+  Mat A;
+  Mat B;
+  Mat C;
+  Vec aIn;
+  Vec aOut;
+  Vec bIn;
+  Vec cOut;
 };
 
 struct SmatData {
@@ -41,9 +48,11 @@ struct SmatData {
 struct SchurPCdata {
 };
 
+PetscErrorCode applyKmatvec(Mat Kmat, Vec in, Vec out);
+
 PetscErrorCode applyMG(PC pc, Vec in, Vec out);
 
-PetscErrorCode applyShellPC(PC pc, Vec in, Vec out);
+PetscErrorCode applyBlockPC(PC pc, Vec in, Vec out);
 
 void createElementMatrices(std::vector<unsigned long long int>& factorialsList, int dim, int K, 
     std::vector<long long int>& coeffs, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
