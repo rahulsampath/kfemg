@@ -280,6 +280,60 @@ PetscErrorCode applyBlockPC(PC pc, Vec in, Vec out) {
   return 0;
 }
 
+PetscErrorCode applyKmatvec(Mat Kmat, Vec in, Vec out) {
+  KmatData* data;
+  MatShellGetContext(Kmat, &data);
+
+  PetscInt subLocSz;
+  PetscInt fullLocSz;
+  VecGetLocalSize(data->aIn, &subLocSz);
+  VecGetLocalSize(in, &fullLocSz);
+  PetscInt numDofs = fullLocSz/subLocSz;
+
+  PetscScalar* inArr;
+  PetscScalar* aInArr;
+  PetscScalar* bInArr;
+  VecGetArray(in, &inArr);
+  VecGetArray(data->aIn, &aInArr);
+  VecGetArray(data->bIn, &bInArr);
+  for(PetscInt i = 0; i < subLocSz; ++i) {
+    PetscInt inBase = i*numDofs;
+    aInArr[i] = inArr[inBase];
+    PetscInt bInBase = i*(numDofs - 1);
+    for(PetscInt d = 1; d < numDofs; ++d) {
+      bInArr[bInBase + d - 1] = inArr[inBase + d];
+    }//end d
+  }//end i
+  VecRestoreArray(data->bIn, &bInArr);
+  VecRestoreArray(data->aIn, &aInArr);
+  VecRestoreArray(in, &inArr);
+
+  MatMult(data->A, data->aIn, data->aOut);
+  MatMultAdd(data->B, data->bIn, data->aOut, data->aOut);
+  MatMult(data->C, data->bIn, data->cOut);
+  MatMultTransposeAdd(data->B, data->aIn, data->cOut, data->cOut);
+
+  PetscScalar* outArr;
+  PetscScalar* aOutArr;
+  PetscScalar* cOutArr;
+  VecGetArray(out, &outArr);
+  VecGetArray(data->aOut, &aOutArr);
+  VecGetArray(data->cOut, &cOutArr);
+  for(PetscInt i = 0; i < subLocSz; ++i) {
+    PetscInt outBase = i*numDofs;
+    outArr[outBase] = aOutArr[i];
+    PetscInt cOutBase = i*(numDofs - 1);
+    for(PetscInt d = 1; d < numDofs; ++d) {
+      outArr[outBase + d] = cOutArr[cOutBase + d - 1];
+    }//end d
+  }//end i
+  VecRestoreArray(data->cOut, &cOutArr);
+  VecRestoreArray(data->aOut, &aOutArr);
+  VecRestoreArray(out, &outArr);
+
+  return 0;
+}
+
 void destroyBlockPCdata(std::vector<BlockPCdata>& data) {
   for(size_t i = 0; i < data.size(); ++i) {
     data[i].KblkDiag.clear();
