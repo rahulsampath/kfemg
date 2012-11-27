@@ -43,10 +43,18 @@ struct KmatData {
 };
 
 struct SmatData {
+  Mat A;
+  Mat B;
+  KSP cKsp;
+  Vec aOut;
+  Vec cRhs;
+  Vec cSol;
 };
 
 struct SchurPCdata {
 };
+
+PetscErrorCode applySmatvec(Mat Smat, Vec in, Vec out);
 
 PetscErrorCode applyKmatvec(Mat Kmat, Vec in, Vec out);
 
@@ -168,6 +176,8 @@ void destroyDA(std::vector<DM>& da);
 void destroyKSP(std::vector<KSP>& ksp);
 
 void destroyKmatData(std::vector<KmatData>& data);
+
+void destroySmatData(std::vector<SmatData>& data);
 
 #endif
 
