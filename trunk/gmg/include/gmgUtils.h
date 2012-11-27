@@ -22,7 +22,7 @@ struct MGdata {
   std::vector<Vec> tmpCvec;
 };
 
-struct PCShellData {
+struct BlockPCdata {
   PetscInt numBlkIters;
   std::vector<Mat> KblkDiag;
   std::vector<Mat> KblkUpper;
@@ -30,6 +30,15 @@ struct PCShellData {
   Vec diagIn;
   Vec diagOut;
   std::vector<Vec> upperIn;
+};
+
+struct KmatData {
+};
+
+struct SmatData {
+};
+
+struct SchurPCdata {
 };
 
 PetscErrorCode applyMG(PC pc, Vec in, Vec out);
@@ -40,7 +49,7 @@ void createElementMatrices(std::vector<unsigned long long int>& factorialsList, 
     std::vector<long long int>& coeffs, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<std::vector<std::vector<long double> > >& elemMats, bool print);
 
-void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<Mat> >& KblkDiag,
+void createBlockPCdata(std::vector<BlockPCdata>& data, std::vector<std::vector<Mat> >& KblkDiag,
     std::vector<std::vector<Mat> >& KblkUpper, bool print);
 
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
@@ -116,7 +125,7 @@ void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& l
 void computeRandomRHS(DM da, Mat Kmat, Vec rhs, const unsigned int seed);
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
-    std::vector<PCShellData>& data, int dim, int dofsPerNode, bool print);
+    std::vector<BlockPCdata>& data, int dim, int dofsPerNode, bool print);
 
 void zeroBoundaries(DM da, Vec vec);
 
@@ -137,7 +146,7 @@ void createGridSizes(int dim, std::vector<PetscInt> & Nz, std::vector<PetscInt> 
 void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol, 
     std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
 
-void destroyPCShellData(std::vector<PCShellData>& data);
+void destroyBlockPCdata(std::vector<BlockPCdata>& data);
 
 void destroyComms(std::vector<MPI_Comm> & activeComms);
 
