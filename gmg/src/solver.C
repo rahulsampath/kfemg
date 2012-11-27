@@ -51,7 +51,7 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
 }
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
-    std::vector<PCShellData>& data, int dim, int dofsPerNode, bool print) {
+    std::vector<BlockPCdata>& data, int dim, int dofsPerNode, bool print) {
   ksp.resize((Kmat.size()), NULL);
   for(int lev = 0; lev < (Kmat.size()); ++lev) {
     if(Kmat[lev] != NULL) {
@@ -79,7 +79,7 @@ void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Co
   }//end lev
 }
 
-void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<Mat> >& KblkDiag,
+void createBlockPCdata(std::vector<BlockPCdata>& data, std::vector<std::vector<Mat> >& KblkDiag,
     std::vector<std::vector<Mat> >& KblkUpper, bool print) {
   PetscInt numBlkIters = 2;
   PetscOptionsGetInt(PETSC_NULL, "-numBlkIters", &numBlkIters, PETSC_NULL);
@@ -134,7 +134,7 @@ void createPCShellData(std::vector<PCShellData>& data, std::vector<std::vector<M
 }
 
 PetscErrorCode applyShellPC(PC pc, Vec in, Vec out) {
-  PCShellData* data;
+  BlockPCdata* data;
   PCShellGetContext(pc, (void**)(&data));
 
   unsigned int dofsPerNode = data->KblkDiag.size();
@@ -279,7 +279,7 @@ PetscErrorCode applyShellPC(PC pc, Vec in, Vec out) {
   return 0;
 }
 
-void destroyPCShellData(std::vector<PCShellData>& data) {
+void destroyBlockPCdata(std::vector<BlockPCdata>& data) {
   for(size_t i = 0; i < data.size(); ++i) {
     data[i].KblkDiag.clear();
     data[i].KblkUpper.clear();

@@ -115,11 +115,11 @@ int main(int argc, char *argv[]) {
     std::cout<<"Built P matrices."<<std::endl;
   }
 
-  std::vector<PCShellData> shellData;
-  createPCShellData(shellData, KblkDiag, KblkUpper, print);
+  std::vector<BlockPCdata> blkPCdata;
+  createBlockPCdata(blkPCdata, KblkDiag, KblkUpper, print);
 
   std::vector<KSP> ksp;
-  createKSP(ksp, Kmat, activeComms, shellData, dim, dofsPerNode, print);
+  createKSP(ksp, Kmat, activeComms, blkPCdata, dim, dofsPerNode, print);
 
   Vec rhs;
   DMCreateGlobalVector(da[da.size() - 1], &rhs);
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
   VecDestroy(&rhs);
   VecDestroy(&sol);
 
-  destroyPCShellData(shellData);
+  destroyBlockPCdata(blkPCdata);
 
   destroyDA(da);
 
