@@ -62,6 +62,12 @@ struct SchurPCdata {
   Vec sSol;
 };
 
+void createKmatData(int blkId, Mat& KmatShell, std::vector<KmatData>& data,
+    std::vector<Mat>& KblkDiag, std::vector<Mat>& KblkUpper);
+
+void createAllKmatShells(std::vector<Mat>& KmatShells, std::vector<std::vector<KmatData> >& kMatData,
+    std::vector<std::vector<Mat> >& KblkDiag, std::vector<std::vector<Mat> >& KblkUpper);
+
 PetscErrorCode applySgetDiagonal(Mat Smat, Vec diag);
 
 PetscErrorCode applySmatvec(Mat Smat, Vec in, Vec out);

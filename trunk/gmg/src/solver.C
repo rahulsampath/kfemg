@@ -10,6 +10,48 @@
 
 extern PetscLogEvent vCycleEvent;
 
+void createAllKmatShells(std::vector<Mat>& KmatShells, std::vector<std::vector<KmatData> >& kMatData,
+    std::vector<std::vector<Mat> >& KblkDiag, std::vector<std::vector<Mat> >& KblkUpper) {
+  KmatShells.resize(KblkDiag.size(), NULL);
+  kMatData.resize(KmatShells.size());
+  for(size_t i = 0; i < KmatShells.size(); ++i) {
+    createKmatData(1, KmatShells[i], kMatData[i], KblkDiag[i], KblkUpper[i]);
+  }//end i
+}
+
+void createKmatData(int blkId, Mat& KmatShell, std::vector<KmatData>& data,
+    std::vector<Mat>& KblkDiag, std::vector<Mat>& KblkUpper) {
+#ifdef DEBUG
+  assert(blkId > 0);
+#endif
+  if(blkId < (KblkDiag.size())) {
+    if(blkId == 1) {
+      data.resize((KblkDiag.size()) - 2);
+    }
+    if((blkId + 1) == (KblkDiag.size())) {
+      KmatShell = KblkDiag[blkId];
+    } else {
+      MPI_Comm comm;
+      PetscObjectGetComm(((PetscObject)(KblkDiag[blkId])), &comm);
+      PetscInt locDiagSz;
+      MatGetLocalSize((KblkDiag[blkId]), PETSC_NULL, &locDiagSz);
+      PetscInt locUpperSz;
+      MatGetLocalSize((KblkUpper[blkId]), PETSC_NULL, &locUpperSz);
+      PetscInt locSz = locDiagSz + locUpperSz;
+      MatCreateShell(comm, locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE, &(data[blkId - 1]), &KmatShell);
+      MatShellSetOperation(KmatShell, MATOP_MULT, ((void(*)(void))(&applyKmatvec)));
+      data[blkId - 1].A = KblkDiag[blkId];
+      data[blkId - 1].B = KblkUpper[blkId]; 
+      createKmatData((blkId + 1), (data[blkId - 1].C), data, KblkDiag, KblkUpper); 
+      MatGetVecs((data[blkId - 1].A), &(data[blkId - 1].aIn), &(data[blkId - 1].aOut));
+      MatGetVecs((data[blkId - 1].B), &(data[blkId - 1].bIn), NULL);
+      MatGetVecs((data[blkId - 1].C), NULL, &(data[blkId - 1].cOut));
+    }
+  } else {
+    KmatShell = NULL;
+  }
+}
+
 PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   MGdata* data;
   PCShellGetContext(pc, (void**)(&data));
