@@ -10,6 +10,78 @@
 
 extern PetscLogEvent vCycleEvent;
 
+void createAllSchurPC(std::vector<std::vector<SchurPCdata> >& pcData, std::vector<std::vector<Mat> >& SmatShells,
+    std::vector<Mat>& KmatShells, std::vector<std::vector<KmatData> >& kMatData,
+    std::vector<std::vector<SmatData> >& sMatData) {
+  pcData.resize(SmatShells.size());
+  for(size_t lev = 0; lev < pcData.size(); ++lev) {
+    createSchurPCdata(lev, pcData[lev], SmatShells[lev], KmatShells[lev], kMatData[lev], sMatData[lev]);
+  }//end lev
+}
+
+void createSchurPCdata(int lev, std::vector<SchurPCdata>& pcData, std::vector<Mat>& SmatShell, Mat& KmatShell, 
+    std::vector<KmatData>& kMatData, std::vector<SmatData>& sMatData) {
+  pcData.resize(SmatShell.size());
+  for(size_t i = 0; i < pcData.size(); ++i) {
+    pcData[i].B = (sMatData[i].B);
+    MatGetVecs(SmatShell[i], &(pcData[i].sSol), &(pcData[i].sRhs));
+    MatGetVecs((pcData[i].B), &(pcData[i].x), NULL);
+    VecDuplicate((pcData[i].x), &(pcData[i].z));
+    VecDuplicate((pcData[i].x), &(pcData[i].cRhs));
+    MPI_Comm comm;
+    PetscObjectGetComm(((PetscObject)(pcData[i].B)), &comm);
+    PC spc;
+    PC cpc;
+    KSPCreate(comm, &(pcData[i].sKsp));
+    KSPCreate(comm, &(pcData[i].cKsp));
+    sMatData[i].cKsp = (pcData[i].cKsp); 
+    KSPGetPC((pcData[i].sKsp), &spc);
+    KSPGetPC((pcData[i].cKsp), &cpc);
+    if(lev == 0) {
+      PCSetType(spc, PCCHOLESKY);
+    } else {
+      PCSetType(spc, PCJACOBI);
+    }
+    KSPSetType((pcData[i].sKsp), KSPFGMRES);
+    KSPSetPCSide((pcData[i].sKsp), PC_RIGHT);
+    if((i + 1) == (pcData.size())) {
+      if(lev == 0) {
+        PCSetType(cpc, PCCHOLESKY);
+      } else {
+        PCSetType(cpc, PCJACOBI);
+      }
+      KSPSetType((pcData[i].cKsp), KSPCG);
+      KSPSetPCSide((pcData[i].cKsp), PC_LEFT);
+    } else {
+      PCSetType(cpc, PCSHELL);
+      PCShellSetContext(cpc, &(pcData[i + 1]));
+      PCShellSetApply(cpc, &applySchurPC);
+      PCShellSetName(cpc, "MySchurPC");
+      KSPSetType((pcData[i].cKsp), KSPFGMRES);
+      KSPSetPCSide((pcData[i].cKsp), PC_RIGHT);
+    }
+    KSPSetOperators((pcData[i].sKsp), SmatShell[i], (sMatData[i].A), SAME_PRECONDITIONER);
+    if(i == 0) {
+      KSPSetOperators((pcData[i].cKsp), KmatShell, KmatShell, SAME_PRECONDITIONER);
+    } else {
+      KSPSetOperators((pcData[i].cKsp), (kMatData[i - 1].C), (kMatData[i - 1].C), SAME_PRECONDITIONER);
+    }
+    KSPSetInitialGuessNonzero((pcData[i].sKsp), PETSC_FALSE);
+    KSPSetInitialGuessNonzero((pcData[i].cKsp), PETSC_FALSE);
+    KSPSetTolerances((pcData[i].sKsp), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+    KSPSetTolerances((pcData[i].cKsp), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+    if(lev == 0) {
+      KSPSetOptionsPrefix((pcData[i].sKsp), "coarseSchurS_");
+      KSPSetOptionsPrefix((pcData[i].cKsp), "coarseSchurC_");
+    } else {
+      KSPSetOptionsPrefix((pcData[i].sKsp), "smoothSchurS_");
+      KSPSetOptionsPrefix((pcData[i].cKsp), "smoothSchurC_");
+    }
+    KSPSetFromOptions((pcData[i].sKsp));
+    KSPSetFromOptions((pcData[i].cKsp));
+  }//end i
+}
+
 void createAllSmatShells(std::vector<std::vector<Mat> >& SmatShells, std::vector<std::vector<SmatData> >& sMatData,
     std::vector<std::vector<Mat> >& KblkDiag, std::vector<std::vector<Mat> >& KblkUpper) {
   SmatShells.resize(KblkDiag.size());
@@ -21,7 +93,7 @@ void createAllSmatShells(std::vector<std::vector<Mat> >& SmatShells, std::vector
 
 void createSmatData(std::vector<Mat>& SmatShell, std::vector<SmatData>& data,
     std::vector<Mat>& KblkDiag, std::vector<Mat>& KblkUpper) {
-  SmatShell.resize(((KblkDiag.size()) - 1), NULL);
+  SmatShell.resize((KblkUpper.size()), NULL);
   data.resize(SmatShell.size());
   for(size_t i = 0; i < SmatShell.size(); ++i) {
     MPI_Comm comm;
@@ -30,7 +102,6 @@ void createSmatData(std::vector<Mat>& SmatShell, std::vector<SmatData>& data,
     MatGetLocalSize((KblkDiag[i]), PETSC_NULL, &locSz);
     MatCreateShell(comm, locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE, &(data[i]), &(SmatShell[i]));
     MatShellSetOperation(SmatShell[i], MATOP_MULT, ((void(*)(void))(&applySmatvec)));
-    MatShellSetOperation(SmatShell[i], MATOP_GET_DIAGONAL, ((void(*)(void))(&applySgetDiagonal)));
     data[i].A = KblkDiag[i];
     data[i].B = KblkUpper[i];
     MatGetVecs((data[i].B), &(data[i].cSol), &(data[i].aOut));
@@ -470,15 +541,6 @@ PetscErrorCode applySmatvec(Mat Smat, Vec in, Vec out) {
   KSPSolve(data->cKsp, data->cRhs, data->cSol);
   VecScale(data->cSol, -1.0);
   MatMultAdd(data->B, data->cSol, data->aOut, out);
-
-  return 0;
-}
-
-PetscErrorCode applySgetDiagonal(Mat Smat, Vec diag) {
-  SmatData* data;
-  MatShellGetContext(Smat, &data);
-
-  MatGetDiagonal(data->A, diag);
 
   return 0;
 }
