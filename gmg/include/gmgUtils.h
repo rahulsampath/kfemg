@@ -62,6 +62,12 @@ struct SchurPCdata {
   Vec sSol;
 };
 
+void createSmatData(std::vector<Mat>& SmatShell, std::vector<SmatData>& data,
+    std::vector<Mat>& KblkDiag, std::vector<Mat>& KblkUpper);
+
+void createAllSmatShells(std::vector<std::vector<Mat> >& SmatShells, std::vector<std::vector<SmatData> >& sMatData,
+    std::vector<std::vector<Mat> >& KblkDiag, std::vector<std::vector<Mat> >& KblkUpper);
+
 void createKmatData(int blkId, Mat& KmatShell, std::vector<KmatData>& data,
     std::vector<Mat>& KblkDiag, std::vector<Mat>& KblkUpper);
 

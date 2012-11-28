@@ -10,6 +10,34 @@
 
 extern PetscLogEvent vCycleEvent;
 
+void createAllSmatShells(std::vector<std::vector<Mat> >& SmatShells, std::vector<std::vector<SmatData> >& sMatData,
+    std::vector<std::vector<Mat> >& KblkDiag, std::vector<std::vector<Mat> >& KblkUpper) {
+  SmatShells.resize(KblkDiag.size());
+  sMatData.resize(SmatShells.size());
+  for(size_t i = 0; i < SmatShells.size(); ++i) {
+    createSmatData(SmatShells[i], sMatData[i], KblkDiag[i], KblkUpper[i]);
+  }//end i
+}
+
+void createSmatData(std::vector<Mat>& SmatShell, std::vector<SmatData>& data,
+    std::vector<Mat>& KblkDiag, std::vector<Mat>& KblkUpper) {
+  SmatShell.resize(((KblkDiag.size()) - 1), NULL);
+  data.resize(SmatShell.size());
+  for(size_t i = 0; i < SmatShell.size(); ++i) {
+    MPI_Comm comm;
+    PetscObjectGetComm(((PetscObject)(KblkDiag[i])), &comm);
+    PetscInt locSz;
+    MatGetLocalSize((KblkDiag[i]), PETSC_NULL, &locSz);
+    MatCreateShell(comm, locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE, &(data[i]), &(SmatShell[i]));
+    MatShellSetOperation(SmatShell[i], MATOP_MULT, ((void(*)(void))(&applySmatvec)));
+    MatShellSetOperation(SmatShell[i], MATOP_GET_DIAGONAL, ((void(*)(void))(&applySgetDiagonal)));
+    data[i].A = KblkDiag[i];
+    data[i].B = KblkUpper[i];
+    MatGetVecs((data[i].B), &(data[i].cSol), &(data[i].aOut));
+    VecDuplicate((data[i].cSol), &(data[i].cRhs));
+  }//end i
+}
+
 void createAllKmatShells(std::vector<Mat>& KmatShells, std::vector<std::vector<KmatData> >& kMatData,
     std::vector<std::vector<Mat> >& KblkDiag, std::vector<std::vector<Mat> >& KblkUpper) {
   KmatShells.resize(KblkDiag.size(), NULL);
