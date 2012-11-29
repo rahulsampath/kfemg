@@ -192,6 +192,7 @@ int main(int argc, char *argv[]) {
   KSPSetPCSide(outerKsp, PC_RIGHT);
   PCSetType(pc, PCSHELL);
   PCShellSetContext(pc, &data);
+  PCShellSetName(pc, "MyVcycle");
   PCShellSetApply(pc, &applyMG);
   KSPSetInitialGuessNonzero(outerKsp, PETSC_FALSE);
   KSPSetOperators(outerKsp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
