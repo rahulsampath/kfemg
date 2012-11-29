@@ -173,6 +173,9 @@ void computeRandomRHS(DM da, Mat Kmat, Vec rhs, const unsigned int seed);
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
     std::vector<BlockPCdata>& data, int dim, int dofsPerNode, bool print);
 
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
+    std::vector<std::vector<SchurPCdata> >& data, int dim, int dofsPerNode, bool print);
+
 void zeroBoundaries(DM da, Vec vec);
 
 void createDA(std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes, int dofsPerNode,

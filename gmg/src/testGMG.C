@@ -115,11 +115,43 @@ int main(int argc, char *argv[]) {
     std::cout<<"Built P matrices."<<std::endl;
   }
 
-  std::vector<BlockPCdata> blkPCdata;
-  createBlockPCdata(blkPCdata, KblkDiag, KblkUpper, print);
+  std::vector<Mat> KmatShells;
+  std::vector<std::vector<KmatData> > kMatData;
+  createAllKmatShells(KmatShells, kMatData, KblkDiag, KblkUpper);
+
+  if(print) {
+    std::cout<<"Built Kmat Shells."<<std::endl;
+  }
+
+  std::vector<std::vector<Mat> > SmatShells;
+  std::vector<std::vector<SmatData> > sMatData;
+  createAllSmatShells(SmatShells, sMatData, KblkDiag, KblkUpper);
+
+  if(print) {
+    std::cout<<"Built Smat Shells."<<std::endl;
+  }
+
+  std::vector<std::vector<SchurPCdata> > schurPCdata;
+  createAllSchurPC(schurPCdata, SmatShells, KmatShells, kMatData, sMatData);
+
+  if(print) {
+    std::cout<<"Built SchurPC."<<std::endl;
+  }
+
+  /*
+     std::vector<BlockPCdata> blkPCdata;
+     createBlockPCdata(blkPCdata, KblkDiag, KblkUpper, print);
+
+     if(print) {
+     std::cout<<"Built BlockPC."<<std::endl;
+     }
+
+     std::vector<KSP> ksp;
+     createKSP(ksp, Kmat, activeComms, blkPCdata, dim, dofsPerNode, print);
+     */
 
   std::vector<KSP> ksp;
-  createKSP(ksp, Kmat, activeComms, blkPCdata, dim, dofsPerNode, print);
+  createKSP(ksp, Kmat, activeComms, schurPCdata, dim, dofsPerNode, print);
 
   Vec rhs;
   DMCreateGlobalVector(da[da.size() - 1], &rhs);
@@ -180,7 +212,7 @@ int main(int argc, char *argv[]) {
   VecDestroy(&rhs);
   VecDestroy(&sol);
 
-  destroyBlockPCdata(blkPCdata);
+  // destroyBlockPCdata(blkPCdata);
 
   destroyDA(da);
 
@@ -197,6 +229,28 @@ int main(int argc, char *argv[]) {
   }//end i
 
   destroyMat(Kmat);
+
+  for(size_t i = 0; i < kMatData.size(); ++i) {
+    destroyKmatData(kMatData[i]);
+  }//end i
+  kMatData.clear();
+
+  destroyMat(KmatShells);
+
+  for(size_t i = 0; i < sMatData.size(); ++i) {
+    destroySmatData(sMatData[i]);
+  }//end i
+  sMatData.clear();
+
+  for(size_t i = 0; i < SmatShells.size(); ++i) {
+    destroyMat(SmatShells[i]);
+  }//end i
+  SmatShells.clear();
+
+  for(size_t i = 0; i < schurPCdata.size(); ++i) {
+    destroySchurPCdata(schurPCdata[i]);
+  }//end i
+  schurPCdata.clear();
 
   PetscFinalize();
 
