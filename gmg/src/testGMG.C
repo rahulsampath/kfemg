@@ -242,7 +242,11 @@ int main(int argc, char *argv[]) {
 
   for(size_t i = 0; i < KmatShells.size(); ++i) {
     if(KmatShells[i] != NULL) {
-      MatDestroy(&(KmatShells[i]));
+      PetscBool same;
+      PetscObjectTypeCompare(((PetscObject)(KmatShells[i])), MATSHELL, &same);
+      if(same) {
+        MatDestroy(&(KmatShells[i]));
+      }
     }
   }//end i
   KmatShells.clear();
