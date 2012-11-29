@@ -240,7 +240,12 @@ int main(int argc, char *argv[]) {
   }//end i
   sMatData.clear();
 
-  destroyMat(KmatShells);
+  for(size_t i = 0; i < KmatShells.size(); ++i) {
+    if(KmatShells[i] != NULL) {
+      MatDestroy(&(KmatShells[i]));
+    }
+  }//end i
+  KmatShells.clear();
 
   for(size_t i = 0; i < kMatData.size(); ++i) {
     destroyKmatData(kMatData[i]);
