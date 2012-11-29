@@ -7,15 +7,15 @@
 -maxNumLevels 20
 -maxCoarseNpes 1
 -numVcycles 1
--numBlkIters 2
 -outer_ksp_max_it 50
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 -outer_ksp_rtol 1.0e-12
 -outer_ksp_atol 1.0e-12
--smooth_ksp_max_it 2
--allBlocksSame true
--block_ksp_max_it 2
+%-smooth_ksp_max_it 2
+%-numBlkIters 2
+%-allBlocksSame true
+%-block_ksp_max_it 2
 %-coarse_ksp_type gmres
 %-coarse_ksp_max_it 100
 %-coarse_ksp_gmres_modifiedgramschmidt
@@ -23,5 +23,5 @@
 %-coarse_ksp_rtol 1.0e-12
 %-coarse_ksp_atol 1.0e-12
 %-coarse_ksp_converged_reason
--coarse_pc_type cholesky
+%-coarse_pc_type cholesky
 

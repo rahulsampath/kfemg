@@ -179,9 +179,7 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
     computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
     applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], mgRes[currLev], mgRhs[currLev - 1]);
     if(ksp[currLev - 1] != NULL) {
-      if(currLev > 1) {
-        VecZeroEntries(mgSol[currLev - 1]);
-      }
+      VecZeroEntries(mgSol[currLev - 1]);
       applyVcycle((currLev - 1), Kmat, Pmat, tmpCvec, ksp, mgSol, mgRhs, mgRes);
     }
     applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], mgSol[currLev - 1], mgRes[currLev]);
@@ -189,6 +187,43 @@ void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, st
     KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
   }
   PetscLogEventEnd(vCycleEvent, 0, 0, 0, 0);
+}
+
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
+    std::vector<std::vector<SchurPCdata> >& data, int dim, int dofsPerNode, bool print) {
+  ksp.resize((Kmat.size()), NULL);
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    if(Kmat[lev] != NULL) {
+      PC pc;
+      KSPCreate(activeComms[lev], &(ksp[lev]));
+      KSPGetPC(ksp[lev], &pc);
+      if(lev == 0) {
+        KSPSetOptionsPrefix(ksp[lev], "coarse_");
+      } else {
+        KSPSetOptionsPrefix(ksp[lev], "smooth_");
+      }
+      if(dofsPerNode == 1) {
+        KSPSetType(ksp[lev], KSPCG);
+        KSPSetPCSide(ksp[lev], PC_LEFT);
+        if(lev == 0) {
+          PCSetType(pc, PCCHOLESKY);
+        } else {
+          PCSetType(pc, PCJACOBI);
+        }
+      } else {
+        KSPSetType(ksp[lev], KSPFGMRES);
+        KSPSetPCSide(ksp[lev], PC_RIGHT);
+        PCSetType(pc, PCSHELL);
+        PCShellSetContext(pc, &(data[lev][0]));
+        PCShellSetApply(pc, &applySchurPC);
+        PCShellSetName(pc, "MySchurPC");
+      }
+      KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
+      KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_PRECONDITIONER);
+      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      KSPSetFromOptions(ksp[lev]);
+    }
+  }//end lev
 }
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
