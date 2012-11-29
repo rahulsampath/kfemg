@@ -215,12 +215,6 @@ int main(int argc, char *argv[]) {
 
   // destroyBlockPCdata(blkPCdata);
 
-  destroyDA(da);
-
-  destroyVec(tmpCvec);
-
-  destroyMat(Pmat);
-
   for(size_t i = 0; i < KblkDiag.size(); ++i) {
     destroyMat(KblkDiag[i]);
   }//end i
@@ -231,27 +225,33 @@ int main(int argc, char *argv[]) {
 
   destroyMat(Kmat);
 
-  for(size_t i = 0; i < kMatData.size(); ++i) {
-    destroyKmatData(kMatData[i]);
+  for(size_t i = 0; i < schurPCdata.size(); ++i) {
+    destroySchurPCdata(schurPCdata[i]);
   }//end i
-  kMatData.clear();
-
-  destroyMat(KmatShells);
-
-  for(size_t i = 0; i < sMatData.size(); ++i) {
-    destroySmatData(sMatData[i]);
-  }//end i
-  sMatData.clear();
+  schurPCdata.clear();
 
   for(size_t i = 0; i < SmatShells.size(); ++i) {
     destroyMat(SmatShells[i]);
   }//end i
   SmatShells.clear();
 
-  for(size_t i = 0; i < schurPCdata.size(); ++i) {
-    destroySchurPCdata(schurPCdata[i]);
+  for(size_t i = 0; i < sMatData.size(); ++i) {
+    destroySmatData(sMatData[i]);
   }//end i
-  schurPCdata.clear();
+  sMatData.clear();
+
+  destroyMat(KmatShells);
+
+  for(size_t i = 0; i < kMatData.size(); ++i) {
+    destroyKmatData(kMatData[i]);
+  }//end i
+  kMatData.clear();
+
+  destroyDA(da);
+
+  destroyVec(tmpCvec);
+
+  destroyMat(Pmat);
 
   PetscFinalize();
 
