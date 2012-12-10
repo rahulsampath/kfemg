@@ -11,6 +11,22 @@
 #include <vector>
 #include "mpi.h"
 
+#define __MMS_X_PARAM__ 1
+#define __MMS_Y_PARAM__ 1
+#define __MMS_Z_PARAM__ 1
+
+#define __SOLUTION_1D__(x) (sin(__MMS_X_PARAM__ * __PI__ * (x)))
+#define __SOLUTION_2D__(x, y) (sin(__MMS_X_PARAM__ * __PI__ * (x)) * sin(__MMS_Y_PARAM__ * __PI__ * (y)))
+#define __SOLUTION_3D__(x, y, z) (sin(__MMS_X_PARAM__ * __PI__ * (x)) * sin(__MMS_Y_PARAM__ * __PI__ * (y)) \
+    * sin(__MMS_Z_PARAM__ * __PI__ * (z)))
+
+#define __FORCE_1D__(x) ((__MMS_X_PARAM__ * __MMS_X_PARAM__) * (__PI__ * __PI__) * (__SOLUTION_1D__((x)))) 
+#define __FORCE_2D__(x, y) (((__MMS_X_PARAM__ * __MMS_X_PARAM__) + (__MMS_Y_PARAM__ * __MMS_Y_PARAM__)) * \
+    (__PI__ * __PI__) * (__SOLUTION_2D__((x), (y)))) 
+#define __FORCE_3D__(x, y, z) (((__MMS_X_PARAM__ * __MMS_X_PARAM__) + (__MMS_Y_PARAM__ * __MMS_Y_PARAM__) + \
+      (__MMS_Z_PARAM__ * __MMS_Z_PARAM__)) * (__PI__ * __PI__) * (__SOLUTION_3D__((x), (y), (z)))) 
+
+
 struct MGdata {
   PetscInt numVcycles;
   std::vector<Vec> mgSol;
