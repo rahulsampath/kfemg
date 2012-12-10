@@ -1,17 +1,32 @@
--dim 3
--K 1
+-dim 2
+-K 4
 -useRandomRHS true
--finestNx 17
--finestNy 17
--finestNz 17
--maxNumLevels 20
+-finestNx 5
+-finestNy 5
+-finestNz 5
+-maxNumLevels 1
 -maxCoarseNpes 1
 -numVcycles 1
--outer_ksp_max_it 50
+-outer_ksp_max_it 1
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 -outer_ksp_rtol 1.0e-12
 -outer_ksp_atol 1.0e-12
+-coarse_ksp_monitor
+-coarse_ksp_converged_reason
+-coarse_ksp_max_it 50
+-coarse_pc_type cholesky
+-coarseSchurS_ksp_max_it 2
+%-coarseSchurS_pc_type none
+-coarseSchurC_pc_type none
+%-coarseSchurLastC_pc_type none
+-coarseSchurC_ksp_max_it 4
+-coarseSchurLastC_ksp_max_it 2
+%-coarseSmatC_pc_type none
+%-coarseSmatLastC_pc_type none
+-coarseSmatC_ksp_max_it 1
+-coarseSmatLastC_ksp_max_it 2
+
 %-smooth_ksp_max_it 2
 %-numBlkIters 2
 %-allBlocksSame true
@@ -24,4 +39,6 @@
 %-coarse_ksp_atol 1.0e-12
 %-coarse_ksp_converged_reason
 %-coarse_pc_type cholesky
+
+%-log_summary
 
