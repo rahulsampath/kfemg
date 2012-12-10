@@ -184,6 +184,9 @@ void dirichletMatrixCorrectionBlkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz
 void dirichletMatrixCorrectionBlkUpper(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, 
     std::vector<PetscInt>& lx, std::vector<PetscInt>& offsets);
 
+void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
+    std::vector<PetscInt>& offsets, std::vector<long long int>& coeffs, const int K, Vec rhs);
+
 void computeRandomRHS(DM da, Mat Kmat, Vec rhs, const unsigned int seed);
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
