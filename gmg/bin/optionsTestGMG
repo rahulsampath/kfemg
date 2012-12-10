@@ -1,5 +1,5 @@
--dim 2
--K 4
+-dim 1
+-K 1
 -useRandomRHS true
 -finestNx 5
 -finestNy 5
@@ -16,6 +16,8 @@
 -coarse_ksp_converged_reason
 -coarse_ksp_max_it 50
 -coarse_pc_type cholesky
+-coarse_pc_factor_shift_amount 1.0e-13
+-coarse_pc_factor_shift_type POSITIVE_DEFINITE
 -coarseSchurS_ksp_max_it 2
 %-coarseSchurS_pc_type none
 -coarseSchurC_pc_type none
