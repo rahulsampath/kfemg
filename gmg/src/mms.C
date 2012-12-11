@@ -7,7 +7,12 @@
 #include <cassert>
 #endif
 
+extern PetscLogEvent errEvent;
+extern PetscLogEvent rhsEvent;
+
 double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K) {
+  PetscLogEventBegin(errEvent, 0, 0, 0, 0);
+
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -60,7 +65,6 @@ double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const in
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
-  //Is 2K + 3 sufficient? 2K + 2 is the minimum.
   int numGaussPts = (2*K) + 3;
   std::vector<long double> gPt(numGaussPts);
   std::vector<long double> gWt(numGaussPts);
@@ -199,11 +203,15 @@ double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const in
 
   double result = sqrt(scaling*globErrSqr);
 
+  PetscLogEventEnd(errEvent, 0, 0, 0, 0);
+
   return result;
 }
 
 void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<PetscInt>& offsets, std::vector<long long int>& coeffs, const int K, Vec rhs) {
+  PetscLogEventBegin(rhsEvent, 0, 0, 0, 0);
+
   PetscInt dim;
   PetscInt dofsPerNode;
   PetscInt Nx;
@@ -415,6 +423,8 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
   VecScale(rhs, scaling);
 
   zeroBoundaries(da, rhs);
+
+  PetscLogEventEnd(rhsEvent, 0, 0, 0, 0);
 }
 
 

@@ -16,6 +16,8 @@ PetscLogEvent buildKmatEvent;
 PetscLogEvent buildKblkDiagEvent;
 PetscLogEvent buildKblkUpperEvent;
 PetscLogEvent vCycleEvent;
+PetscLogEvent errEvent;
+PetscLogEvent rhsEvent;
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
@@ -31,6 +33,8 @@ int main(int argc, char *argv[]) {
   PetscLogEventRegister("KblkD", gmgCookie, &buildKblkDiagEvent);
   PetscLogEventRegister("KblkU", gmgCookie, &buildKblkUpperEvent);
   PetscLogEventRegister("Vcycle", gmgCookie, &vCycleEvent);
+  PetscLogEventRegister("Error", gmgCookie, &errEvent);
+  PetscLogEventRegister("RHS", gmgCookie, &rhsEvent);
 
   PetscInt dim = 1; 
   PetscOptionsGetInt(PETSC_NULL, "-dim", &dim, PETSC_NULL);
@@ -38,8 +42,6 @@ int main(int argc, char *argv[]) {
   assert(dim <= 3);
   PetscInt K;
   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
-  PetscBool useRandomRHS = PETSC_TRUE;
-  PetscOptionsGetBool(PETSC_NULL, "-useRandomRHS", &useRandomRHS, PETSC_NULL);
 
   int globalRank;
   MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
@@ -52,7 +54,6 @@ int main(int argc, char *argv[]) {
     std::cout<<"Dim = "<<dim<<std::endl;
     std::cout<<"K = "<<K<<std::endl;
     std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
-    std::cout<<"Random-RHS = "<<useRandomRHS<<std::endl;
   }
 
   std::vector<DM> da;
@@ -156,8 +157,8 @@ int main(int argc, char *argv[]) {
   Vec rhs;
   DMCreateGlobalVector(da[da.size() - 1], &rhs);
 
-  const unsigned int seed = (0x3456782  + (54763*globalRank));
-  computeRandomRHS(da[da.size() - 1], Kmat[Kmat.size() - 1], rhs, seed);
+  computeRHS(da[da.size() - 1], partZ[da.size() - 1], partY[da.size() - 1],
+      partX[da.size() - 1], offsets[da.size() - 1], coeffs, K, rhs);
 
   Vec sol;
   VecDuplicate(rhs, &sol);
@@ -201,6 +202,12 @@ int main(int argc, char *argv[]) {
   KSPSetFromOptions(outerKsp);
 
   KSPSolve(outerKsp, rhs, sol);
+
+  double err = computeError(da[da.size() - 1], sol, coeffs, K);
+
+  if(print) {
+    std::cout<<"Error = "<<err<<std::endl;
+  }
 
   destroyVec(mgSol);
   destroyVec(mgRhs);
