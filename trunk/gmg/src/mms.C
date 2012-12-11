@@ -99,14 +99,16 @@ double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const in
   if(dim == 1) {
     for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
       long double xa = (static_cast<long double>(xi))*hx;
-      std::vector<PetscScalar> solVals(numGaussPts);
       for(int gX = 0; gX < numGaussPts; ++gX) {
-        solVals[gX] = 0.0;
+        long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+        PetscScalar solVal = 0.0;
         for(int nodeX = 0; nodeX < 2; ++nodeX) {
           for(int dofX = 0; dofX <= K; ++dofX) {
-            solVals[gX] += (arr1d[xi + nodeX][dofX] * shFnVals[nodeX][dofX][gX]);
+            solVal += (arr1d[xi + nodeX][dofX] * shFnVals[nodeX][dofX][gX]);
           }//end dofX
         }//end nodeX
+        PetscScalar err = solVal -  (__SOLUTION_1D__(xg));
+        locErrSqr += ( gWt[gX] * err * err );
       }//end gX
     }//end xi
   } else if(dim == 2) {
@@ -114,6 +116,25 @@ double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const in
       long double ya = (static_cast<long double>(yi))*hy;
       for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
         long double xa = (static_cast<long double>(xi))*hx;
+        for(int gY = 0; gY < numGaussPts; ++gY) {
+          long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+          for(int gX = 0; gX < numGaussPts; ++gX) {
+            long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+            PetscScalar solVal = 0.0;
+            for(int nodeY = 0; nodeY < 2; ++nodeY) {
+              for(int nodeX = 0; nodeX < 2; ++nodeX) {
+                for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
+                  for(int dofX = 0; dofX <= K; ++dofX, ++d) {
+                    solVal += (arr2d[yi + nodeY][xi + nodeX][d] *
+                        shFnVals[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX]);
+                  }//end dofX
+                }//end dofY
+              }//end nodeX
+            }//end nodeY
+            PetscScalar err = solVal -  (__SOLUTION_2D__(xg, yg));
+            locErrSqr += ( gWt[gY] * gWt[gX] * err * err );
+          }//end gX
+        }//end gY 
       }//end xi
     }//end yi
   } else {
@@ -123,6 +144,32 @@ double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const in
         long double ya = (static_cast<long double>(yi))*hy;
         for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
           long double xa = (static_cast<long double>(xi))*hx;
+          for(int gZ = 0; gZ < numGaussPts; ++gZ) {
+            long double zg = coordLocalToGlobal(gPt[gZ], za, hz);
+            for(int gY = 0; gY < numGaussPts; ++gY) {
+              long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+              for(int gX = 0; gX < numGaussPts; ++gX) {
+                long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+                PetscScalar solVal = 0.0;
+                for(int nodeZ = 0; nodeZ < 2; ++nodeZ) {
+                  for(int nodeY = 0; nodeY < 2; ++nodeY) {
+                    for(int nodeX = 0; nodeX < 2; ++nodeX) {
+                      for(int dofZ = 0, d = 0; dofZ <= K; ++dofZ) {
+                        for(int dofY = 0; dofY <= K; ++dofY) {
+                          for(int dofX = 0; dofX <= K; ++dofX, ++d) {
+                            solVal += (arr3d[zi + nodeZ][yi + nodeY][xi + nodeX][d] *
+                                shFnVals[nodeZ][dofZ][gZ] * shFnVals[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX]);
+                          }//end dofX
+                        }//end dofY
+                      }//end dofZ
+                    }//end nodeX
+                  }//end nodeY
+                }//end nodeZ
+                PetscScalar err = solVal -  (__SOLUTION_3D__(xg, yg, zg)); 
+                locErrSqr += ( gWt[gZ] * gWt[gY] * gWt[gX] * err * err );
+              }//end gX
+            }//end gY 
+          }//end gZ 
         }//end xi
       }//end yi
     }//end zi
