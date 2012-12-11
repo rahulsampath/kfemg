@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
   }
 
   std::vector<std::vector<Mat> > KblkDiag;
-  buildKdiagBlocks(factorialsList, KblkDiag, da, activeComms, activeNpes, coeffs, K, 
+  buildKdiagBlocks(KblkDiag, da, activeComms, activeNpes, coeffs, K, 
       partZ, partY, partX, offsets, elemMats);
 
   if(print) {
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
   }
 
   std::vector<std::vector<Mat> > KblkUpper;
-  buildKupperBlocks(factorialsList, KblkUpper, da, activeComms, activeNpes, coeffs, K,
+  buildKupperBlocks(KblkUpper, da, activeComms, activeNpes, coeffs, K,
       partZ, partY, partX, offsets, elemMats);
 
   if(print) {
@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
   }
 
   std::vector<Mat> Kmat;
-  buildKmat(factorialsList, Kmat, da, activeComms, activeNpes, coeffs, K,
+  buildKmat(Kmat, da, activeComms, activeNpes, coeffs, K,
       partZ, partY, partX, offsets, elemMats, print);
 
   std::vector<Mat> Pmat;
