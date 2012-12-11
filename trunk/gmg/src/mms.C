@@ -7,6 +7,100 @@
 #include <cassert>
 #endif
 
+double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K) {
+  PetscInt dim;
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+#ifdef DEBUG
+  if(dim < 2) {
+    assert(Ny == 1);
+    assert(ys == 0);
+    assert(ny == 1);
+  }
+  if(dim < 3) {
+    assert(Nz == 1);
+    assert(zs == 0);
+    assert(nz == 1);
+  }
+#endif
+
+  PetscInt nxe = nx;
+  PetscInt nye = ny;
+  PetscInt nze = nz;
+
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
+  long double hy = 0;
+  if(dim > 1) {
+    if((ys + ny) == Ny) {
+      nye = ny - 1;
+    }
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+  }
+  long double hz = 0;
+  if(dim > 2) {
+    if((zs + nz) == Nz) {
+      nze = nz - 1;
+    }
+    hz = 1.0L/(static_cast<long double>(Nz - 1));
+  }
+
+  //Is 2K + 3 sufficient? 2K + 2 is the minimum.
+  int numGaussPts = (2*K) + 3;
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(int node = 0; node < 2; ++node) {
+    shFnVals[node].resize(K + 1);
+    for(int dof = 0; dof <= K; ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
+
+  double locErrSqr = 0.0;
+  for(PetscInt zi = zs; zi < (zs + nze); ++zi) {
+    long double za = (static_cast<long double>(zi))*hz;
+    for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+      long double ya = (static_cast<long double>(yi))*hy;
+      for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+        long double xa = (static_cast<long double>(xi))*hx;
+      }//end xi
+    }//end yi
+  }//end zi
+
+  long double scaling = hx*0.5L;
+  if(dim > 1) {
+    scaling *= (hy*0.5L);
+  }
+  if(dim > 2) {
+    scaling *= (hz*0.5L);
+  }
+
+  double result = 0.0;
+
+  return result;
+}
+
 void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<PetscInt>& offsets, std::vector<long long int>& coeffs, const int K, Vec rhs) {
   PetscInt dim;
