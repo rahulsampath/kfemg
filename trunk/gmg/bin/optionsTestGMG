@@ -1,6 +1,5 @@
 -dim 1
 -K 1
--useRandomRHS true
 -finestNx 5
 -finestNy 5
 -finestNz 5
