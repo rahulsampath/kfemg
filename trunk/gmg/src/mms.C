@@ -77,16 +77,70 @@ double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const in
     }//end dof
   }//end node
 
+  Vec locSol;
+  DMGetLocalVector(da, &locSol);
+
+  DMGlobalToLocalBegin(da, sol, INSERT_VALUES, locSol);
+  DMGlobalToLocalEnd(da, sol, INSERT_VALUES, locSol);
+
+  PetscScalar** arr1d = NULL;
+  PetscScalar*** arr2d = NULL;
+  PetscScalar**** arr3d = NULL;
+
+  if(dim == 1) {
+    DMDAVecGetArrayDOF(da, locSol, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecGetArrayDOF(da, locSol, &arr2d);
+  } else {
+    DMDAVecGetArrayDOF(da, locSol, &arr3d);
+  }
+
   double locErrSqr = 0.0;
-  for(PetscInt zi = zs; zi < (zs + nze); ++zi) {
-    long double za = (static_cast<long double>(zi))*hz;
+  if(dim == 1) {
+    for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+      long double xa = (static_cast<long double>(xi))*hx;
+      std::vector<PetscScalar> solVals(numGaussPts);
+      for(int gX = 0; gX < numGaussPts; ++gX) {
+        solVals[gX] = 0.0;
+        for(int nodeX = 0; nodeX < 2; ++nodeX) {
+          for(int dofX = 0; dofX <= K; ++dofX) {
+            solVals[gX] += (arr1d[xi + nodeX][dofX] * shFnVals[nodeX][dofX][gX]);
+          }//end dofX
+        }//end nodeX
+      }//end gX
+    }//end xi
+  } else if(dim == 2) {
     for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
       long double ya = (static_cast<long double>(yi))*hy;
       for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
         long double xa = (static_cast<long double>(xi))*hx;
       }//end xi
     }//end yi
-  }//end zi
+  } else {
+    for(PetscInt zi = zs; zi < (zs + nze); ++zi) {
+      long double za = (static_cast<long double>(zi))*hz;
+      for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+        long double ya = (static_cast<long double>(yi))*hy;
+        for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+          long double xa = (static_cast<long double>(xi))*hx;
+        }//end xi
+      }//end yi
+    }//end zi
+  }
+
+  if(dim == 1) {
+    DMDAVecRestoreArrayDOF(da, locSol, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecRestoreArrayDOF(da, locSol, &arr2d);
+  } else {
+    DMDAVecRestoreArrayDOF(da, locSol, &arr3d);
+  }
+
+  DMRestoreLocalVector(da, &locSol);
+
+  double globErrSqr;
+  MPI_Allreduce(&locErrSqr, &globErrSqr, 1, MPI_DOUBLE,
+      MPI_SUM, MPI_COMM_WORLD);
 
   long double scaling = hx*0.5L;
   if(dim > 1) {
@@ -96,7 +150,7 @@ double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const in
     scaling *= (hz*0.5L);
   }
 
-  double result = 0.0;
+  double result = sqrt(scaling*globErrSqr);
 
   return result;
 }
