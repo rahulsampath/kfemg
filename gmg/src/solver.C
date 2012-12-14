@@ -55,99 +55,139 @@ void smooth(KSP ksp, Vec rhs, Vec sol) {
   KSPSolve(ksp, rhs, sol);
 }
 
-void createAllSchurPC(std::vector<std::vector<SchurPCdata> >& pcData, std::vector<std::vector<Mat> >& SmatShells,
-    std::vector<Mat>& KmatShells, std::vector<std::vector<KmatData> >& kMatData,
-    std::vector<std::vector<SmatData> >& sMatData) {
-  pcData.resize(SmatShells.size());
-  for(size_t lev = 0; lev < pcData.size(); ++lev) {
-    createSchurPCdata(lev, pcData[lev], SmatShells[lev], KmatShells[lev], kMatData[lev], sMatData[lev]);
+void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
+    int dim, int dofsPerNode, bool print) {
+  ksp.resize((Kmat.size()), NULL);
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    if(Kmat[lev] != NULL) {
+      PC pc;
+      KSPCreate(activeComms[lev], &(ksp[lev]));
+      KSPGetPC(ksp[lev], &pc);
+      if(lev == 0) {
+        KSPSetOptionsPrefix(ksp[lev], "coarse_");
+      } else {
+        KSPSetOptionsPrefix(ksp[lev], "smooth_");
+      }
+      KSPSetType(ksp[lev], KSPCG);
+      KSPSetPCSide(ksp[lev], PC_LEFT);
+      if(lev == 0) {
+        PCSetType(pc, PCCHOLESKY);
+        PCFactorSetShiftAmount(pc, 1.0e-13);
+        PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
+      } else {
+        PCSetType(pc, PCJACOBI);
+      }
+      KSPSetInitialGuessNonzero(ksp[lev], PETSC_TRUE);
+      KSPSetOperators(ksp[lev], Kmat[lev], Kmat[lev], SAME_PRECONDITIONER);
+      KSPSetTolerances(ksp[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      KSPSetFromOptions(ksp[lev]);
+    }
   }//end lev
 }
 
-void createSchurPCdata(int lev, std::vector<SchurPCdata>& pcData, std::vector<Mat>& SmatShell, Mat& KmatShell, 
-    std::vector<KmatData>& kMatData, std::vector<SmatData>& sMatData) {
-  pcData.resize(SmatShell.size());
-  for(size_t i = 0; i < pcData.size(); ++i) {
-    pcData[i].B = (sMatData[i].B);
-    MatGetVecs(SmatShell[i], &(pcData[i].sSol), &(pcData[i].sRhs));
-    MatGetVecs((pcData[i].B), &(pcData[i].x), NULL);
-    VecDuplicate((pcData[i].x), &(pcData[i].z));
-    VecDuplicate((pcData[i].x), &(pcData[i].cRhs));
-    MPI_Comm comm;
-    PetscObjectGetComm(((PetscObject)(pcData[i].B)), &comm);
-    PC spc;
-    PC cpc;
-    PC sCpc;
-    KSPCreate(comm, &(pcData[i].sKsp));
-    KSPCreate(comm, &(pcData[i].cKsp));
-    KSPCreate(comm, &(sMatData[i].cKsp));
-    KSPGetPC((pcData[i].sKsp), &spc);
-    KSPGetPC((pcData[i].cKsp), &cpc);
-    KSPGetPC((sMatData[i].cKsp), &sCpc);
-    if(lev == 0) {
-      PCSetType(spc, PCCHOLESKY);
-      KSPSetOptionsPrefix((pcData[i].sKsp), "coarseSchurS_");
-    } else {
-      PCSetType(spc, PCJACOBI);
-      KSPSetOptionsPrefix((pcData[i].sKsp), "smoothSchurS_");
+void destroyKSP(std::vector<KSP>& ksp) {
+  for(size_t i = 0; i < ksp.size(); ++i) {
+    if(ksp[i] != NULL) {
+      KSPDestroy(&(ksp[i]));
     }
-    KSPSetType((pcData[i].sKsp), KSPFGMRES);
-    KSPSetPCSide((pcData[i].sKsp), PC_RIGHT);
-    if((i + 1) == (pcData.size())) {
-      if(lev == 0) {
-        PCSetType(cpc, PCCHOLESKY);
-        PCSetType(sCpc, PCCHOLESKY);
-        KSPSetOptionsPrefix((pcData[i].cKsp), "coarseSchurLastC_");
-        KSPSetOptionsPrefix((sMatData[i].cKsp), "coarseSmatLastC_");
-      } else {
-        PCSetType(cpc, PCJACOBI);
-        PCSetType(sCpc, PCJACOBI);
-        KSPSetOptionsPrefix((pcData[i].cKsp), "smoothSchurLastC_");
-        KSPSetOptionsPrefix((sMatData[i].cKsp), "smoothSmatLastC_");
-      }
-      KSPSetType((pcData[i].cKsp), KSPCG);
-      KSPSetType((sMatData[i].cKsp), KSPCG);
-      KSPSetPCSide((pcData[i].cKsp), PC_LEFT);
-      KSPSetPCSide((sMatData[i].cKsp), PC_LEFT);
-    } else {
-      if(lev == 0) {
-        KSPSetOptionsPrefix((pcData[i].cKsp), "coarseSchurC_");
-        KSPSetOptionsPrefix((sMatData[i].cKsp), "coarseSmatC_");
-      } else {
-        KSPSetOptionsPrefix((pcData[i].cKsp), "smoothSchurC_");
-        KSPSetOptionsPrefix((sMatData[i].cKsp), "smoothSmatC_");
-      }
-      PCSetType(cpc, PCSHELL);
-      PCSetType(sCpc, PCSHELL);
-      PCShellSetContext(cpc, &(pcData[i + 1]));
-      PCShellSetContext(sCpc, &(pcData[i + 1]));
-      PCShellSetApply(cpc, &applySchurPC);
-      PCShellSetApply(sCpc, &applySchurPC);
-      PCShellSetName(cpc, "MySchurPC");
-      PCShellSetName(sCpc, "MySchurPC");
-      KSPSetType((pcData[i].cKsp), KSPFGMRES);
-      KSPSetType((sMatData[i].cKsp), KSPFGMRES);
-      KSPSetPCSide((pcData[i].cKsp), PC_RIGHT);
-      KSPSetPCSide((sMatData[i].cKsp), PC_RIGHT);
-    }
-    KSPSetOperators((pcData[i].sKsp), SmatShell[i], (sMatData[i].A), SAME_PRECONDITIONER);
-    if(i == 0) {
-      KSPSetOperators((pcData[i].cKsp), KmatShell, KmatShell, SAME_PRECONDITIONER);
-      KSPSetOperators((sMatData[i].cKsp), KmatShell, KmatShell, SAME_PRECONDITIONER);
-    } else {
-      KSPSetOperators((pcData[i].cKsp), (kMatData[i - 1].C), (kMatData[i - 1].C), SAME_PRECONDITIONER);
-      KSPSetOperators((sMatData[i].cKsp), (kMatData[i - 1].C), (kMatData[i - 1].C), SAME_PRECONDITIONER);
-    }
-    KSPSetInitialGuessNonzero((pcData[i].sKsp), PETSC_FALSE);
-    KSPSetInitialGuessNonzero((pcData[i].cKsp), PETSC_FALSE);
-    KSPSetInitialGuessNonzero((sMatData[i].cKsp), PETSC_FALSE);
-    KSPSetTolerances((pcData[i].sKsp), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
-    KSPSetTolerances((pcData[i].cKsp), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
-    KSPSetTolerances((sMatData[i].cKsp), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
-    KSPSetFromOptions((pcData[i].sKsp));
-    KSPSetFromOptions((pcData[i].cKsp));
-    KSPSetFromOptions((sMatData[i].cKsp));
   }//end i
+  ksp.clear();
+}
+
+/*
+   void createAllSchurPC(std::vector<std::vector<SchurPCdata> >& pcData, std::vector<std::vector<Mat> >& SmatShells,
+   std::vector<Mat>& KmatShells, std::vector<std::vector<KmatData> >& kMatData,
+   std::vector<std::vector<SmatData> >& sMatData) {
+   pcData.resize(SmatShells.size());
+   for(size_t lev = 0; lev < pcData.size(); ++lev) {
+   createSchurPCdata(lev, pcData[lev], SmatShells[lev], KmatShells[lev], kMatData[lev], sMatData[lev]);
+   }//end lev
+   }
+
+   void createSchurPCdata(int lev, std::vector<SchurPCdata>& pcData, std::vector<Mat>& SmatShell, Mat& KmatShell, 
+   std::vector<KmatData>& kMatData, std::vector<SmatData>& sMatData) {
+   pcData.resize(SmatShell.size());
+   for(size_t i = 0; i < pcData.size(); ++i) {
+   pcData[i].B = (sMatData[i].B);
+   MatGetVecs(SmatShell[i], &(pcData[i].sSol), &(pcData[i].sRhs));
+   MatGetVecs((pcData[i].B), &(pcData[i].x), NULL);
+   VecDuplicate((pcData[i].x), &(pcData[i].z));
+   VecDuplicate((pcData[i].x), &(pcData[i].cRhs));
+   MPI_Comm comm;
+   PetscObjectGetComm(((PetscObject)(pcData[i].B)), &comm);
+   PC spc;
+   PC cpc;
+   PC sCpc;
+   KSPCreate(comm, &(pcData[i].sKsp));
+   KSPCreate(comm, &(pcData[i].cKsp));
+   KSPCreate(comm, &(sMatData[i].cKsp));
+   KSPGetPC((pcData[i].sKsp), &spc);
+   KSPGetPC((pcData[i].cKsp), &cpc);
+   KSPGetPC((sMatData[i].cKsp), &sCpc);
+   if(lev == 0) {
+   PCSetType(spc, PCCHOLESKY);
+   KSPSetOptionsPrefix((pcData[i].sKsp), "coarseSchurS_");
+   } else {
+   PCSetType(spc, PCJACOBI);
+   KSPSetOptionsPrefix((pcData[i].sKsp), "smoothSchurS_");
+   }
+   KSPSetType((pcData[i].sKsp), KSPFGMRES);
+   KSPSetPCSide((pcData[i].sKsp), PC_RIGHT);
+   if((i + 1) == (pcData.size())) {
+   if(lev == 0) {
+   PCSetType(cpc, PCCHOLESKY);
+   PCSetType(sCpc, PCCHOLESKY);
+   KSPSetOptionsPrefix((pcData[i].cKsp), "coarseSchurLastC_");
+   KSPSetOptionsPrefix((sMatData[i].cKsp), "coarseSmatLastC_");
+   } else {
+   PCSetType(cpc, PCJACOBI);
+   PCSetType(sCpc, PCJACOBI);
+   KSPSetOptionsPrefix((pcData[i].cKsp), "smoothSchurLastC_");
+   KSPSetOptionsPrefix((sMatData[i].cKsp), "smoothSmatLastC_");
+   }
+   KSPSetType((pcData[i].cKsp), KSPCG);
+   KSPSetType((sMatData[i].cKsp), KSPCG);
+   KSPSetPCSide((pcData[i].cKsp), PC_LEFT);
+   KSPSetPCSide((sMatData[i].cKsp), PC_LEFT);
+   } else {
+   if(lev == 0) {
+   KSPSetOptionsPrefix((pcData[i].cKsp), "coarseSchurC_");
+   KSPSetOptionsPrefix((sMatData[i].cKsp), "coarseSmatC_");
+   } else {
+   KSPSetOptionsPrefix((pcData[i].cKsp), "smoothSchurC_");
+   KSPSetOptionsPrefix((sMatData[i].cKsp), "smoothSmatC_");
+   }
+   PCSetType(cpc, PCSHELL);
+   PCSetType(sCpc, PCSHELL);
+   PCShellSetContext(cpc, &(pcData[i + 1]));
+   PCShellSetContext(sCpc, &(pcData[i + 1]));
+   PCShellSetApply(cpc, &applySchurPC);
+   PCShellSetApply(sCpc, &applySchurPC);
+   PCShellSetName(cpc, "MySchurPC");
+   PCShellSetName(sCpc, "MySchurPC");
+KSPSetType((pcData[i].cKsp), KSPFGMRES);
+KSPSetType((sMatData[i].cKsp), KSPFGMRES);
+KSPSetPCSide((pcData[i].cKsp), PC_RIGHT);
+KSPSetPCSide((sMatData[i].cKsp), PC_RIGHT);
+}
+KSPSetOperators((pcData[i].sKsp), SmatShell[i], (sMatData[i].A), SAME_PRECONDITIONER);
+if(i == 0) {
+  KSPSetOperators((pcData[i].cKsp), KmatShell, KmatShell, SAME_PRECONDITIONER);
+  KSPSetOperators((sMatData[i].cKsp), KmatShell, KmatShell, SAME_PRECONDITIONER);
+} else {
+  KSPSetOperators((pcData[i].cKsp), (kMatData[i - 1].C), (kMatData[i - 1].C), SAME_PRECONDITIONER);
+  KSPSetOperators((sMatData[i].cKsp), (kMatData[i - 1].C), (kMatData[i - 1].C), SAME_PRECONDITIONER);
+}
+KSPSetInitialGuessNonzero((pcData[i].sKsp), PETSC_FALSE);
+KSPSetInitialGuessNonzero((pcData[i].cKsp), PETSC_FALSE);
+KSPSetInitialGuessNonzero((sMatData[i].cKsp), PETSC_FALSE);
+KSPSetTolerances((pcData[i].sKsp), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+KSPSetTolerances((pcData[i].cKsp), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+KSPSetTolerances((sMatData[i].cKsp), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+KSPSetFromOptions((pcData[i].sKsp));
+KSPSetFromOptions((pcData[i].cKsp));
+KSPSetFromOptions((sMatData[i].cKsp));
+}//end i
 }
 
 void createAllSmatShells(std::vector<std::vector<Mat> >& SmatShells, std::vector<std::vector<SmatData> >& sMatData,
@@ -625,15 +665,6 @@ void destroyBlockPCdata(std::vector<BlockPCdata>& data) {
   }//end i
 }
 
-void destroyKSP(std::vector<KSP>& ksp) {
-  for(size_t i = 0; i < ksp.size(); ++i) {
-    if(ksp[i] != NULL) {
-      KSPDestroy(&(ksp[i]));
-    }
-  }//end i
-  ksp.clear();
-}
-
 void destroyKmatData(std::vector<KmatData>& data) {
   for(size_t i = 0; i < data.size(); ++i) {
     if((data[i].aIn) != NULL) {
@@ -703,5 +734,5 @@ void destroySchurPCdata(std::vector<SchurPCdata>& data) {
   }//end i
   data.clear();
 }
-
+*/
 
