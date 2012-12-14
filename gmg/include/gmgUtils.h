@@ -78,6 +78,10 @@ struct SchurPCdata {
   Vec sSol;
 };
 
+void coarseGridSolve(KSP ksp, Vec rhs, Vec sol); 
+
+void smooth(KSP ksp, Vec rhs, Vec sol);
+
 void createAllSchurPC(std::vector<std::vector<SchurPCdata> >& pcData, std::vector<std::vector<Mat> >& SmatShells,
     std::vector<Mat>& KmatShells, std::vector<std::vector<KmatData> >& kMatData,
     std::vector<std::vector<SmatData> >& sMatData);
