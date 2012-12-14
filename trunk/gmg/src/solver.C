@@ -10,6 +10,51 @@
 
 extern PetscLogEvent vCycleEvent;
 
+PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
+  MGdata* data;
+  PCShellGetContext(pc, (void**)(&data));
+
+  VecZeroEntries(out);
+  data->mgSol[data->Kmat.size() - 1] = out;
+  data->mgRhs[data->Kmat.size() - 1] = in;
+  for(int iter = 0; iter < data->numVcycles; ++iter) {
+    applyVcycle((data->Kmat.size() - 1), data->Kmat, data->Pmat, data->tmpCvec,
+        data->ksp, data->mgSol, data->mgRhs, data->mgRes);
+  }//end iter
+  data->mgSol[data->Kmat.size() - 1] = NULL;
+  data->mgRhs[data->Kmat.size() - 1] = NULL;
+
+  return 0;
+}
+
+void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
+    std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
+  PetscLogEventBegin(vCycleEvent, 0, 0, 0, 0);
+  if(currLev == 0) {
+    coarseGridSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+  } else {
+    smooth(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+    computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
+    applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], mgRes[currLev], mgRhs[currLev - 1]);
+    if(ksp[currLev - 1] != NULL) {
+      VecZeroEntries(mgSol[currLev - 1]);
+      applyVcycle((currLev - 1), Kmat, Pmat, tmpCvec, ksp, mgSol, mgRhs, mgRes);
+    }
+    applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], mgSol[currLev - 1], mgRes[currLev]);
+    VecAXPY(mgSol[currLev], 1.0, mgRes[currLev]);
+    smooth(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
+  }
+  PetscLogEventEnd(vCycleEvent, 0, 0, 0, 0);
+}
+
+void coarseGridSolve(KSP ksp, Vec rhs, Vec sol) {
+  KSPSolve(ksp, rhs, sol);
+}
+
+void smooth(KSP ksp, Vec rhs, Vec sol) {
+  KSPSolve(ksp, rhs, sol);
+}
+
 void createAllSchurPC(std::vector<std::vector<SchurPCdata> >& pcData, std::vector<std::vector<Mat> >& SmatShells,
     std::vector<Mat>& KmatShells, std::vector<std::vector<KmatData> >& kMatData,
     std::vector<std::vector<SmatData> >& sMatData) {
@@ -172,44 +217,6 @@ void createKmatData(int blkId, Mat& KmatShell, std::vector<KmatData>& data,
   } else {
     KmatShell = NULL;
   }
-}
-
-PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
-  MGdata* data;
-  PCShellGetContext(pc, (void**)(&data));
-
-  VecZeroEntries(out);
-  data->mgSol[data->Kmat.size() - 1] = out;
-  data->mgRhs[data->Kmat.size() - 1] = in;
-  for(int iter = 0; iter < data->numVcycles; ++iter) {
-    applyVcycle((data->Kmat.size() - 1), data->Kmat, data->Pmat, data->tmpCvec,
-        data->ksp, data->mgSol, data->mgRhs, data->mgRes);
-  }//end iter
-  data->mgSol[data->Kmat.size() - 1] = NULL;
-  data->mgRhs[data->Kmat.size() - 1] = NULL;
-
-  return 0;
-}
-
-void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
-    std::vector<KSP>& ksp, std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes) {
-  PetscLogEventBegin(vCycleEvent, 0, 0, 0, 0);
-#ifdef DEBUG
-  assert(ksp[currLev] != NULL);
-#endif
-  KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
-  if(currLev > 0) {
-    computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
-    applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], mgRes[currLev], mgRhs[currLev - 1]);
-    if(ksp[currLev - 1] != NULL) {
-      VecZeroEntries(mgSol[currLev - 1]);
-      applyVcycle((currLev - 1), Kmat, Pmat, tmpCvec, ksp, mgSol, mgRhs, mgRes);
-    }
-    applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], mgSol[currLev - 1], mgRes[currLev]);
-    VecAXPY(mgSol[currLev], 1.0, mgRes[currLev]);
-    KSPSolve(ksp[currLev], mgRhs[currLev], mgSol[currLev]);
-  }
-  PetscLogEventEnd(vCycleEvent, 0, 0, 0, 0);
 }
 
 void createKSP(std::vector<KSP>& ksp, std::vector<Mat>& Kmat, std::vector<MPI_Comm>& activeComms,
