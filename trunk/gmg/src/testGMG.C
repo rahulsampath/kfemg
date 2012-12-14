@@ -87,22 +87,6 @@ int main(int argc, char *argv[]) {
     std::cout<<"Created Element Matrices."<<std::endl;
   }
 
-  std::vector<std::vector<Mat> > KblkDiag;
-  buildKdiagBlocks(KblkDiag, da, activeComms, activeNpes, coeffs, K, 
-      partZ, partY, partX, offsets, elemMats);
-
-  if(print) {
-    std::cout<<"Built K-diag blocks."<<std::endl;
-  }
-
-  std::vector<std::vector<Mat> > KblkUpper;
-  buildKupperBlocks(KblkUpper, da, activeComms, activeNpes, coeffs, K,
-      partZ, partY, partX, offsets, elemMats);
-
-  if(print) {
-    std::cout<<"Built K-upper blocks."<<std::endl;
-  }
-
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, activeComms, activeNpes, coeffs, K,
       partZ, partY, partX, offsets, elemMats, print);
@@ -116,28 +100,49 @@ int main(int argc, char *argv[]) {
     std::cout<<"Built P matrices."<<std::endl;
   }
 
-  std::vector<Mat> KmatShells;
-  std::vector<std::vector<KmatData> > kMatData;
-  createAllKmatShells(KmatShells, kMatData, KblkDiag, KblkUpper);
+  /*
+     std::vector<std::vector<Mat> > KblkDiag;
+     buildKdiagBlocks(KblkDiag, da, activeComms, activeNpes, coeffs, K, 
+     partZ, partY, partX, offsets, elemMats);
 
-  if(print) {
-    std::cout<<"Built Kmat Shells."<<std::endl;
-  }
+     if(print) {
+     std::cout<<"Built K-diag blocks."<<std::endl;
+     }
 
-  std::vector<std::vector<Mat> > SmatShells;
-  std::vector<std::vector<SmatData> > sMatData;
-  createAllSmatShells(SmatShells, sMatData, KblkDiag, KblkUpper);
+     std::vector<std::vector<Mat> > KblkUpper;
+     buildKupperBlocks(KblkUpper, da, activeComms, activeNpes, coeffs, K,
+     partZ, partY, partX, offsets, elemMats);
 
-  if(print) {
-    std::cout<<"Built Smat Shells."<<std::endl;
-  }
+     if(print) {
+     std::cout<<"Built K-upper blocks."<<std::endl;
+     }
 
-  std::vector<std::vector<SchurPCdata> > schurPCdata;
-  createAllSchurPC(schurPCdata, SmatShells, KmatShells, kMatData, sMatData);
+     std::vector<Mat> KmatShells;
+     std::vector<std::vector<KmatData> > kMatData;
+     createAllKmatShells(KmatShells, kMatData, KblkDiag, KblkUpper);
 
-  if(print) {
-    std::cout<<"Built SchurPC."<<std::endl;
-  }
+     if(print) {
+     std::cout<<"Built Kmat Shells."<<std::endl;
+     }
+
+     std::vector<std::vector<Mat> > SmatShells;
+     std::vector<std::vector<SmatData> > sMatData;
+     createAllSmatShells(SmatShells, sMatData, KblkDiag, KblkUpper);
+
+     if(print) {
+     std::cout<<"Built Smat Shells."<<std::endl;
+     }
+
+     std::vector<std::vector<SchurPCdata> > schurPCdata;
+     createAllSchurPC(schurPCdata, SmatShells, KmatShells, kMatData, sMatData);
+
+     if(print) {
+     std::cout<<"Built SchurPC."<<std::endl;
+     }
+
+     std::vector<KSP> ksp;
+     createKSP(ksp, Kmat, activeComms, schurPCdata, dim, dofsPerNode, print);
+     */
 
   /*
      std::vector<BlockPCdata> blkPCdata;
@@ -152,7 +157,7 @@ int main(int argc, char *argv[]) {
      */
 
   std::vector<KSP> ksp;
-  createKSP(ksp, Kmat, activeComms, schurPCdata, dim, dofsPerNode, print);
+  createKSP(ksp, Kmat, activeComms, dim, dofsPerNode, print);
 
   Vec rhs;
   DMCreateGlobalVector(da[da.size() - 1], &rhs);
@@ -197,7 +202,7 @@ int main(int argc, char *argv[]) {
   PCShellSetApply(pc, &applyMG);
   KSPSetInitialGuessNonzero(outerKsp, PETSC_FALSE);
   KSPSetOperators(outerKsp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
-  KSPSetTolerances(outerKsp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 20);
+  KSPSetTolerances(outerKsp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
   KSPSetOptionsPrefix(outerKsp, "outer_");
   KSPSetFromOptions(outerKsp);
 
@@ -220,48 +225,54 @@ int main(int argc, char *argv[]) {
   VecDestroy(&rhs);
   VecDestroy(&sol);
 
-  // destroyBlockPCdata(blkPCdata);
+  /*
+     destroyBlockPCdata(blkPCdata);
 
-  for(size_t i = 0; i < KblkDiag.size(); ++i) {
-    destroyMat(KblkDiag[i]);
-  }//end i
+     for(size_t i = 0; i < KblkDiag.size(); ++i) {
+     destroyMat(KblkDiag[i]);
+     }//end i
 
-  for(size_t i = 0; i < KblkUpper.size(); ++i) {
-    destroyMat(KblkUpper[i]);
-  }//end i
+     for(size_t i = 0; i < KblkUpper.size(); ++i) {
+     destroyMat(KblkUpper[i]);
+     }//end i
+     */
 
   destroyMat(Kmat);
 
-  for(size_t i = 0; i < schurPCdata.size(); ++i) {
-    destroySchurPCdata(schurPCdata[i]);
-  }//end i
-  schurPCdata.clear();
+  /*
+     for(size_t i = 0; i < schurPCdata.size(); ++i) {
+     destroySchurPCdata(schurPCdata[i]);
+     }//end i
+     schurPCdata.clear();
 
-  for(size_t i = 0; i < SmatShells.size(); ++i) {
-    destroyMat(SmatShells[i]);
-  }//end i
-  SmatShells.clear();
+     for(size_t i = 0; i < SmatShells.size(); ++i) {
+     destroyMat(SmatShells[i]);
+     }//end i
+     SmatShells.clear();
 
-  for(size_t i = 0; i < sMatData.size(); ++i) {
-    destroySmatData(sMatData[i]);
-  }//end i
-  sMatData.clear();
+     for(size_t i = 0; i < sMatData.size(); ++i) {
+     destroySmatData(sMatData[i]);
+     }//end i
+     sMatData.clear();
+     */
 
-  for(size_t i = 0; i < KmatShells.size(); ++i) {
-    if(KmatShells[i] != NULL) {
-      PetscBool same;
-      PetscObjectTypeCompare(((PetscObject)(KmatShells[i])), MATSHELL, &same);
-      if(same) {
-        MatDestroy(&(KmatShells[i]));
-      }
-    }
-  }//end i
-  KmatShells.clear();
+  /*
+     for(size_t i = 0; i < KmatShells.size(); ++i) {
+     if(KmatShells[i] != NULL) {
+     PetscBool same;
+     PetscObjectTypeCompare(((PetscObject)(KmatShells[i])), MATSHELL, &same);
+     if(same) {
+     MatDestroy(&(KmatShells[i]));
+     }
+     }
+     }//end i
+     KmatShells.clear();
 
-  for(size_t i = 0; i < kMatData.size(); ++i) {
-    destroyKmatData(kMatData[i]);
-  }//end i
-  kMatData.clear();
+     for(size_t i = 0; i < kMatData.size(); ++i) {
+     destroyKmatData(kMatData[i]);
+     }//end i
+     kMatData.clear();
+     */
 
   destroyDA(da);
 

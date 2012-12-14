@@ -11,6 +11,7 @@ extern PetscLogEvent buildKmatEvent;
 extern PetscLogEvent buildKblkDiagEvent;
 extern PetscLogEvent buildKblkUpperEvent;
 
+/*
 void buildKupperBlocks(std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, std::vector<long long int>& coeffs, const unsigned int K, 
     std::vector<std::vector<PetscInt> >& lz, std::vector<std::vector<PetscInt> >& ly, std::vector<std::vector<PetscInt> >& lx,
@@ -211,6 +212,7 @@ void buildKdiagBlocks(std::vector<std::vector<Mat> >& Kblk, std::vector<DM>& da,
 
   PetscLogEventEnd(buildKblkDiagEvent, 0, 0, 0, 0);
 }
+*/
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, 
     std::vector<int>& activeNpes, std::vector<long long int>& coeffs, const unsigned int K, 
