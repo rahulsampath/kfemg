@@ -1,9 +1,11 @@
 -dim 1
 -K 1
+-extraGptsError 0
+-extraGptsRHS 0
 -finestNx 17
 -finestNy 17
 -finestNz 17
--maxNumLevels 10
+-maxNumLevels 20
 -maxCoarseNpes 1
 -numVcycles 1
 
