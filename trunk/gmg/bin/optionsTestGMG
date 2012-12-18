@@ -1,19 +1,19 @@
--dim 1
--K 1
+-dim 2
+%-K 1
 -extraGptsError 0
 -extraGptsRHS 0
--finestNx 17
--finestNy 17
--finestNz 17
+%-finestNx 17
+%-finestNy 17
+%-finestNz 17
 -maxNumLevels 20
 -maxCoarseNpes 1
 -numVcycles 1
 
--outer_ksp_monitor
--outer_ksp_max_it 50
+%-outer_ksp_monitor
+-outer_ksp_max_it 500
 -outer_ksp_converged_reason
 
--coarse_ksp_converged_reason
+%-coarse_ksp_converged_reason
 
 %-log_summary
 

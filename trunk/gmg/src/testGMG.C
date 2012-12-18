@@ -208,10 +208,10 @@ int main(int argc, char *argv[]) {
 
   KSPSolve(outerKsp, rhs, sol);
 
-  double err = computeError(da[da.size() - 1], sol, coeffs, K);
+  long double err = computeError(da[da.size() - 1], sol, coeffs, K);
 
   if(print) {
-    std::cout<<"Error = "<<err<<std::endl;
+    std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
   }
 
   destroyVec(mgSol);
