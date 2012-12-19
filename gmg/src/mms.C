@@ -10,6 +10,106 @@
 extern PetscLogEvent errEvent;
 extern PetscLogEvent rhsEvent;
 
+void setSolution(DM da, Vec vec, const int K) {
+  PetscInt dim;
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+#ifdef DEBUG
+  if(dim < 2) {
+    assert(Ny == 1);
+    assert(ys == 0);
+    assert(ny == 1);
+  }
+  if(dim < 3) {
+    assert(Nz == 1);
+    assert(zs == 0);
+    assert(nz == 1);
+  }
+#endif
+
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  long double hy = 0;
+  if(dim > 1) {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+  }
+  long double hz = 0;
+  if(dim > 2) {
+    hz = 1.0L/(static_cast<long double>(Nz - 1));
+  }
+
+  PetscScalar** arr1d = NULL;
+  PetscScalar*** arr2d = NULL;
+  PetscScalar**** arr3d = NULL;
+
+  if(dim == 1) {
+    DMDAVecGetArrayDOF(da, vec, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecGetArrayDOF(da, vec, &arr2d);
+  } else {
+    DMDAVecGetArrayDOF(da, vec, &arr3d);
+  }
+
+  if(dim == 1) {
+    for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+      long double xa = (static_cast<long double>(xi))*hx;
+      for(int d = 0; d <= K; ++d) {
+        arr1d[xi][d] = solutionDerivative1D(xa, d, hx);
+      }//end d
+    }//end xi
+  } else if(dim == 2) {
+    for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+      long double ya = (static_cast<long double>(yi))*hy;
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        long double xa = (static_cast<long double>(xi))*hx;
+        for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
+          for(int dofX = 0; dofX <= K; ++dofX, ++d) {
+            arr2d[yi][xi][d] = solutionDerivative2D(xa, ya, dofX, dofY, hx, hy); 
+          }//end dofX
+        }//end dofY
+      }//end xi
+    }//end yi
+  } else {
+    for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+      long double za = (static_cast<long double>(zi))*hz;
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        long double ya = (static_cast<long double>(yi))*hy;
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          long double xa = (static_cast<long double>(xi))*hx;
+          for(int dofZ = 0, d = 0; dofZ <= K; ++dofZ) {
+            for(int dofY = 0; dofY <= K; ++dofY) {
+              for(int dofX = 0; dofX <= K; ++dofX, ++d) {
+                arr3d[zi][yi][xi][d] = solutionDerivative3D(xa, ya, za, dofX, dofY, dofZ, hx, hy, hz); 
+              }//end dofX
+            }//end dofY
+          }//end dofZ
+        }//end xi
+      }//end yi
+    }//end zi
+  }
+
+  if(dim == 1) {
+    DMDAVecRestoreArrayDOF(da, vec, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecRestoreArrayDOF(da, vec, &arr2d);
+  } else {
+    DMDAVecRestoreArrayDOF(da, vec, &arr3d);
+  }
+
+}
+
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K) {
   PetscLogEventBegin(errEvent, 0, 0, 0, 0);
 
@@ -113,7 +213,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
             solVal += ((static_cast<long double>(arr1d[xi + nodeX][dofX])) * shFnVals[nodeX][dofX][gX]);
           }//end dofX
         }//end nodeX
-        long double err = solVal -  (__SOLUTION_1D__(xg));
+        long double err = solVal -  solution1D(xg);
         locErrSqr += ( gWt[gX] * err * err );
       }//end gX
     }//end xi
@@ -137,7 +237,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
                 }//end dofY
               }//end nodeX
             }//end nodeY
-            long double err = solVal -  (__SOLUTION_2D__(xg, yg));
+            long double err = solVal -  solution2D(xg, yg);
             locErrSqr += ( gWt[gY] * gWt[gX] * err * err );
           }//end gX
         }//end gY 
@@ -171,7 +271,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
                     }//end nodeX
                   }//end nodeY
                 }//end nodeZ
-                long double err = solVal -  (__SOLUTION_3D__(xg, yg, zg)); 
+                long double err = solVal -  solution3D(xg, yg, zg); 
                 locErrSqr += ( gWt[gZ] * gWt[gY] * gWt[gX] * err * err );
               }//end gX
             }//end gY 
@@ -359,7 +459,7 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
               long double sum = 0.0;
               for(int g = 0; g < numGaussPts; ++g) {
                 long double xg = coordLocalToGlobal(gPt[g], xa, hx);
-                sum += ( gWt[g] * shFnVals[node][dof][g] * (__FORCE_1D__(xg)) );
+                sum += ( gWt[g] * shFnVals[node][dof][g] * force1D(xg) );
               }//end g
               vals[i] = sum;
             }//end dof
@@ -375,7 +475,7 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
                     for(int gX = 0; gX < numGaussPts; ++gX) {
                       long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
                       sum += ( gWt[gY] * gWt[gX]  * shFnVals[nodeY][dofY][gY] *
-                          shFnVals[nodeX][dofX][gX] * (__FORCE_2D__(xg, yg)) );
+                          shFnVals[nodeX][dofX][gX] * force2D(xg, yg) );
                     }//end gX
                   }//end gY
                   vals[i] = sum;
@@ -398,7 +498,7 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
                           for(int gX = 0; gX < numGaussPts; ++gX) {
                             long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
                             sum += ( gWt[gZ] * gWt[gY] * gWt[gX] * shFnVals[nodeZ][dofZ][gZ] *
-                                shFnVals[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX] * (__FORCE_3D__(xg, yg, zg)) );
+                                shFnVals[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX] * force3D(xg, yg, zg) );
                           }//end gX
                         }//end gY
                       }//end gZ

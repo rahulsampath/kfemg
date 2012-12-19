@@ -10,28 +10,119 @@
 #include "petscpc.h"
 #include <vector>
 #include "mpi.h"
+#include "common/include/commonUtils.h"
 
-#define __MMS_X_PARAM__ 1
+inline long double solution1D(long double x) {
+  long double res;
 
-#define __MMS_Y_PARAM__ 1
+  const int xFac = 1;
 
-#define __MMS_Z_PARAM__ 1
+  res = sin((static_cast<long double>(xFac)) * __PI__ * x);
 
-#define __SOLUTION_1D__(x) (sin(__MMS_X_PARAM__ * __PI__ * (x)))
+  return res;
+}
 
-#define __SOLUTION_2D__(x, y) (sin(__MMS_X_PARAM__ * __PI__ * (x)) * sin(__MMS_Y_PARAM__ * __PI__ * (y)))
+inline long double solution2D(long double x, long double y) {
+  long double res;
 
-#define __SOLUTION_3D__(x, y, z) (sin(__MMS_X_PARAM__ * __PI__ * (x)) * sin(__MMS_Y_PARAM__ * __PI__ * (y)) \
-    * sin(__MMS_Z_PARAM__ * __PI__ * (z)))
+  const int xFac = 1;
+  const int yFac = 1;
 
-#define __FORCE_1D__(x) ((__MMS_X_PARAM__ * __MMS_X_PARAM__) * (__PI__ * __PI__) * (__SOLUTION_1D__((x)))) 
+  res = sin((static_cast<long double>(xFac)) * __PI__ * x) * sin((static_cast<long double>(yFac)) * __PI__ * y);
 
-#define __FORCE_2D__(x, y) (((__MMS_X_PARAM__ * __MMS_X_PARAM__) + (__MMS_Y_PARAM__ * __MMS_Y_PARAM__)) * \
-    (__PI__ * __PI__) * (__SOLUTION_2D__((x), (y)))) 
+  return res;
+}
 
-#define __FORCE_3D__(x, y, z) (((__MMS_X_PARAM__ * __MMS_X_PARAM__) + (__MMS_Y_PARAM__ * __MMS_Y_PARAM__) + \
-      (__MMS_Z_PARAM__ * __MMS_Z_PARAM__)) * (__PI__ * __PI__) * (__SOLUTION_3D__((x), (y), (z)))) 
+inline long double solution3D(long double x, long double y, long double z) {
+  long double res;
 
+  const int xFac = 1;
+  const int yFac = 1;
+  const int zFac = 1;
+
+  res = sin((static_cast<long double>(xFac)) * __PI__ * x) * sin((static_cast<long double>(yFac)) * __PI__ * y)
+    * sin((static_cast<long double>(zFac)) * __PI__ * z);
+
+  return res;
+}
+
+inline long double solutionDerivative1D(long double x, int dofX, long double hx) {
+  long double res;
+
+  const int xFac = 1;
+
+  if(dofX == 0) {
+    res = solution1D(x);
+  } else {
+  }
+
+  return res;
+}
+
+inline long double solutionDerivative2D(long double x, long double y, int dofX, 
+    int dofY, long double hx, long double hy) {
+  long double res;
+
+  const int xFac = 1;
+  const int yFac = 1;
+
+  if((dofX == 0) && (dofY == 0)) {
+    res = solution2D(x, y);
+  } else {
+  }
+
+  return res;
+}
+
+inline long double solutionDerivative3D(long double x, long double y, long double z,
+    int dofX, int dofY, int dofZ, long double hx, long double hy, long double hz) {
+  long double res;
+
+  const int xFac = 1;
+  const int yFac = 1;
+  const int zFac = 1;
+
+  if((dofX == 0) && (dofY == 0) && (dofZ == 0)) {
+    res = solution3D(x, y, z);
+  } else {
+  }
+
+  return res;
+}
+
+inline long double force1D(long double x) {
+  long double res;
+
+  const int xFac = 1;
+
+  res = (static_cast<long double>(xFac * xFac)) * (__PI__ * __PI__) * solution1D(x);
+
+  return res;
+}
+
+inline long double force2D(long double x, long double y) {
+  long double res;
+
+  const int xFac = 1;
+  const int yFac = 1;
+
+  res = (static_cast<long double>((xFac * xFac) + (yFac * yFac))) * (__PI__ * __PI__) * solution2D(x, y);
+
+  return res;
+}
+
+inline long double force3D(long double x, long double y, long double z) {
+  long double res;
+
+  const int xFac = 1;
+  const int yFac = 1;
+  const int zFac = 1;
+
+  res = (static_cast<long double>((xFac * xFac) + (yFac * yFac) + (zFac * zFac))) *
+    (__PI__ * __PI__) * solution3D(x, y, z);
+
+  return res;
+}
 
 struct MGdata {
   PetscInt numVcycles;
@@ -140,6 +231,8 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
     std::vector<PetscInt>& offsets, std::vector<long long int>& coeffs, const int K, Vec rhs);
 
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
+
+void setSolution(DM da, Vec vec, const int K);
 
 void zeroBoundaries(DM da, Vec vec);
 
