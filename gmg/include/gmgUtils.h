@@ -13,114 +13,85 @@
 #include "common/include/commonUtils.h"
 
 inline long double solution1D(long double x) {
-  long double res;
-
   const int xFac = 1;
-
-  res = sin((static_cast<long double>(xFac)) * __PI__ * x);
-
+  long double res = sin((static_cast<long double>(xFac)) * __PI__ * x);
   return res;
 }
 
 inline long double solution2D(long double x, long double y) {
-  long double res;
-
   const int xFac = 1;
   const int yFac = 1;
-
-  res = sin((static_cast<long double>(xFac)) * __PI__ * x) * sin((static_cast<long double>(yFac)) * __PI__ * y);
-
+  long double res = sin((static_cast<long double>(xFac)) * __PI__ * x) 
+    * sin((static_cast<long double>(yFac)) * __PI__ * y);
   return res;
 }
 
 inline long double solution3D(long double x, long double y, long double z) {
-  long double res;
-
   const int xFac = 1;
   const int yFac = 1;
   const int zFac = 1;
-
-  res = sin((static_cast<long double>(xFac)) * __PI__ * x) * sin((static_cast<long double>(yFac)) * __PI__ * y)
+  long double res = sin((static_cast<long double>(xFac)) * __PI__ * x) 
+    * sin((static_cast<long double>(yFac)) * __PI__ * y)
     * sin((static_cast<long double>(zFac)) * __PI__ * z);
-
   return res;
 }
 
 inline long double solutionDerivative1D(long double x, int dofX, long double hx) {
-  long double res;
-
   const int xFac = 1;
-
+  long double res;
   if(dofX == 0) {
     res = solution1D(x);
   } else {
   }
-
   return res;
 }
 
 inline long double solutionDerivative2D(long double x, long double y, int dofX, 
     int dofY, long double hx, long double hy) {
-  long double res;
-
   const int xFac = 1;
   const int yFac = 1;
-
+  long double res;
   if((dofX == 0) && (dofY == 0)) {
     res = solution2D(x, y);
   } else {
   }
-
   return res;
 }
 
 inline long double solutionDerivative3D(long double x, long double y, long double z,
     int dofX, int dofY, int dofZ, long double hx, long double hy, long double hz) {
-  long double res;
-
   const int xFac = 1;
   const int yFac = 1;
   const int zFac = 1;
-
+  long double res;
   if((dofX == 0) && (dofY == 0) && (dofZ == 0)) {
     res = solution3D(x, y, z);
   } else {
   }
-
   return res;
 }
 
 inline long double force1D(long double x) {
-  long double res;
-
   const int xFac = 1;
-
-  res = (static_cast<long double>(xFac * xFac)) * (__PI__ * __PI__) * solution1D(x);
-
+  long double res = (static_cast<long double>(xFac * xFac)) 
+    * (__PI__ * __PI__) * solution1D(x);
   return res;
 }
 
 inline long double force2D(long double x, long double y) {
-  long double res;
-
   const int xFac = 1;
   const int yFac = 1;
-
-  res = (static_cast<long double>((xFac * xFac) + (yFac * yFac))) * (__PI__ * __PI__) * solution2D(x, y);
-
+  long double res = (static_cast<long double>((xFac * xFac) + (yFac * yFac)))
+    * (__PI__ * __PI__) * solution2D(x, y);
   return res;
 }
 
 inline long double force3D(long double x, long double y, long double z) {
-  long double res;
-
   const int xFac = 1;
   const int yFac = 1;
   const int zFac = 1;
-
-  res = (static_cast<long double>((xFac * xFac) + (yFac * yFac) + (zFac * zFac))) *
+  long double res = (static_cast<long double>((xFac * xFac) + (yFac * yFac) + (zFac * zFac))) *
     (__PI__ * __PI__) * solution3D(x, y, z);
-
   return res;
 }
 
