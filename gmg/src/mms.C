@@ -171,7 +171,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
-  PetscInt extraNumGpts;
+  PetscInt extraNumGpts = 0;
   PetscOptionsGetInt(PETSC_NULL, "-extraGptsError", &extraNumGpts, PETSC_NULL);
   PetscInt numGaussPts = (2*K) + 3 + extraNumGpts;
   std::vector<long double> gPt(numGaussPts);
@@ -398,7 +398,7 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
   int rj = (rank/px)%py;
   int ri = rank%px;
 
-  PetscInt extraNumGpts;
+  PetscInt extraNumGpts = 0;
   PetscOptionsGetInt(PETSC_NULL, "-extraGptsRHS", &extraNumGpts, PETSC_NULL);
   int numGaussPts = (2*K) + 2 + extraNumGpts;
   std::vector<long double> gPt(numGaussPts);
