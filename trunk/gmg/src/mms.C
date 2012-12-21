@@ -70,7 +70,7 @@ void setSolution(DM da, Vec vec, const int K) {
     for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
       long double xa = (static_cast<long double>(xi))*hx;
       for(int d = 0; d <= K; ++d) {
-        arr1d[xi][d] = solutionDerivative1D(xa, d, solXfac);
+        arr1d[xi][d] = myIntPow((0.5*hx), d) * solutionDerivative1D(xa, d, solXfac);
       }//end d
     }//end xi
   } else if(dim == 2) {
@@ -80,7 +80,8 @@ void setSolution(DM da, Vec vec, const int K) {
         long double xa = (static_cast<long double>(xi))*hx;
         for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
           for(int dofX = 0; dofX <= K; ++dofX, ++d) {
-            arr2d[yi][xi][d] = solutionDerivative2D(xa, ya, dofX, dofY, solXfac, solYfac); 
+            arr2d[yi][xi][d] = myIntPow((0.5*hx), dofX) * myIntPow((0.5*hy), dofY) 
+              * solutionDerivative2D(xa, ya, dofX, dofY, solXfac, solYfac); 
           }//end dofX
         }//end dofY
       }//end xi
@@ -95,7 +96,8 @@ void setSolution(DM da, Vec vec, const int K) {
           for(int dofZ = 0, d = 0; dofZ <= K; ++dofZ) {
             for(int dofY = 0; dofY <= K; ++dofY) {
               for(int dofX = 0; dofX <= K; ++dofX, ++d) {
-                arr3d[zi][yi][xi][d] = solutionDerivative3D(xa, ya, za, dofX, dofY, dofZ, solXfac, solYfac, solZfac); 
+                arr3d[zi][yi][xi][d] = myIntPow((0.5*hx), dofX) * myIntPow((0.5*hy), dofY) * myIntPow((0.5*hz), dofZ)
+                  * solutionDerivative3D(xa, ya, za, dofX, dofY, dofZ, solXfac, solYfac, solZfac); 
               }//end dofX
             }//end dofY
           }//end dofZ
