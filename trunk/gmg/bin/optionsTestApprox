@@ -1,9 +1,9 @@
 -dim 2
-%-K 1
+-K 1
 -extraGptsError 0
-%-finestNx 17
-%-finestNy 17
-%-finestNz 17
+-finestNx 17
+-finestNy 17
+-finestNz 17
 -maxNumLevels 1
 -maxCoarseNpes 1
 
