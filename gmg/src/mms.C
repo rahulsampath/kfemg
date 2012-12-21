@@ -62,11 +62,15 @@ void setSolution(DM da, Vec vec, const int K) {
     DMDAVecGetArrayDOF(da, vec, &arr3d);
   }
 
+  const int solXfac = 1;
+  const int solYfac = 1;
+  const int solZfac = 1;
+
   if(dim == 1) {
     for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
       long double xa = (static_cast<long double>(xi))*hx;
       for(int d = 0; d <= K; ++d) {
-        arr1d[xi][d] = solutionDerivative1D(xa, d, hx);
+        arr1d[xi][d] = solutionDerivative1D(xa, d, solXfac);
       }//end d
     }//end xi
   } else if(dim == 2) {
@@ -76,7 +80,7 @@ void setSolution(DM da, Vec vec, const int K) {
         long double xa = (static_cast<long double>(xi))*hx;
         for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
           for(int dofX = 0; dofX <= K; ++dofX, ++d) {
-            arr2d[yi][xi][d] = solutionDerivative2D(xa, ya, dofX, dofY, hx, hy); 
+            arr2d[yi][xi][d] = solutionDerivative2D(xa, ya, dofX, dofY, solXfac, solYfac); 
           }//end dofX
         }//end dofY
       }//end xi
@@ -91,7 +95,7 @@ void setSolution(DM da, Vec vec, const int K) {
           for(int dofZ = 0, d = 0; dofZ <= K; ++dofZ) {
             for(int dofY = 0; dofY <= K; ++dofY) {
               for(int dofX = 0; dofX <= K; ++dofX, ++d) {
-                arr3d[zi][yi][xi][d] = solutionDerivative3D(xa, ya, za, dofX, dofY, dofZ, hx, hy, hz); 
+                arr3d[zi][yi][xi][d] = solutionDerivative3D(xa, ya, za, dofX, dofY, dofZ, solXfac, solYfac, solZfac); 
               }//end dofX
             }//end dofY
           }//end dofZ
@@ -201,6 +205,10 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
     DMDAVecGetArrayDOF(da, locSol, &arr3d);
   }
 
+  const int solXfac = 1;
+  const int solYfac = 1;
+  const int solZfac = 1;
+
   long double locErrSqr = 0.0;
   if(dim == 1) {
     for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
@@ -213,7 +221,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
             solVal += ((static_cast<long double>(arr1d[xi + nodeX][dofX])) * shFnVals[nodeX][dofX][gX]);
           }//end dofX
         }//end nodeX
-        long double err = solVal -  solution1D(xg);
+        long double err = solVal -  solution1D(xg, solXfac);
         locErrSqr += ( gWt[gX] * err * err );
       }//end gX
     }//end xi
@@ -237,7 +245,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
                 }//end dofY
               }//end nodeX
             }//end nodeY
-            long double err = solVal -  solution2D(xg, yg);
+            long double err = solVal -  solution2D(xg, yg, solXfac, solYfac);
             locErrSqr += ( gWt[gY] * gWt[gX] * err * err );
           }//end gX
         }//end gY 
@@ -271,7 +279,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
                     }//end nodeX
                   }//end nodeY
                 }//end nodeZ
-                long double err = solVal -  solution3D(xg, yg, zg); 
+                long double err = solVal -  solution3D(xg, yg, zg, solXfac, solYfac, solZfac); 
                 locErrSqr += ( gWt[gZ] * gWt[gY] * gWt[gX] * err * err );
               }//end gX
             }//end gY 
@@ -406,10 +414,14 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
     }//end dof
   }//end node
 
-  VecZeroEntries(rhs);
+  const int solXfac = 1;
+  const int solYfac = 1;
+  const int solZfac = 1;
 
   //PERFORMANCE IMPROVEMENT: We could do a node-based assembly instead of the
   //following element-based assembly and avoid the communication.
+
+  VecZeroEntries(rhs);
 
   for(PetscInt zi = zs; zi < (zs + nze); ++zi) {
     long double za = (static_cast<long double>(zi))*hz;
@@ -459,7 +471,7 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
               long double sum = 0.0;
               for(int g = 0; g < numGaussPts; ++g) {
                 long double xg = coordLocalToGlobal(gPt[g], xa, hx);
-                sum += ( gWt[g] * shFnVals[node][dof][g] * force1D(xg) );
+                sum += ( gWt[g] * shFnVals[node][dof][g] * force1D(xg, solXfac) );
               }//end g
               vals[i] = sum;
             }//end dof
@@ -475,7 +487,7 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
                     for(int gX = 0; gX < numGaussPts; ++gX) {
                       long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
                       sum += ( gWt[gY] * gWt[gX]  * shFnVals[nodeY][dofY][gY] *
-                          shFnVals[nodeX][dofX][gX] * force2D(xg, yg) );
+                          shFnVals[nodeX][dofX][gX] * force2D(xg, yg, solXfac, solYfac) );
                     }//end gX
                   }//end gY
                   vals[i] = sum;
@@ -498,7 +510,8 @@ void computeRHS(DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std
                           for(int gX = 0; gX < numGaussPts; ++gX) {
                             long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
                             sum += ( gWt[gZ] * gWt[gY] * gWt[gX] * shFnVals[nodeZ][dofZ][gZ] *
-                                shFnVals[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX] * force3D(xg, yg, zg) );
+                                shFnVals[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX] *
+                                force3D(xg, yg, zg, solXfac, solYfac, solZfac) );
                           }//end gX
                         }//end gY
                       }//end gZ

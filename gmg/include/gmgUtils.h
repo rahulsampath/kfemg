@@ -12,86 +12,61 @@
 #include "mpi.h"
 #include "common/include/commonUtils.h"
 
-inline long double solution1D(long double x) {
-  const int xFac = 1;
+inline long double solution1D(long double x, int xFac) {
   long double res = sin((static_cast<long double>(xFac)) * __PI__ * x);
   return res;
 }
 
-inline long double solution2D(long double x, long double y) {
-  const int xFac = 1;
-  const int yFac = 1;
-  long double res = sin((static_cast<long double>(xFac)) * __PI__ * x) 
-    * sin((static_cast<long double>(yFac)) * __PI__ * y);
+inline long double solution2D(long double x, long double y, int xFac, int yFac) {
+  long double res = solution1D(x, xFac) * solution1D(y, yFac);
   return res;
 }
 
-inline long double solution3D(long double x, long double y, long double z) {
-  const int xFac = 1;
-  const int yFac = 1;
-  const int zFac = 1;
-  long double res = sin((static_cast<long double>(xFac)) * __PI__ * x) 
-    * sin((static_cast<long double>(yFac)) * __PI__ * y)
-    * sin((static_cast<long double>(zFac)) * __PI__ * z);
+inline long double solution3D(long double x, long double y, long double z, 
+    int xFac, int yFac, int zFac) {
+  long double res = solution1D(x, xFac) * solution1D(y, yFac) * solution1D(z, zFac);
   return res;
 }
 
-inline long double solutionDerivative1D(long double x, int dofX, long double hx) {
-  const int xFac = 1;
-  long double res;
-  if(dofX == 0) {
-    res = solution1D(x);
+inline long double solutionDerivative1D(long double x, int dofX, int xFac) {
+  long double res = myIntPow(((static_cast<long double>(xFac)) * __PI__), dofX);
+  if(((dofX/2)%2) != 0) {
+    res *= -1;
+  }
+  if((dofX%2) == 0) {
+    res *= sin((static_cast<long double>(xFac)) * __PI__ * x);
   } else {
+    res *= cos((static_cast<long double>(xFac)) * __PI__ * x);
   }
   return res;
 }
 
-inline long double solutionDerivative2D(long double x, long double y, int dofX, 
-    int dofY, long double hx, long double hy) {
-  const int xFac = 1;
-  const int yFac = 1;
-  long double res;
-  if((dofX == 0) && (dofY == 0)) {
-    res = solution2D(x, y);
-  } else {
-  }
+inline long double solutionDerivative2D(long double x, long double y, int dofX, int dofY, int xFac, int yFac) {
+  long double res = solutionDerivative1D(x, dofX, xFac) * solutionDerivative1D(y, dofY, yFac);
   return res;
 }
 
 inline long double solutionDerivative3D(long double x, long double y, long double z,
-    int dofX, int dofY, int dofZ, long double hx, long double hy, long double hz) {
-  const int xFac = 1;
-  const int yFac = 1;
-  const int zFac = 1;
-  long double res;
-  if((dofX == 0) && (dofY == 0) && (dofZ == 0)) {
-    res = solution3D(x, y, z);
-  } else {
-  }
+    int dofX, int dofY, int dofZ, int xFac, int yFac, int zFac) {
+  long double res = solutionDerivative1D(x, dofX, xFac) * solutionDerivative1D(y, dofY, yFac)
+    * solutionDerivative1D(z, dofZ, zFac);
   return res;
 }
 
-inline long double force1D(long double x) {
-  const int xFac = 1;
-  long double res = (static_cast<long double>(xFac * xFac)) 
-    * (__PI__ * __PI__) * solution1D(x);
+inline long double force1D(long double x, int xFac) {
+  long double res = -solutionDerivative1D(x, 2, xFac);
   return res;
 }
 
-inline long double force2D(long double x, long double y) {
-  const int xFac = 1;
-  const int yFac = 1;
-  long double res = (static_cast<long double>((xFac * xFac) + (yFac * yFac)))
-    * (__PI__ * __PI__) * solution2D(x, y);
+inline long double force2D(long double x, long double y, int xFac, int yFac) {
+  long double res = -(solutionDerivative2D(x, y, 2, 0, xFac, yFac) + solutionDerivative2D(x, y, 0, 2, xFac, yFac));
   return res;
 }
 
-inline long double force3D(long double x, long double y, long double z) {
-  const int xFac = 1;
-  const int yFac = 1;
-  const int zFac = 1;
-  long double res = (static_cast<long double>((xFac * xFac) + (yFac * yFac) + (zFac * zFac))) *
-    (__PI__ * __PI__) * solution3D(x, y, z);
+inline long double force3D(long double x, long double y, long double z, int xFac, int yFac, int zFac) {
+  long double res = -(solutionDerivative3D(x, y, z, 2, 0, 0, xFac, yFac, zFac) +
+      solutionDerivative3D(x, y, z, 0, 2, 0, xFac, yFac, zFac) +
+      solutionDerivative3D(x, y, z, 0, 0, 2, xFac, yFac, zFac));
   return res;
 }
 
