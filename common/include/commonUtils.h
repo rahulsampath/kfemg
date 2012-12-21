@@ -4,7 +4,7 @@
 
 #include <vector>
 
-#define __PI__ 3.1415926535897932
+#define __PI__ 3.1415926535897932L
 
 void suppressSmallValues(const unsigned int len, double* vec);
 
