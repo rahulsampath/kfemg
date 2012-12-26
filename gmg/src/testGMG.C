@@ -168,6 +168,16 @@ int main(int argc, char *argv[]) {
   Vec sol;
   VecDuplicate(rhs, &sol);
 
+  Vec exactSol;
+  VecDuplicate(rhs, &exactSol);
+
+  Vec exactRhs;
+  VecDuplicate(rhs, &exactRhs);
+
+  setSolution(da[da.size() - 1], exactSol, K);
+
+  MatMult(Kmat[Kmat.size() - 1], exactSol, exactRhs);
+
   std::vector<Vec> mgSol;
   std::vector<Vec> mgRhs;
   std::vector<Vec> mgRes;
@@ -202,7 +212,7 @@ int main(int argc, char *argv[]) {
   PCShellSetApply(pc, &applyMG);
   KSPSetInitialGuessNonzero(outerKsp, PETSC_FALSE);
   KSPSetOperators(outerKsp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
-  KSPSetTolerances(outerKsp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
+  KSPSetTolerances(outerKsp, 1.0e-13, 1.0e-13, PETSC_DEFAULT, 50);
   KSPSetOptionsPrefix(outerKsp, "outer_");
   KSPSetFromOptions(outerKsp);
 
@@ -212,6 +222,24 @@ int main(int argc, char *argv[]) {
 
   if(print) {
     std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
+  }
+
+  VecAXPY(sol, -1.0, exactSol);
+
+  PetscReal infSolErrNorm;
+  VecNorm(sol, NORM_INFINITY, &infSolErrNorm);
+
+  VecAXPY(rhs, -1.0, exactRhs);
+
+  PetscReal infRhsErrNorm;
+  VecNorm(rhs, NORM_INFINITY, &infRhsErrNorm);
+
+  if(print) {
+    std::cout<<"Max Abs. Point-wise Error in Solution = "<<std::setprecision(13)<<infSolErrNorm<<std::endl;
+  }
+
+  if(print) {
+    std::cout<<"Max Abs. Point-wise Error in RHS = "<<std::setprecision(13)<<infRhsErrNorm<<std::endl;
   }
 
   destroyVec(mgSol);
@@ -224,6 +252,7 @@ int main(int argc, char *argv[]) {
 
   VecDestroy(&rhs);
   VecDestroy(&sol);
+  VecDestroy(&exactSol);
 
   /*
      destroyBlockPCdata(blkPCdata);

@@ -447,6 +447,7 @@ void computeKmat(Mat Kmat, DM da, std::vector<PetscInt>& lz, std::vector<PetscIn
   MatAssemblyEnd(Kmat, MAT_FLUSH_ASSEMBLY);
 }
 
+/*
 void computeKblkDiag(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<PetscInt>& ly, std::vector<PetscInt>& lx,
     std::vector<PetscInt>& offsets, std::vector<std::vector<long double> >& elemMat, 
     std::vector<long long int>& coeffs, const unsigned int K, const unsigned int dof) {
@@ -720,6 +721,7 @@ void computeKblkUpper(Mat Kblk, DM da, std::vector<PetscInt>& lz, std::vector<Pe
     MatAssemblyEnd(Kblk, MAT_FINAL_ASSEMBLY);
   }
 }
+*/
 
 void createElementMatrices(std::vector<unsigned long long int>& factorialsList, int dim, int K, 
     std::vector<long long int>& coeffs, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
