@@ -1,0 +1,20 @@
+
+INCLUDE = -I.. ${PETSC_CC_INCLUDES} 
+
+LIBS = -L../common/lib -lcommon ${PETSC_LIB}
+
+EXEC = bin/testMMS
+
+all : $(EXEC)
+
+./src/%.o: ./src/%.C
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+
+bin/testMMS : ./src/testMMS.o ./src/mms.o ./src/assembly.o ./src/boundary.o  
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
+
+clean :
+	rm -rf ./src/*~ ./src/*.o  
+	rm -rf $(EXEC)
+
+
