@@ -1,0 +1,23 @@
+
+INCLUDE = -I.. 
+
+ARCHIVES = ./lib/libcommon.a 
+
+LIBS = -L./lib -lcommon 
+
+all : ${ARCHIVES} 
+
+./src/%.o: ./src/%.C
+	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
+
+./lib/libcommon.a: ./src/commonUtils.o ./src/gaussQuad.o 
+	${AR} ${AR_FLAGS} $@ $^
+	${RANLIB} $@
+
+clean :
+	rm -rf ./src/*~ ./src/*.o  
+
+clobber : clean
+	rm -rf  $(ARCHIVES)
+
+
