@@ -23,10 +23,18 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
   DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
-
   PetscInt nxe = nx;
   if((xs + nx) == Nx) {
     nxe = nx - 1;
+  }
+
+  long double hy;
+  PetscInt nye = ny;
+  if(dim > 1) {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+    if((ys + ny) == Ny) {
+      nye = ny - 1;
+    }
   }
 
   PetscInt extraNumGpts = 0;
@@ -53,14 +61,18 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
   VecZeroEntries(locRhs);
 
   PetscScalar** arr1d = NULL;
+  PetscScalar*** arr2d = NULL;
 
   if(dim == 1) {
     DMDAVecGetArrayDOF(da, locRhs, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecGetArrayDOF(da, locRhs, &arr2d);
   } else {
     assert(false);
   }
 
   const int solXfac = 1;
+  const int solYfac = 1;
 
   //PERFORMANCE IMPROVEMENT: We could do a node-based assembly instead of the
   //following element-based assembly and avoid the communication.
@@ -78,12 +90,37 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
         }//end dof
       }//end node
     }//end xi
+  } else if(dim == 2) {
+    for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+      long double ya = (static_cast<long double>(yi))*hy;
+      for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+        long double xa = (static_cast<long double>(xi))*hx;
+        for(int nodeY = 0; nodeY < 2; ++nodeY) {
+          for(int nodeX = 0; nodeX < 2; ++nodeX) {
+            for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
+              for(int dofX = 0; dofX <= K; ++dofX, ++d) {
+                for(int gY = 0; gY < numGaussPts; ++gY) {
+                  long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+                  for(int gX = 0; gX < numGaussPts; ++gX) {
+                    long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+                    arr2d[yi + nodeY][xi + nodeX][d] += ( gWt[gX] * gWt[gY] * myIntPow((0.5L * hx), dofX) * myIntPow((0.5L * hy), dofY)
+                        * shFnVals[nodeX][dofX][gX] * shFnVals[nodeY][dofY][gY] * force2D(xg, yg, solXfac, solYfac) );
+                  }//end gX
+                }//end gY
+              }//end dofX
+            }//end dofY
+          }//end nodeX
+        }//end nodeY
+      }//end xi
+    }//end yi
   } else {
     assert(false);
   }
 
   if(dim == 1) {
     DMDAVecRestoreArrayDOF(da, locRhs, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecRestoreArrayDOF(da, locRhs, &arr2d);
   } else {
     assert(false);
   }
@@ -95,9 +132,12 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
 
   DMRestoreLocalVector(da, &locRhs);
 
-  long double scaling = hx*0.5L;
+  long double jac = hx * 0.5L;
+  if(dim > 1) {
+    jac *= (hy * 0.5L);
+  }
 
-  VecScale(rhs, scaling);
+  VecScale(rhs, jac);
 
   zeroBoundaries(da, rhs);
 }

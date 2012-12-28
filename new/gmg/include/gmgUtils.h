@@ -17,6 +17,11 @@ inline long double solution1D(long double x, int xFac) {
   return res;
 }
 
+inline long double solution2D(long double x, long double y, int xFac, int yFac) {
+  long double res = solution1D(x, xFac) * solution1D(y, yFac);
+  return res;
+}
+
 inline long double solutionDerivative1D(long double x, int dofX, int xFac) {
   long double res = myIntPow(((static_cast<long double>(xFac)) * __PI__), dofX);
   if(((dofX/2)%2) != 0) {
@@ -30,8 +35,18 @@ inline long double solutionDerivative1D(long double x, int dofX, int xFac) {
   return res;
 }
 
+inline long double solutionDerivative2D(long double x, long double y, int dofX, int dofY, int xFac, int yFac) {
+  long double res = solutionDerivative1D(x, dofX, xFac) * solutionDerivative1D(y, dofY, yFac);
+  return res;
+}
+
 inline long double force1D(long double x, int xFac) {
   long double res = -solutionDerivative1D(x, 2, xFac);
+  return res;
+}
+
+inline long double force2D(long double x, long double y, int xFac, int yFac) {
+  long double res = -(solutionDerivative2D(x, y, 2, 0, xFac, yFac) + solutionDerivative2D(x, y, 0, 2, xFac, yFac));
   return res;
 }
 
