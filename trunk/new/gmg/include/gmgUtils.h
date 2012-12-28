@@ -35,7 +35,11 @@ inline long double force1D(long double x, int xFac) {
   return res;
 }
 
+void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs);
+
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
+
+void zeroBoundaries(DM da, Vec vec);
 
 #endif
 
