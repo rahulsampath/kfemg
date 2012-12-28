@@ -41,8 +41,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
 
 void zeroBoundaries(DM da, Vec vec);
 
-void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat, 
-    std::vector<long long int>& coeffs, const unsigned int K);
+void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
 
 void dirichletMatrixCorrection(Mat Kmat, DM da);
 
