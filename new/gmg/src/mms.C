@@ -5,6 +5,103 @@
 
 #include <cassert>
 
+void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs) {
+  PetscInt dim;
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+
+  PetscInt nxe = nx;
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
+
+  PetscInt extraNumGpts = 0;
+  PetscOptionsGetInt(PETSC_NULL, "-extraGptsRHS", &extraNumGpts, PETSC_NULL);
+  int numGaussPts = (2*K) + 2 + extraNumGpts;
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(int node = 0; node < 2; ++node) {
+    shFnVals[node].resize(K + 1);
+    for(int dof = 0; dof <= K; ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
+
+  Vec locRhs;
+  DMGetLocalVector(da, &locRhs);
+
+  VecZeroEntries(locRhs);
+
+  PetscScalar** arr1d = NULL;
+
+  if(dim == 1) {
+    DMDAVecGetArrayDOF(da, locRhs, &arr1d);
+  } else {
+    assert(false);
+  }
+
+  const int solXfac = 1;
+
+  //PERFORMANCE IMPROVEMENT: We could do a node-based assembly instead of the
+  //following element-based assembly and avoid the communication.
+
+  if(dim == 1) {
+    for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+      long double xa = (static_cast<long double>(xi))*hx;
+      for(int node = 0; node < 2; ++node) {
+        for(int dof = 0; dof <= K; ++dof) {
+          for(int g = 0; g < numGaussPts; ++g) {
+            long double xg = coordLocalToGlobal(gPt[g], xa, hx);
+            arr1d[xi + node][dof] += ( gWt[g] * myIntPow((0.5L * hx), dof) 
+                * shFnVals[node][dof][g] * force1D(xg, solXfac) );
+          }//end g
+        }//end dof
+      }//end node
+    }//end xi
+  } else {
+    assert(false);
+  }
+
+  if(dim == 1) {
+    DMDAVecRestoreArrayDOF(da, locRhs, &arr1d);
+  } else {
+    assert(false);
+  }
+
+  VecZeroEntries(rhs);
+
+  DMLocalToGlobalBegin(da, locRhs, ADD_VALUES, rhs);
+  DMLocalToGlobalEnd(da, locRhs, ADD_VALUES, rhs);
+
+  DMRestoreLocalVector(da, &locRhs);
+
+  long double scaling = hx*0.5L;
+
+  VecScale(rhs, scaling);
+
+  zeroBoundaries(da, rhs);
+}
+
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K) {
   PetscInt dim;
   PetscInt dofsPerNode;
@@ -84,8 +181,6 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
         locErrSqr += ( gWt[gX] * err * err );
       }//end gX
     }//end xi
-  } else if(dim == 2) {
-    assert(false);
   } else {
     assert(false);
   }

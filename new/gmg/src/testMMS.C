@@ -101,6 +101,8 @@ int main(int argc, char *argv[]) {
   Vec rhs;
   DMCreateGlobalVector(da, &rhs);
 
+  computeRHS(da, coeffs, K, rhs);
+
   Vec sol;
   VecDuplicate(rhs, &sol); 
 
