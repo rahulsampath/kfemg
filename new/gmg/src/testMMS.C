@@ -23,10 +23,13 @@ int main(int argc, char *argv[]) {
   PetscInt K;
   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
 
-  int globalRank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  bool print = (globalRank == 0);
+  int npes;
+  MPI_Comm_size(MPI_COMM_WORLD, &npes);
+
+  bool print = (rank == 0);
 
   int dofsPerNode = getDofsPerNode(dim, K);
 
@@ -46,9 +49,40 @@ int main(int argc, char *argv[]) {
   PetscInt Nx = 5;
   PetscOptionsGetInt(PETSC_NULL, "-finestNx", &Nx, PETSC_NULL);
 
+  //1-D case
+  int px = npes;
+
   std::vector<PetscInt> partX;
   std::vector<PetscInt> scanX;
   std::vector<PetscInt> offsets;
+
+  assert(px <= Nx);
+  PetscInt avgX = Nx/px;
+  PetscInt extraX = Nx%px; 
+  partX.resize(px, avgX);
+  for(int cnt = 0; cnt < extraX; ++cnt) {
+    ++(partX[cnt]);
+  }//end cnt
+
+  offsets.resize(npes);
+  for(int i = 0, p = 0; i < px; ++i, ++p) {
+    offsets[p] = (partX[i]);
+  }//end i
+
+  for(int p = 1; p < npes; ++p) {
+    offsets[p] += offsets[p - 1];
+  }//end p
+
+  for(int p = (npes - 1); p > 0; --p) {
+    offsets[p] = offsets[p - 1];
+  }//end p
+  offsets[0] = 0;
+
+  scanX.resize(px);
+  scanX[0] = partX[0] - 1;
+  for(int i = 1; i < px; ++i) {
+    scanX[i] = scanX[i - 1] + partX[i];
+  }//end i
 
   //Create DA
   DM da;
@@ -71,12 +105,24 @@ int main(int argc, char *argv[]) {
   VecDuplicate(rhs, &sol); 
 
   //Build KSP
+  PC pc;
   KSP ksp;
+  KSPCreate(PETSC_COMM_WORLD, &ksp);
+  KSPSetType(ksp, KSPCG);
+  KSPSetPCSide(ksp, PC_LEFT);
+  KSPGetPC(ksp, &pc);
+  PCSetType(pc, PCCHOLESKY);
+  PCFactorSetShiftAmount(pc, 1.0e-13);
+  PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
+  KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+  KSPSetOperators(ksp, Kmat, Kmat, SAME_PRECONDITIONER);
+  KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
+  KSPSetFromOptions(ksp);
 
   KSPSolve(ksp, rhs, sol);
 
   //Compute Error
-  long double err;
+  long double err = computeError(da, sol, coeffs, K);
 
   if(print) {
     std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;

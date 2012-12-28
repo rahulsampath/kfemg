@@ -35,6 +35,8 @@ inline long double force1D(long double x, int xFac) {
   return res;
 }
 
+long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
+
 #endif
 
 

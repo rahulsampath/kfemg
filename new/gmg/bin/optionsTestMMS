@@ -6,3 +6,6 @@
 -finestNy 5
 -finestNz 5
 
+-ksp_max_it 100
+-ksp_converged_reason
+
