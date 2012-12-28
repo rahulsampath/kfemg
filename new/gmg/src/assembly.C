@@ -26,6 +26,12 @@ void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMa
   if((xs + nx) == Nx) {
     nxe = nx - 1;
   }
+  PetscInt nye = ny;
+  if(dim > 1) {
+    if((ys + ny) == Ny) {
+      nye = ny - 1;
+    }
+  }
 
   MatZeroEntries(Kmat);
 
@@ -48,6 +54,33 @@ void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMa
         }//end rDof
       }//end rNode
     }//end xi
+  } else if(dim == 2) {
+    for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+      for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+        for(int rNodeY = 0, r = 0; rNodeY < 2; ++rNodeY) {
+          for(int rNodeX = 0; rNodeX < 2; ++rNodeX) {
+            for(int rDof = 0; rDof < dofsPerNode; ++rDof, ++r) {
+              MatStencil row;
+              row.j = yi + rNodeY;
+              row.i = xi + rNodeX;
+              row.c = rDof;
+              for(int cNodeY = 0, c = 0; cNodeY < 2; ++cNodeY) {
+                for(int cNodeX = 0; cNodeX < 2; ++cNodeX) {
+                  for(int cDof = 0; cDof < dofsPerNode; ++cDof, ++c) {
+                    MatStencil col;
+                    col.j = yi + cNodeY;
+                    col.i = xi + cNodeX;
+                    col.c = cDof;
+                    PetscScalar val = elemMat[r][c];
+                    MatSetValuesStencil(Kmat, 1, &row, 1, &col, &val, ADD_VALUES);
+                  }//end cDof
+                }//end cNodeX
+              }//end cNodeY
+            }//end rDof
+          }//end rNodeX
+        }//end rNodeY
+      }//end xi
+    }//end yi
   } else {
     assert(false);
   }
