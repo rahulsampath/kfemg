@@ -51,12 +51,9 @@ int main(int argc, char *argv[]) {
 
   //1-D case
   int px = npes;
+  assert(px <= Nx);
 
   std::vector<PetscInt> partX;
-  std::vector<PetscInt> scanX;
-  std::vector<PetscInt> offsets;
-
-  assert(px <= Nx);
   PetscInt avgX = Nx/px;
   PetscInt extraX = Nx%px; 
   partX.resize(px, avgX);
@@ -64,38 +61,59 @@ int main(int argc, char *argv[]) {
     ++(partX[cnt]);
   }//end cnt
 
-  offsets.resize(npes);
-  for(int i = 0, p = 0; i < px; ++i, ++p) {
-    offsets[p] = (partX[i]);
-  }//end i
+  /*
+     std::vector<PetscInt> offsets;
+     offsets.resize(npes);
+     for(int i = 0, p = 0; i < px; ++i, ++p) {
+     offsets[p] = (partX[i]);
+     }//end i
 
-  for(int p = 1; p < npes; ++p) {
-    offsets[p] += offsets[p - 1];
-  }//end p
+     for(int p = 1; p < npes; ++p) {
+     offsets[p] += offsets[p - 1];
+     }//end p
 
-  for(int p = (npes - 1); p > 0; --p) {
-    offsets[p] = offsets[p - 1];
-  }//end p
-  offsets[0] = 0;
+     for(int p = (npes - 1); p > 0; --p) {
+     offsets[p] = offsets[p - 1];
+     }//end p
+     offsets[0] = 0;
 
-  scanX.resize(px);
-  scanX[0] = partX[0] - 1;
-  for(int i = 1; i < px; ++i) {
-    scanX[i] = scanX[i - 1] + partX[i];
-  }//end i
+     std::vector<PetscInt> scanX;
+     scanX.resize(px);
+     scanX[0] = partX[0] - 1;
+     for(int i = 1; i < px; ++i) {
+     scanX[i] = scanX[i - 1] + partX[i];
+     }//end i
+     */
 
   //Create DA
   DM da;
   if(dim == 1) {
     DMDACreate1d(PETSC_COMM_WORLD, DMDA_BOUNDARY_NONE, Nx, dofsPerNode, 1, &(partX[0]), &da);
-  } else if(dim == 2) {
-    assert(false);
   } else {
     assert(false);
   }
 
   //Build Kmat
   Mat Kmat;
+  DMCreateMatrix(da, MATAIJ, &Kmat);
+
+  PetscInt sz;
+  MatGetSize(Kmat, &sz, PETSC_NULL);
+  if(print) {
+    std::cout<<"Kmat Size = "<<sz<<std::endl;
+  }
+
+  std::vector<std::vector<long double> > elemMat;
+  if(dim == 1) {
+    long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, print);
+  } else {
+    assert(false);
+  }
+
+  computeKmat(Kmat, da, elemMat, coeffs, K);
+
+  dirichletMatrixCorrection(Kmat, da);
 
   //ComputeRHS
   Vec rhs;
