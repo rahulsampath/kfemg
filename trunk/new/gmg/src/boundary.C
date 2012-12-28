@@ -61,6 +61,127 @@ void dirichletMatrixCorrection(Mat Kmat, DM da) {
         }//end dof
       }//end node
     }
+  } else if(dim == 2) {
+    if(xs == 0) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        MatStencil bnd;
+        bnd.j = yi;
+        bnd.i = 0;
+        bnd.c = 0;
+        for(int nodeY = -1; nodeY < 2; ++nodeY) {
+          if((yi == 0) && (nodeY == -1)) {
+            continue;
+          }
+          if((yi == (Ny - 1)) && (nodeY == 1)) {
+            continue;
+          }
+          for(int nodeX = 0; nodeX < 2; ++nodeX) {
+            for(int dof = 0; dof < dofsPerNode; ++dof) {
+              MatStencil oth;
+              oth.j = yi + nodeY;
+              oth.i = nodeX;
+              oth.c = dof;
+              if((nodeY == 0) && (nodeX == 0) && (dof == 0)) {
+                MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+              } else {
+                MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+              }
+            }//end dof
+          }//end nodeX
+        }//end nodeY
+      }//end yi
+    }
+    if((xs + nx) == Nx) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        MatStencil bnd;
+        bnd.j = yi;
+        bnd.i = Nx - 1;
+        bnd.c = 0;
+        for(int nodeY = -1; nodeY < 2; ++nodeY) {
+          if((yi == 0) && (nodeY == -1)) {
+            continue;
+          }
+          if((yi == (Ny - 1)) && (nodeY == 1)) {
+            continue;
+          }
+          for(int nodeX = -1; nodeX < 1; ++nodeX) {
+            for(int dof = 0; dof < dofsPerNode; ++dof) {
+              MatStencil oth;
+              oth.j = yi + nodeY;
+              oth.i = Nx - 1 + nodeX;
+              oth.c = dof;
+              if((nodeY == 0) && (nodeX == 0) && (dof == 0)) {
+                MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+              } else {
+                MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+              }
+            }//end dof
+          }//end nodeX
+        }//end nodeY
+      }//end yi
+    }
+    if(ys == 0) {
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        MatStencil bnd;
+        bnd.j = 0;
+        bnd.i = xi;
+        bnd.c = 0;
+        for(int nodeY = 0; nodeY < 2; ++nodeY) {
+          for(int nodeX = -1; nodeX < 2; ++nodeX) {
+            if((xi == 0) && (nodeX == -1)) {
+              continue;
+            }
+            if((xi == (Nx - 1)) && (nodeX == 1)) {
+              continue;
+            }
+            for(int dof = 0; dof < dofsPerNode; ++dof) {
+              MatStencil oth;
+              oth.j = nodeY;
+              oth.i = xi + nodeX;
+              oth.c = dof;
+              if((nodeY == 0) && (nodeX == 0) && (dof == 0)) {
+                MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+              } else {
+                MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+              }
+            }//end dof
+          }//end nodeX
+        }//end nodeY
+      }//end xi
+    }
+    if((ys + ny) == Ny) {
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        MatStencil bnd;
+        bnd.j = Ny - 1;
+        bnd.i = xi;
+        bnd.c = 0;
+        for(int nodeY = -1; nodeY < 1; ++nodeY) {
+          for(int nodeX = -1; nodeX < 2; ++nodeX) {
+            if((xi == 0) && (nodeX == -1)) {
+              continue;
+            }
+            if((xi == (Nx - 1)) && (nodeX == 1)) {
+              continue;
+            }
+            for(int dof = 0; dof < dofsPerNode; ++dof) {
+              MatStencil oth;
+              oth.j = Ny - 1 + nodeY;
+              oth.i = xi + nodeX;
+              oth.c = dof;
+              if((nodeY == 0) && (nodeX == 0) && (dof == 0)) {
+                MatSetValuesStencil(Kmat, 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+              } else {
+                MatSetValuesStencil(Kmat, 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                MatSetValuesStencil(Kmat, 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+              }
+            }//end dof
+          }//end nodeX
+        }//end nodeY
+      }//end xi
+    }
   } else {
     assert(false);
   }
