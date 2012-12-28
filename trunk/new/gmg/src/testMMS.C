@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
     assert(false);
   }
 
-  computeKmat(Kmat, da, elemMat, coeffs, K);
+  computeKmat(Kmat, da, elemMat);
 
   dirichletMatrixCorrection(Kmat, da);
 
