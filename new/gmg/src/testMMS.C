@@ -49,9 +49,28 @@ int main(int argc, char *argv[]) {
   PetscInt Nx = 5;
   PetscOptionsGetInt(PETSC_NULL, "-finestNx", &Nx, PETSC_NULL);
 
-  //1-D case
-  int px = npes;
+  PetscInt Ny = 1;
+  if(dim > 1) {
+    PetscOptionsGetInt(PETSC_NULL, "-finestNy", &Ny, PETSC_NULL);
+  }
+
+  int px, py;
+  if(dim == 1) {
+    px = npes;
+  } else if(dim == 2) {
+    px = sqrt(npes);
+    py = npes/px;
+    assert((px*py) == npes);
+  } else {
+    assert(false);
+  }
+
+  assert(px >= 1);
   assert(px <= Nx);
+  if(dim > 1) {
+    assert(py >= 1);
+    assert(py <= Ny);
+  }
 
   std::vector<PetscInt> partX;
   PetscInt avgX = Nx/px;
@@ -61,34 +80,21 @@ int main(int argc, char *argv[]) {
     ++(partX[cnt]);
   }//end cnt
 
-  /*
-     std::vector<PetscInt> offsets;
-     offsets.resize(npes);
-     for(int i = 0, p = 0; i < px; ++i, ++p) {
-     offsets[p] = (partX[i]);
-     }//end i
-
-     for(int p = 1; p < npes; ++p) {
-     offsets[p] += offsets[p - 1];
-     }//end p
-
-     for(int p = (npes - 1); p > 0; --p) {
-     offsets[p] = offsets[p - 1];
-     }//end p
-     offsets[0] = 0;
-
-     std::vector<PetscInt> scanX;
-     scanX.resize(px);
-     scanX[0] = partX[0] - 1;
-     for(int i = 1; i < px; ++i) {
-     scanX[i] = scanX[i - 1] + partX[i];
-     }//end i
-     */
+  std::vector<PetscInt> partY;
+  PetscInt avgY = Ny/py;
+  PetscInt extraY = Ny%py; 
+  partY.resize(py, avgY);
+  for(int cnt = 0; cnt < extraY; ++cnt) {
+    ++(partY[cnt]);
+  }//end cnt
 
   //Create DA
   DM da;
   if(dim == 1) {
     DMDACreate1d(PETSC_COMM_WORLD, DMDA_BOUNDARY_NONE, Nx, dofsPerNode, 1, &(partX[0]), &da);
+  } else if(dim == 2) {
+    DMDACreate2d(PETSC_COMM_WORLD, DMDA_BOUNDARY_NONE, DMDA_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+        Nx, Ny, px, py, dofsPerNode, 1, &(partX[0]), &(partY[0]), &da);
   } else {
     assert(false);
   }
@@ -107,6 +113,10 @@ int main(int argc, char *argv[]) {
   if(dim == 1) {
     long double hx = 1.0L/(static_cast<long double>(Nx - 1));
     createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, print);
+  } else if(dim == 2) {
+    long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+    long double hy = 1.0L/(static_cast<long double>(Ny - 1));
+    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, print);
   } else {
     assert(false);
   }

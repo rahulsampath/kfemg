@@ -10,6 +10,82 @@
 #include <cassert>
 #endif
 
+void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorialsList,
+    unsigned int K, std::vector<long long int> & coeffs, long double hy, long double hx, 
+    std::vector<std::vector<long double> >& mat, bool print) {
+  unsigned int matSz = 4*(K + 1)*(K + 1);
+  if(print) {
+    std::cout<<"ElemMatSize = "<<matSz<<std::endl;
+  }
+  mat.resize(matSz);
+  for(unsigned int i = 0; i < matSz; ++i) {
+    (mat[i]).resize(matSz);
+  }//end i
+
+  unsigned int numGaussPts = (2*K) + 2;
+  if(print) {
+    std::cout<<"NumGaussPtsPerDim = "<<numGaussPts<<std::endl;
+  }
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnDerivatives(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnDerivatives[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnDerivatives[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnDerivatives[node][dof][g] = eval1DshFnDerivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
+      }//end g
+    }//end dof
+  }//end node
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnVals[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
+
+  long double jac = 0.25L * hx * hy;
+  for(unsigned int rNodeY = 0, r = 0; rNodeY < 2; ++rNodeY) {
+    for(unsigned int rNodeX = 0; rNodeX < 2; ++rNodeX) {
+      for(unsigned int rDofY = 0; rDofY <= K; ++rDofY) {
+        for(unsigned int rDofX = 0; rDofX <= K; ++rDofX, ++r) {
+          for(unsigned int cNodeY = 0, c = 0; cNodeY < 2; ++cNodeY) {
+            for(unsigned int cNodeX = 0; cNodeX < 2; ++cNodeX) {
+              for(unsigned int cDofY = 0; cDofY <= K; ++cDofY) {
+                for(unsigned int cDofX = 0; cDofX <= K; ++cDofX, ++c) {
+                  mat[r][c] = 0.0;
+                  long double scaling = myIntPow((0.5L * hx), (rDofX + cDofX)) 
+                    * myIntPow((0.5L * hy), (rDofY + cDofY));
+                  long double xFac = (4.0L/(hx*hx)) * scaling;
+                  long double yFac = (4.0L/(hy*hy)) * scaling;
+                  for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
+                    for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
+                      mat[r][c] += ( gWt[gY] * gWt[gX] * jac * (
+                            ( yFac*(shFnDerivatives[rNodeY][rDofY][gY])*(shFnVals[rNodeX][rDofX][gX])
+                              *(shFnDerivatives[cNodeY][cDofY][gY])*(shFnVals[cNodeX][cDofX][gX]) ) +
+                            ( xFac*(shFnVals[rNodeY][rDofY][gY])*(shFnDerivatives[rNodeX][rDofX][gX])
+                              *(shFnVals[cNodeY][cDofY][gY])*(shFnDerivatives[cNodeX][cDofX][gX]) )
+                            ) );
+                    }//end gX
+                  }//end gY
+                }//end cDofX
+              }//end cDofY
+            }//end cNodeX
+          }//end cNodeY
+        }//end rDofX
+      }//end rDofY
+    }//end rNodeX
+  }//end rNodeY
+}
+
 void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorialsList,
     unsigned int K, std::vector<long long int> & coeffs, long double hx,
     std::vector<std::vector<long double> >& mat, bool print) {
