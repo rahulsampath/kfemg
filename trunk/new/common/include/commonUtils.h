@@ -6,6 +6,10 @@
 
 #define __PI__ 3.1415926535897932L
 
+void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorialsList,
+    unsigned int K, std::vector<long long int> & coeffs, long double hy, long double hx, 
+    std::vector<std::vector<long double> >& mat, bool print);
+
 void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorialsList,
     unsigned int K, std::vector<long long int> & coeffs, long double hx, 
     std::vector<std::vector<long double> >& mat, bool print);
