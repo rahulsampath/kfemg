@@ -2,6 +2,8 @@
 #include "gmg/include/gmgUtils.h"
 #include "common/include/commonUtils.h"
 
+#include <cassert>
+
 void dirichletMatrixCorrection(Mat Kmat, DM da) {
   PetscInt dim;
   PetscInt dofsPerNode;
