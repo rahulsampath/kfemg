@@ -160,10 +160,18 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
   DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
-
   PetscInt nxe = nx;
   if((xs + nx) == Nx) {
     nxe = nx - 1;
+  }
+
+  long double hy;
+  PetscInt nye = ny;
+  if(dim > 1) {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+    if((ys + ny) == Ny) {
+      nye = ny - 1;
+    }
   }
 
   PetscInt extraNumGpts = 0;
@@ -203,6 +211,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
   }
 
   const int solXfac = 1;
+  const int solYfac = 1;
 
   long double locErrSqr = 0.0;
   if(dim == 1) {
@@ -221,6 +230,33 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
         locErrSqr += ( gWt[gX] * err * err );
       }//end gX
     }//end xi
+  } else if(dim == 2) {
+    for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+      long double ya = (static_cast<long double>(yi))*hy;
+      for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+        long double xa = (static_cast<long double>(xi))*hx;
+        for(int gY = 0; gY < numGaussPts; ++gY) {
+          long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+          for(int gX = 0; gX < numGaussPts; ++gX) {
+            long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+            long double solVal = 0.0;
+            for(int nodeY = 0; nodeY < 2; ++nodeY) {
+              for(int nodeX = 0; nodeX < 2; ++nodeX) {
+                for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
+                  for(int dofX = 0; dofX <= K; ++dofX, ++d) {
+                    solVal += ( (static_cast<long double>(arr2d[yi + nodeY][xi + nodeX][d])) 
+                        * myIntPow((0.5L * hx), dofX) * myIntPow((0.5L * hy), dofY)
+                        * shFnVals[nodeX][dofX][gX] * shFnVals[nodeY][dofY][gY] );
+                  }//end dofX
+                }//end dofY
+              }//end nodeX
+            }//end nodeY
+            long double err = solVal -  solution2D(xg, yg, solXfac, solYfac);
+            locErrSqr += ( gWt[gY] * gWt[gX] * err * err );
+          }//end gX
+        }//end gY
+      }//end xi
+    }//end yi
   } else {
     assert(false);
   }
@@ -238,9 +274,12 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
   long double globErrSqr;
   MPI_Allreduce(&locErrSqr, &globErrSqr, 1, MPI_LONG_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  long double scaling = hx*0.5L;
+  long double jac = hx * 0.5L;
+  if(dim > 1) {
+    jac *= (hy * 0.5L);
+  }
 
-  long double result = sqrt(scaling*globErrSqr);
+  long double result = sqrt(jac * globErrSqr);
 
   return result;
 }
