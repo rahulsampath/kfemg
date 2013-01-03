@@ -15,17 +15,29 @@
 inline long double solution1D(long double x, int xFac) {
   //long double res = sin((static_cast<long double>(xFac)) * __PI__ * x);
   //long double res = pow((x - 0.5), 8) - pow(0.5, 8);
-  long double res = pow((x - 0.5), 2) - pow(0.5, 2);
+// long double res = pow((x - 0.5), 2) - pow(0.5, 2);
+long double res = x;
   return res;
 }
 
 inline long double solution2D(long double x, long double y, int xFac, int yFac) {
-  long double res = solution1D(x, xFac) * solution1D(y, yFac);
+  //long double res = solution1D(x, xFac) * solution1D(y, yFac);
+  long double res = x;
   return res;
 }
 
 inline long double solutionDerivative1D(long double x, int dofX, int xFac) {
   long double res;
+
+  if(dofX == 0) {
+    res = x;
+  } else if(dofX == 1) {
+    res = 1.0;
+  } else {
+    res = 0.0;
+  }
+
+  /*
   if(dofX == 0) {
     res = solution1D(x, xFac);
   } else if(dofX > 2) {
@@ -35,6 +47,7 @@ inline long double solutionDerivative1D(long double x, int dofX, int xFac) {
   } else {
     res = 2; 
   }
+  */
   
   /*
   else if(dofX > 8) {
@@ -74,7 +87,13 @@ inline long double solutionDerivative1D(long double x, int dofX, int xFac) {
 }
 
 inline long double solutionDerivative2D(long double x, long double y, int dofX, int dofY, int xFac, int yFac) {
-  long double res = solutionDerivative1D(x, dofX, xFac) * solutionDerivative1D(y, dofY, yFac);
+//  long double res = solutionDerivative1D(x, dofX, xFac) * solutionDerivative1D(y, dofY, yFac);
+  long double res;
+  if(dofY == 0) {
+    res = solutionDerivative1D(x, dofX, xFac);
+  } else {
+    res = 0.0;
+  }
   return res;
 }
 
@@ -93,6 +112,8 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
 
 void setBoundaries(DM da, Vec vec);
+
+void chkBoundaries(DM da, Vec vec);
 
 void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
 
