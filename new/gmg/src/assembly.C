@@ -14,6 +14,8 @@ void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMa
   DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
       &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
+  std::cout<<"In Assembly: dim = "<<dim<<" dofsPerNode = "<<dofsPerNode<<std::endl;
+
   PetscInt xs;
   PetscInt ys;
   PetscInt zs;
