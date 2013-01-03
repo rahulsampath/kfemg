@@ -138,8 +138,6 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
   }
 
   VecScale(rhs, jac);
-
-  zeroBoundaries(da, rhs);
 }
 
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K) {
