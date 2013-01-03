@@ -85,8 +85,8 @@ void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMa
     assert(false);
   }
 
-  MatAssemblyBegin(Kmat, MAT_FLUSH_ASSEMBLY);
-  MatAssemblyEnd(Kmat, MAT_FLUSH_ASSEMBLY);
+  MatAssemblyBegin(Kmat, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
 }
 
 

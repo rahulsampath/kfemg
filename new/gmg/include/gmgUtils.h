@@ -92,7 +92,7 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
 
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
 
-void zeroBoundaries(DM da, Vec vec);
+void setBoundaries(DM da, Vec vec);
 
 void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
 
