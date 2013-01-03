@@ -121,18 +121,25 @@ int main(int argc, char *argv[]) {
     assert(false);
   }
 
-  computeKmat(Kmat, da, elemMat);
-
-  dirichletMatrixCorrection(Kmat, da);
-
-  //ComputeRHS
   Vec rhs;
   DMCreateGlobalVector(da, &rhs);
 
-  computeRHS(da, coeffs, K, rhs);
-
   Vec sol;
   VecDuplicate(rhs, &sol); 
+
+  //ComputeRHS
+  computeRHS(da, coeffs, K, rhs);
+
+  //Neumann Matrix (Assembly)
+  computeKmat(Kmat, da, elemMat);
+
+  //ModifyRHS 
+  VecZeroEntries(sol);
+  setBoundaries(da, sol);
+  MatMultAdd(Kmat, sol, rhs, rhs);
+  setBoundaries(da, rhs);
+
+  dirichletMatrixCorrection(Kmat, da);
 
   //Build KSP
   PC pc;

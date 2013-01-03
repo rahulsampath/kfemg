@@ -190,7 +190,7 @@ void dirichletMatrixCorrection(Mat Kmat, DM da) {
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
 }
 
-void zeroBoundaries(DM da, Vec vec) {
+void setBoundaries(DM da, Vec vec) {
   PetscInt dim;
   PetscInt Nx;
   PetscInt Ny;
@@ -206,14 +206,23 @@ void zeroBoundaries(DM da, Vec vec) {
   PetscInt nz;
   DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  long double hy;
+  if(dim > 1) {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+  }
+
+  const int solXfac = 1;
+  const int solYfac = 1;
+
   if(dim == 1) {
     PetscScalar** arr; 
     DMDAVecGetArrayDOF(da, vec, &arr);
     if(xs == 0) {
-      arr[0][0] = 0.0;
+      arr[0][0] = solution1D(0, solXfac);
     }
     if((xs + nx) == Nx) {
-      arr[Nx - 1][0] = 0.0;
+      arr[Nx - 1][0] = solution1D(1, solXfac);
     }
     DMDAVecRestoreArrayDOF(da, vec, &arr);
   } else if(dim == 2) {
@@ -221,71 +230,27 @@ void zeroBoundaries(DM da, Vec vec) {
     DMDAVecGetArrayDOF(da, vec, &arr);
     if(xs == 0) {
       for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
-        arr[yi][0][0] = 0.0;
+        arr[yi][0][0] = solution2D(0, ((static_cast<long double>(yi)) * hy), solXfac, solYfac);
       }//end yi
     }
     if((xs + nx) == Nx) {
       for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
-        arr[yi][Nx - 1][0] = 0.0;
+        arr[yi][Nx - 1][0] = solution2D(1, ((static_cast<long double>(yi)) * hy), solXfac, solYfac);
       }//end yi
     }
     if(ys == 0) {
       for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
-        arr[0][xi][0] = 0.0;
+        arr[0][xi][0] = solution2D(((static_cast<long double>(xi)) * hx), 0, solXfac, solYfac);
       }//end xi
     }
     if((ys + ny) == Ny) {
       for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
-        arr[Ny - 1][xi][0] = 0.0;
+        arr[Ny - 1][xi][0] = solution2D(((static_cast<long double>(xi)) * hx), 1, solXfac, solYfac);
       }//end xi
     }
     DMDAVecRestoreArrayDOF(da, vec, &arr);
   } else {
-    PetscScalar**** arr; 
-    DMDAVecGetArrayDOF(da, vec, &arr);
-    if(xs == 0) {
-      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
-        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
-          arr[zi][yi][0][0] = 0.0;
-        }//end yi
-      }//end zi
-    }
-    if((xs + nx) == Nx) {
-      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
-        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
-          arr[zi][yi][Nx - 1][0] = 0.0;
-        }//end yi
-      }//end zi
-    }
-    if(ys == 0) {
-      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
-        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
-          arr[zi][0][xi][0] = 0.0;
-        }//end xi
-      }//end zi
-    }
-    if((ys + ny) == Ny) {
-      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
-        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
-          arr[zi][Ny - 1][xi][0] = 0.0;
-        }//end xi
-      }//end zi
-    }
-    if(zs == 0) {
-      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
-        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
-          arr[0][yi][xi][0] = 0.0;
-        }//end xi
-      }//end yi
-    }
-    if((zs + nz) == Nz) {
-      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
-        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
-          arr[Nz - 1][yi][xi][0] = 0.0;
-        }//end xi
-      }//end yi
-    }
-    DMDAVecRestoreArrayDOF(da, vec, &arr);
+    assert(false);
   }
 }
 
