@@ -29,7 +29,8 @@ inline long double solution3D(long double x, long double y, long double z,
 }
 
 inline long double solutionDerivative1D(long double x, int dofX, int xFac) {
-  long double res = myIntPow(((static_cast<long double>(xFac)) * __PI__), dofX);
+  long double res;
+  res = myIntPow(((static_cast<long double>(xFac)) * __PI__), dofX);
   if(((dofX/2)%2) != 0) {
     res *= -1;
   }
