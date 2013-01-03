@@ -128,7 +128,8 @@ int main(int argc, char *argv[]) {
   VecDuplicate(rhs, &sol); 
 
   //ComputeRHS
-  computeRHS(da, coeffs, K, rhs);
+  //computeRHS(da, coeffs, K, rhs);
+  VecZeroEntries(rhs);
 
   //Neumann Matrix (Assembly)
   computeKmat(Kmat, da, elemMat);
@@ -136,6 +137,7 @@ int main(int argc, char *argv[]) {
   //ModifyRHS 
   VecZeroEntries(sol);
   setBoundaries(da, sol);
+  VecScale(sol, -1.0);
   MatMultAdd(Kmat, sol, rhs, rhs);
   setBoundaries(da, rhs);
 
@@ -164,6 +166,8 @@ int main(int argc, char *argv[]) {
   if(print) {
     std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
   }
+
+  chkBoundaries(da, sol);
 
   VecDestroy(&rhs);
   VecDestroy(&sol);
