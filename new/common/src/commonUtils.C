@@ -117,25 +117,25 @@ void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorial
     }//end dof
   }//end node
 
-  std::vector<long double> scaling(K + 1);
-  for(unsigned int dof = 0; dof <= K; ++dof) {
-    scaling[dof] = (2.0L/hx) * myIntPow((0.5L * hx), dof);
-  }//end dof
+  std::vector<std::vector<long double> > gradPhi(matSz);
+  for(unsigned int node = 0, i = 0; node < 2; ++node) {
+    for(unsigned int dof = 0; dof <= K; ++dof, ++i) {
+      gradPhi[i].resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        gradPhi[i][g] = (2.0L/hx) * myIntPow((0.5L * hx), dof) * shFnDerivatives[node][dof][g];
+      }//end g
+    }//end dof
+  }//end node
 
   long double jac = 0.5L * hx;
-  for(unsigned int rNode = 0, r = 0; rNode < 2; ++rNode) {
-    for(unsigned int rDof = 0; rDof <= K; ++rDof, ++r) {
-      for(unsigned int cNode = 0, c = 0; cNode < 2; ++cNode) {
-        for(unsigned int cDof = 0; cDof <= K; ++cDof, ++c) {
-          mat[r][c] = 0.0;
-          for(unsigned int g = 0; g < numGaussPts; ++g) {
-            mat[r][c] += ( gWt[g] * jac * scaling[rDof] * scaling[cDof] * 
-                shFnDerivatives[rNode][rDof][g] * shFnDerivatives[cNode][cDof][g] );
-          }//end g
-        }//end cDof
-      }//end cNode
-    }//end rDof
-  }//end rNode
+  for(unsigned int r = 0; r < gradPhi.size(); ++r) {
+    for(unsigned int c = 0; c < gradPhi.size(); ++c) {
+      mat[r][c] = 0.0;
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        mat[r][c] += (gWt[g] * jac * gradPhi[r][g] * gradPhi[c][g]);
+      }//end g
+    }//end c
+  }//end r
 }
 
 long double eval1DshFnDerivative(std::vector<unsigned long long int>& factorialsList, unsigned int nodeId,
