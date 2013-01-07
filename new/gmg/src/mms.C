@@ -45,7 +45,7 @@ void setSolution(DM da, Vec vec, const int K) {
   if(dim == 1) {
     for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
       long double xa = (static_cast<long double>(xi))*hx;
-      for(unsigned int d = 0; d <= K; ++d) {
+      for(int d = 0; d <= K; ++d) {
         arr1d[xi][d] = solutionDerivative1D(xa, d, solXfac);
       }//end dof
     }//end xi
@@ -54,8 +54,8 @@ void setSolution(DM da, Vec vec, const int K) {
       long double ya = (static_cast<long double>(yi))*hy;
       for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
         long double xa = (static_cast<long double>(xi))*hx;
-        for(unsigned int dofY = 0, d = 0; dofY <= K; ++dofY) {
-          for(unsigned int dofX = 0; dofX <= K; ++dofX, ++d) {
+        for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
+          for(int dofX = 0; dofX <= K; ++dofX, ++d) {
             arr2d[yi][xi][d] = solutionDerivative2D(xa, ya, dofX, dofY, solXfac, solYfac);
           }//end dofX
         }//end dofY
