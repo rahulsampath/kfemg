@@ -141,13 +141,13 @@ int main(int argc, char *argv[]) {
   MatMultAdd(Kmat, sol, rhs, rhs);
   setBoundaries(da, rhs);
 
-  std::cout<<"Matrix before DirichletCorrection: "<<std::endl;
-  MatView(Kmat, PETSC_VIEWER_STDOUT_WORLD);
+  //std::cout<<"Matrix before DirichletCorrection: "<<std::endl;
+  //MatView(Kmat, PETSC_VIEWER_STDOUT_WORLD);
 
   dirichletMatrixCorrection(Kmat, da);
 
-  std::cout<<"Matrix after DirichletCorrection: "<<std::endl;
-  MatView(Kmat, PETSC_VIEWER_STDOUT_WORLD);
+  //std::cout<<"Matrix after DirichletCorrection: "<<std::endl;
+  //MatView(Kmat, PETSC_VIEWER_STDOUT_WORLD);
 
   //Build KSP
   PC pc;
