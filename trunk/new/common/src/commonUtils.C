@@ -52,38 +52,40 @@ void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorial
     }//end dof
   }//end node
 
+  std::vector<std::vector<std::vector<long double> > > gradPhi(matSz);
+  for(unsigned int nodeY = 0, i = 0; nodeY < 2; ++nodeY) {
+    for(unsigned int nodeX = 0; nodeX < 2; ++nodeX) {
+      for(unsigned int dofY = 0; dofY <= K; ++dofY) {
+        for(unsigned int dofX = 0; dofX <= K; ++dofX, ++i) {
+          gradPhi[i].resize(numGaussPts*numGaussPts);
+          for(unsigned int gY = 0, g = 0; gY < numGaussPts; ++gY) {
+            for(unsigned int gX = 0; gX < numGaussPts; ++gX, ++g) {
+              gradPhi[i][g].resize(2);
+              gradPhi[i][g][0] = (2.0L/hx) * myIntPow((0.5L * hx), dofX) * 
+                myIntPow((0.5L * hy), dofY) * shFnVals[nodeY][dofY][gY] * shFnDerivatives[nodeX][dofX][gX];
+              gradPhi[i][g][1] = (2.0L/hy) * myIntPow((0.5L * hx), dofX) * 
+                myIntPow((0.5L * hy), dofY) * shFnDerivatives[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX];
+            }//end gX
+          }//end gY
+        }//end dofX
+      }//end dofY
+    }//end nodeX
+  }//end nodeY
+
   long double jac = 0.25L * hx * hy;
-  for(unsigned int rNodeY = 0, r = 0; rNodeY < 2; ++rNodeY) {
-    for(unsigned int rNodeX = 0; rNodeX < 2; ++rNodeX) {
-      for(unsigned int rDofY = 0; rDofY <= K; ++rDofY) {
-        for(unsigned int rDofX = 0; rDofX <= K; ++rDofX, ++r) {
-          for(unsigned int cNodeY = 0, c = 0; cNodeY < 2; ++cNodeY) {
-            for(unsigned int cNodeX = 0; cNodeX < 2; ++cNodeX) {
-              for(unsigned int cDofY = 0; cDofY <= K; ++cDofY) {
-                for(unsigned int cDofX = 0; cDofX <= K; ++cDofX, ++c) {
-                  mat[r][c] = 0.0;
-                  long double scaling = myIntPow((0.5L * hx), (rDofX + cDofX)) 
-                    * myIntPow((0.5L * hy), (rDofY + cDofY));
-                  long double xFac = (4.0L/(hx*hx)) * scaling;
-                  long double yFac = (4.0L/(hy*hy)) * scaling;
-                  for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
-                    for(unsigned int gX = 0; gX < numGaussPts; ++gX) {
-                      mat[r][c] += ( gWt[gY] * gWt[gX] * jac * (
-                            ( yFac*(shFnDerivatives[rNodeY][rDofY][gY])*(shFnVals[rNodeX][rDofX][gX])
-                              *(shFnDerivatives[cNodeY][cDofY][gY])*(shFnVals[cNodeX][cDofX][gX]) ) +
-                            ( xFac*(shFnVals[rNodeY][rDofY][gY])*(shFnDerivatives[rNodeX][rDofX][gX])
-                              *(shFnVals[cNodeY][cDofY][gY])*(shFnDerivatives[cNodeX][cDofX][gX]) )
-                            ) );
-                    }//end gX
-                  }//end gY
-                }//end cDofX
-              }//end cDofY
-            }//end cNodeX
-          }//end cNodeY
-        }//end rDofX
-      }//end rDofY
-    }//end rNodeX
-  }//end rNodeY
+  for(unsigned int r = 0; r < matSz; ++r) {
+    for(unsigned int c = 0; c < matSz; ++c) {
+      mat[r][c] = 0.0;
+      for(unsigned int gY = 0, g = 0; gY < numGaussPts; ++gY) {
+        for(unsigned int gX = 0; gX < numGaussPts; ++gX, ++g) {
+          long double comp1 = (gradPhi[r][g][0] * gradPhi[c][g][0]);
+          long double comp2 = (gradPhi[r][g][1] * gradPhi[c][g][1]);
+          long double integrand = comp1 + comp2;
+          mat[r][c] += (gWt[gY] * gWt[gX] * jac * integrand);
+        }//end gX
+      }//end gY
+    }//end c
+  }//end r
 }
 
 void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorialsList,
@@ -128,8 +130,8 @@ void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorial
   }//end node
 
   long double jac = 0.5L * hx;
-  for(unsigned int r = 0; r < gradPhi.size(); ++r) {
-    for(unsigned int c = 0; c < gradPhi.size(); ++c) {
+  for(unsigned int r = 0; r < matSz; ++r) {
+    for(unsigned int c = 0; c < matSz; ++c) {
       mat[r][c] = 0.0;
       for(unsigned int g = 0; g < numGaussPts; ++g) {
         mat[r][c] += (gWt[g] * jac * gradPhi[r][g] * gradPhi[c][g]);
