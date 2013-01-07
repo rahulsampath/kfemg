@@ -166,6 +166,8 @@ int main(int argc, char *argv[]) {
 
   KSPSolve(ksp, rhs, sol);
 
+  chkBoundaries(da, sol);
+
   //Compute Error
   long double err = computeError(da, sol, coeffs, K);
 
@@ -173,7 +175,12 @@ int main(int argc, char *argv[]) {
     std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
   }
 
-  chkBoundaries(da, sol);
+  setSolution(da, sol, K);
+  err = computeError(da, sol, coeffs, K);
+
+  if(print) {
+    std::cout<<"Interpolation Error = "<<std::setprecision(13)<<err<<std::endl;
+  }
 
   VecDestroy(&rhs);
   VecDestroy(&sol);

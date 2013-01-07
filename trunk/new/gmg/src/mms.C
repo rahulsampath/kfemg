@@ -5,6 +5,75 @@
 
 #include <cassert>
 
+void setSolution(DM da, Vec vec, const int K) {
+  PetscInt dim;
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  long double hy;
+  if(dim > 1) {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+  }
+
+  PetscScalar** arr1d = NULL;
+  PetscScalar*** arr2d = NULL;
+
+  if(dim == 1) {
+    DMDAVecGetArrayDOF(da, vec, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecGetArrayDOF(da, vec, &arr2d);
+  } else {
+    assert(false);
+  }
+
+  const int solXfac = 1;
+  const int solYfac = 1;
+
+  if(dim == 1) {
+    for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+      long double xa = (static_cast<long double>(xi))*hx;
+      for(unsigned int d = 0; d <= K; ++d) {
+        arr1d[xi][d] = solutionDerivative1D(xa, d, solXfac);
+      }//end dof
+    }//end xi
+  } else if(dim == 2) {
+    for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+      long double ya = (static_cast<long double>(yi))*hy;
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        long double xa = (static_cast<long double>(xi))*hx;
+        for(unsigned int dofY = 0, d = 0; dofY <= K; ++dofY) {
+          for(unsigned int dofX = 0; dofX <= K; ++dofX, ++d) {
+            arr2d[yi][xi][d] = solutionDerivative2D(xa, ya, dofX, dofY, solXfac, solYfac);
+          }//end dofX
+        }//end dofY
+      }//end xi
+    }//end yi
+  } else {
+    assert(false);
+  }
+
+  if(dim == 1) {
+    DMDAVecRestoreArrayDOF(da, vec, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecRestoreArrayDOF(da, vec, &arr2d);
+  } else {
+    assert(false);
+  }
+}
+
 void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs) {
   PetscInt dim;
   PetscInt dofsPerNode;
