@@ -113,6 +113,8 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
 
 void setBoundaries(DM da, Vec vec);
 
+void setSolution(DM da, Vec vec, const int K);
+
 void chkBoundaries(DM da, Vec vec);
 
 void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
