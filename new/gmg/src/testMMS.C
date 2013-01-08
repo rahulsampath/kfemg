@@ -42,6 +42,23 @@ int main(int argc, char *argv[]) {
   std::vector<long long int> coeffs;
   read1DshapeFnCoeffs(K, coeffs);
 
+  /*
+  const int P = (2*K) + 1;
+
+  std::cout<<"# Coeffs = "<<(coeffs.size())<<std::endl;
+  for(int i = 0, cnt = 0; i < 2; ++i) {
+    std::cout<<"Node "<<i<<std::endl;
+    for(int d = 0; d <= K; ++d) {
+      std::cout<<"Dof "<<d<<std::endl;
+      for(int j = 0; j <= P; ++j, ++cnt) {
+        long double num = coeffs[2*cnt];
+        long double den = coeffs[(2*cnt) + 1];
+        std::cout<<"C["<<j<<"] = "<<(num/den)<<std::endl;
+      }//end j
+    }//end d
+  }//end i
+  */
+
   std::vector<unsigned long long int> factorialsList;
   initFactorials(factorialsList); 
 
@@ -121,6 +138,20 @@ int main(int argc, char *argv[]) {
     assert(false);
   }
 
+  /*
+     for(size_t r = 0; r < elemMat.size(); ++r) {
+     for(size_t c = 0; c < elemMat.size(); ++c) {
+     std::cout<<"ElemMat("<<r<<", "<<c<<") = "<<(elemMat[r][c])<<std::endl;
+     }//end c
+     }//end r
+     */
+
+  /*
+  for(size_t c = 0; c < elemMat.size(); ++c) {
+    std::cout<<"ElemMat("<<2<<", "<<c<<") = "<<(elemMat[2][c])<<std::endl;
+  }//end c
+  */
+
   Vec rhs;
   DMCreateGlobalVector(da, &rhs);
 
@@ -129,11 +160,22 @@ int main(int argc, char *argv[]) {
 
   //ComputeRHS
   //computeRHS(da, coeffs, K, rhs);
-  VecZeroEntries(rhs);
+  //VecZeroEntries(rhs);
 
   //Neumann Matrix (Assembly)
   computeKmat(Kmat, da, elemMat);
 
+  setSolution(da, sol, K);
+
+  std::cout<<"Sol: "<<std::endl;
+  VecView(sol, PETSC_VIEWER_STDOUT_WORLD);
+
+  MatMult(Kmat, sol, rhs);
+
+  std::cout<<"Rhs: "<<std::endl;
+  VecView(rhs, PETSC_VIEWER_STDOUT_WORLD);
+
+  /*
   //ModifyRHS 
   VecZeroEntries(sol);
   setBoundaries(da, sol);
@@ -141,14 +183,15 @@ int main(int argc, char *argv[]) {
   MatMultAdd(Kmat, sol, rhs, rhs);
   setBoundaries(da, rhs);
 
-  //std::cout<<"Matrix before DirichletCorrection: "<<std::endl;
-  //MatView(Kmat, PETSC_VIEWER_STDOUT_WORLD);
+  std::cout<<"Matrix before DirichletCorrection: "<<std::endl;
+  MatView(Kmat, PETSC_VIEWER_STDOUT_WORLD);
 
   dirichletMatrixCorrection(Kmat, da);
 
-  //std::cout<<"Matrix after DirichletCorrection: "<<std::endl;
-  //MatView(Kmat, PETSC_VIEWER_STDOUT_WORLD);
-
+  std::cout<<"Matrix after DirichletCorrection: "<<std::endl;
+  MatView(Kmat, PETSC_VIEWER_STDOUT_WORLD);
+  */
+  /*
   //Build KSP
   PC pc;
   KSP ksp;
@@ -172,20 +215,21 @@ int main(int argc, char *argv[]) {
   long double err = computeError(da, sol, coeffs, K);
 
   if(print) {
-    std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
+  std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
   }
 
   setSolution(da, sol, K);
   err = computeError(da, sol, coeffs, K);
 
   if(print) {
-    std::cout<<"Interpolation Error = "<<std::setprecision(13)<<err<<std::endl;
+  std::cout<<"Interpolation Error = "<<std::setprecision(13)<<err<<std::endl;
   }
+  */
 
   VecDestroy(&rhs);
   VecDestroy(&sol);
 
-  KSPDestroy(&ksp);
+  //KSPDestroy(&ksp);
 
   MatDestroy(&Kmat);
 
