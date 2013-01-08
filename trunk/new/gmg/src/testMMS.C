@@ -43,21 +43,21 @@ int main(int argc, char *argv[]) {
   read1DshapeFnCoeffs(K, coeffs);
 
   /*
-  const int P = (2*K) + 1;
+     const int P = (2*K) + 1;
 
-  std::cout<<"# Coeffs = "<<(coeffs.size())<<std::endl;
-  for(int i = 0, cnt = 0; i < 2; ++i) {
-    std::cout<<"Node "<<i<<std::endl;
-    for(int d = 0; d <= K; ++d) {
-      std::cout<<"Dof "<<d<<std::endl;
-      for(int j = 0; j <= P; ++j, ++cnt) {
-        long double num = coeffs[2*cnt];
-        long double den = coeffs[(2*cnt) + 1];
-        std::cout<<"C["<<j<<"] = "<<(num/den)<<std::endl;
-      }//end j
-    }//end d
-  }//end i
-  */
+     std::cout<<"# Coeffs = "<<(coeffs.size())<<std::endl;
+     for(int i = 0, cnt = 0; i < 2; ++i) {
+     std::cout<<"Node "<<i<<std::endl;
+     for(int d = 0; d <= K; ++d) {
+     std::cout<<"Dof "<<d<<std::endl;
+     for(int j = 0; j <= P; ++j, ++cnt) {
+     long double num = coeffs[2*cnt];
+     long double den = coeffs[(2*cnt) + 1];
+     std::cout<<"C["<<j<<"] = "<<(num/den)<<std::endl;
+     }//end j
+     }//end d
+     }//end i
+     */
 
   std::vector<unsigned long long int> factorialsList;
   initFactorials(factorialsList); 
@@ -147,10 +147,10 @@ int main(int argc, char *argv[]) {
      */
 
   /*
-  for(size_t c = 0; c < elemMat.size(); ++c) {
-    std::cout<<"ElemMat("<<2<<", "<<c<<") = "<<(elemMat[2][c])<<std::endl;
-  }//end c
-  */
+     for(size_t c = 0; c < elemMat.size(); ++c) {
+     std::cout<<"ElemMat("<<2<<", "<<c<<") = "<<(elemMat[2][c])<<std::endl;
+     }//end c
+     */
 
   Vec rhs;
   DMCreateGlobalVector(da, &rhs);
@@ -168,12 +168,27 @@ int main(int argc, char *argv[]) {
   setSolution(da, sol, K);
 
   std::cout<<"Sol: "<<std::endl;
-  VecView(sol, PETSC_VIEWER_STDOUT_WORLD);
+  //VecView(sol, PETSC_VIEWER_STDOUT_WORLD);
+  PetscInt vecSz;
+  VecGetSize(sol, &vecSz);
+  PetscScalar* solArr;
+  VecGetArray(sol, &solArr);
+  for(int i = 0; i < vecSz; ++i) {
+    std::cout<<"Sol["<<i<<"] = "<<(solArr[i])<<std::endl;
+  }//end i
+  VecRestoreArray(sol, &solArr);
 
   MatMult(Kmat, sol, rhs);
 
   std::cout<<"Rhs: "<<std::endl;
-  VecView(rhs, PETSC_VIEWER_STDOUT_WORLD);
+  //VecView(rhs, PETSC_VIEWER_STDOUT_WORLD);
+  PetscScalar* rhsArr;
+  VecGetArray(rhs, &rhsArr);
+  for(int i = 0; i < vecSz; ++i) {
+    std::cout<<"Rhs["<<i<<"] = "<<(rhsArr[i])<<std::endl;
+  }//end i
+  VecRestoreArray(rhs, &rhsArr);
+
 
   /*
   //ModifyRHS 
