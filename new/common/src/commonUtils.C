@@ -187,27 +187,16 @@ long double eval1DshFn(unsigned int nodeId, unsigned int dofId, unsigned int K,
   int P = (2*K) + 1;
   long long int* coeffArr = &(coeffs[2*(P + 1)*((nodeId*(K + 1)) + dofId)]);
 
-  long double result = 0.0;
-  for(int i = 0; i <= P; ++i) {
-    long double num = coeffArr[2*i];
-    long double den = coeffArr[(2*i) + 1];
-    long double c = num/den;
-    result += (c*(myIntPow(xi, i)));
+  long double num = coeffArr[2*P];
+  long double den = coeffArr[(2*P) + 1];
+  long double c = num/den;
+  long double result = c;
+  for(int i = (P - 1); i >= 0; --i) {
+    num = coeffArr[2*i];
+    den = coeffArr[(2*i) + 1];
+    c = num/den;
+    result = ((result*xi) + c);
   }//end i
-
-  /*
-     long double num = coeffArr[2*P];
-     long double den = coeffArr[(2*P) + 1];
-     long double c = num/den;
-
-     result = c;
-     for(int i = (P - 1); i >= 0; --i) {
-     num = coeffArr[2*i];
-     den = coeffArr[(2*i) + 1];
-     c = num/den;
-     result = ((result*xi) + c);
-     }//end i
-     */
 
   return result;
 }
