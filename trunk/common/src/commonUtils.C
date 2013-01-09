@@ -10,22 +10,218 @@
 #include <cassert>
 #endif
 
-void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorialsList,
-    unsigned int K, std::vector<long long int> & coeffs, long double hx, 
+void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorialsList,
+    unsigned int K, std::vector<long long int> & coeffs, long double hz, long double hy, long double hx, 
     std::vector<std::vector<long double> >& mat, bool print) {
-  //TO BE IMPLEMENTED
+  unsigned int matSz = 8*(K + 1)*(K + 1)*(K + 1);
+  if(print) {
+    std::cout<<"ElemMatSize = "<<matSz<<std::endl;
+  }
+  mat.resize(matSz);
+  for(unsigned int i = 0; i < matSz; ++i) {
+    (mat[i]).resize(matSz);
+  }//end i
+
+  unsigned int numGaussPts = (2*K) + 2;
+  if(print) {
+    std::cout<<"NumGaussPtsPerDim = "<<numGaussPts<<std::endl;
+  }
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnDerivatives(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnDerivatives[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnDerivatives[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnDerivatives[node][dof][g] = eval1DshFnDerivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
+      }//end g
+    }//end dof
+  }//end node
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnVals[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
+
+  std::vector<std::vector<std::vector<long double> > > gradPhi(matSz);
+  for(unsigned int nodeZ = 0, i = 0; nodeZ < 2; ++nodeZ) {
+    for(unsigned int nodeY = 0; nodeY < 2; ++nodeY) {
+      for(unsigned int nodeX = 0; nodeX < 2; ++nodeX) {
+        for(unsigned int dofZ = 0; dofZ <= K; ++dofZ) {
+          for(unsigned int dofY = 0; dofY <= K; ++dofY) {
+            for(unsigned int dofX = 0; dofX <= K; ++dofX, ++i) {
+              gradPhi[i].resize(numGaussPts*numGaussPts*numGaussPts);
+              for(unsigned int gZ = 0, g = 0; gZ < numGaussPts; ++gZ) {
+                for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
+                  for(unsigned int gX = 0; gX < numGaussPts; ++gX, ++g) {
+                    gradPhi[i][g].resize(3);
+                    gradPhi[i][g][0] = (2.0L/hx) * shFnVals[nodeZ][dofZ][gZ] * shFnVals[nodeY][dofY][gY] * shFnDerivatives[nodeX][dofX][gX];
+                    gradPhi[i][g][1] = (2.0L/hy) * shFnVals[nodeZ][dofZ][gZ] * shFnDerivatives[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX];
+                    gradPhi[i][g][2] = (2.0L/hz) * shFnDerivatives[nodeZ][dofZ][gZ] * shFnVals[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX];
+                  }//end gX
+                }//end gY
+              }//end gZ
+            }//end dofX
+          }//end dofY
+        }//end dofZ
+      }//end nodeX
+    }//end nodeY
+  }//end nodeZ
+
+  long double jac = 0.125L * hx * hy * hz;
+  for(unsigned int r = 0; r < matSz; ++r) {
+    for(unsigned int c = 0; c < matSz; ++c) {
+      mat[r][c] = 0.0;
+      for(unsigned int gZ = 0, g = 0; gZ < numGaussPts; ++gZ) {
+        for(unsigned int gY = 0; gY < numGaussPts; ++gY) {
+          for(unsigned int gX = 0; gX < numGaussPts; ++gX, ++g) {
+            long double comp1 = (gradPhi[r][g][0] * gradPhi[c][g][0]);
+            long double comp2 = (gradPhi[r][g][1] * gradPhi[c][g][1]);
+            long double comp3 = (gradPhi[r][g][2] * gradPhi[c][g][2]);
+            long double integrand = comp1 + comp2 + comp3;
+            mat[r][c] += (gWt[gZ] * gWt[gY] * gWt[gX] * jac * integrand);
+          }//end gX
+        }//end gY
+      }//end gZ
+    }//end c
+  }//end r
 }
 
 void createPoisson2DelementMatrix(std::vector<unsigned long long int>& factorialsList,
     unsigned int K, std::vector<long long int> & coeffs, long double hy, long double hx, 
     std::vector<std::vector<long double> >& mat, bool print) {
-  //TO BE IMPLEMENTED
+  unsigned int matSz = 4*(K + 1)*(K + 1);
+  if(print) {
+    std::cout<<"ElemMatSize = "<<matSz<<std::endl;
+  }
+  mat.resize(matSz);
+  for(unsigned int i = 0; i < matSz; ++i) {
+    (mat[i]).resize(matSz);
+  }//end i
+
+  unsigned int numGaussPts = (2*K) + 2;
+  if(print) {
+    std::cout<<"NumGaussPtsPerDim = "<<numGaussPts<<std::endl;
+  }
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnDerivatives(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnDerivatives[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnDerivatives[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnDerivatives[node][dof][g] = eval1DshFnDerivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
+      }//end g
+    }//end dof
+  }//end node
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnVals[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
+
+  std::vector<std::vector<std::vector<long double> > > gradPhi(matSz);
+  for(unsigned int nodeY = 0, i = 0; nodeY < 2; ++nodeY) {
+    for(unsigned int nodeX = 0; nodeX < 2; ++nodeX) {
+      for(unsigned int dofY = 0; dofY <= K; ++dofY) {
+        for(unsigned int dofX = 0; dofX <= K; ++dofX, ++i) {
+          gradPhi[i].resize(numGaussPts*numGaussPts);
+          for(unsigned int gY = 0, g = 0; gY < numGaussPts; ++gY) {
+            for(unsigned int gX = 0; gX < numGaussPts; ++gX, ++g) {
+              gradPhi[i][g].resize(2);
+              gradPhi[i][g][0] = (2.0L/hx) * shFnVals[nodeY][dofY][gY] * shFnDerivatives[nodeX][dofX][gX];
+              gradPhi[i][g][1] = (2.0L/hy) * shFnDerivatives[nodeY][dofY][gY] * shFnVals[nodeX][dofX][gX];
+            }//end gX
+          }//end gY
+        }//end dofX
+      }//end dofY
+    }//end nodeX
+  }//end nodeY
+
+  long double jac = 0.25L * hx * hy;
+  for(unsigned int r = 0; r < matSz; ++r) {
+    for(unsigned int c = 0; c < matSz; ++c) {
+      mat[r][c] = 0.0;
+      for(unsigned int gY = 0, g = 0; gY < numGaussPts; ++gY) {
+        for(unsigned int gX = 0; gX < numGaussPts; ++gX, ++g) {
+          long double comp1 = (gradPhi[r][g][0] * gradPhi[c][g][0]);
+          long double comp2 = (gradPhi[r][g][1] * gradPhi[c][g][1]);
+          long double integrand = comp1 + comp2;
+          mat[r][c] += (gWt[gY] * gWt[gX] * jac * integrand);
+        }//end gX
+      }//end gY
+    }//end c
+  }//end r
 }
 
-void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorialsList,
-    unsigned int K, std::vector<long long int> & coeffs, long double hz, long double hy, long double hx, 
+void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorialsList,
+    unsigned int K, std::vector<long long int> & coeffs, long double hx, 
     std::vector<std::vector<long double> >& mat, bool print) {
-  //TO BE IMPLEMENTED
+  unsigned int matSz = 2*(K + 1);
+  if(print) {
+    std::cout<<"ElemMatSize = "<<matSz<<std::endl;
+  }
+  mat.resize(matSz);
+  for(unsigned int i = 0; i < matSz; ++i) {
+    (mat[i]).resize(matSz);
+  }//end i
+
+  unsigned int numGaussPts = (2*K) + 2;
+  if(print) {
+    std::cout<<"NumGaussPtsPerDim = "<<numGaussPts<<std::endl;
+  }
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnDerivatives(2);
+  for(unsigned int node = 0; node < 2; ++node) {
+    shFnDerivatives[node].resize(K + 1);
+    for(unsigned int dof = 0; dof <= K; ++dof) {
+      (shFnDerivatives[node][dof]).resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        shFnDerivatives[node][dof][g] = eval1DshFnDerivative(factorialsList, node, dof, K, coeffs, gPt[g], 1);
+      }//end g
+    }//end dof
+  }//end node
+
+  std::vector<std::vector<long double> > gradPhi(matSz);
+  for(unsigned int node = 0, i = 0; node < 2; ++node) {
+    for(unsigned int dof = 0; dof <= K; ++dof, ++i) {
+      gradPhi[i].resize(numGaussPts);
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        gradPhi[i][g] = (2.0L/hx) * shFnDerivatives[node][dof][g];
+      }//end g
+    }//end dof
+  }//end node
+
+  long double jac = 0.5L * hx;
+  for(unsigned int r = 0; r < matSz; ++r) {
+    for(unsigned int c = 0; c < matSz; ++c) {
+      mat[r][c] = 0.0;
+      for(unsigned int g = 0; g < numGaussPts; ++g) {
+        mat[r][c] += (gWt[g] * jac * gradPhi[r][g] * gradPhi[c][g]);
+      }//end g
+    }//end c
+  }//end r
 }
 
 long double eval1DshFnDerivative(std::vector<unsigned long long int>& factorialsList, unsigned int nodeId,
