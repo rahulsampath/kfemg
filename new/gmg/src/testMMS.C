@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
   KSPSetPCSide(ksp, PC_LEFT);
   KSPGetPC(ksp, &pc);
   PCSetType(pc, PCCHOLESKY);
-  PCFactorSetShiftAmount(pc, 1.0e-13);
+  PCFactorSetShiftAmount(pc, 1.0e-12);
   PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
   KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
   KSPSetOperators(ksp, Kmat, Kmat, SAME_PRECONDITIONER);
