@@ -39,14 +39,11 @@ void setSolution(DM da, Vec vec, const int K) {
     assert(false);
   }
 
-  const int solXfac = 1;
-  const int solYfac = 1;
-
   if(dim == 1) {
     for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
       long double xa = (static_cast<long double>(xi))*hx;
       for(int d = 0; d <= K; ++d) {
-        arr1d[xi][d] = solutionDerivative1D(xa, d, solXfac);
+        arr1d[xi][d] = solutionDerivative1D(xa, d);
       }//end dof
     }//end xi
   } else if(dim == 2) {
@@ -56,7 +53,7 @@ void setSolution(DM da, Vec vec, const int K) {
         long double xa = (static_cast<long double>(xi))*hx;
         for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
           for(int dofX = 0; dofX <= K; ++dofX, ++d) {
-            arr2d[yi][xi][d] = solutionDerivative2D(xa, ya, dofX, dofY, solXfac, solYfac);
+            arr2d[yi][xi][d] = solutionDerivative2D(xa, ya, dofX, dofY);
           }//end dofX
         }//end dofY
       }//end xi
@@ -140,9 +137,6 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
     assert(false);
   }
 
-  const int solXfac = 1;
-  const int solYfac = 1;
-
   //PERFORMANCE IMPROVEMENT: We could do a node-based assembly instead of the
   //following element-based assembly and avoid the communication.
 
@@ -154,7 +148,7 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
           for(int g = 0; g < numGaussPts; ++g) {
             long double xg = coordLocalToGlobal(gPt[g], xa, hx);
             arr1d[xi + node][dof] += ( gWt[g] * myIntPow((0.5L * hx), dof) 
-                * shFnVals[node][dof][g] * force1D(xg, solXfac) );
+                * shFnVals[node][dof][g] * force1D(xg) );
           }//end g
         }//end dof
       }//end node
@@ -173,7 +167,7 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
                   for(int gX = 0; gX < numGaussPts; ++gX) {
                     long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
                     arr2d[yi + nodeY][xi + nodeX][d] += ( gWt[gX] * gWt[gY] * myIntPow((0.5L * hx), dofX) * myIntPow((0.5L * hy), dofY)
-                        * shFnVals[nodeX][dofX][gX] * shFnVals[nodeY][dofY][gY] * force2D(xg, yg, solXfac, solYfac) );
+                        * shFnVals[nodeX][dofX][gX] * shFnVals[nodeY][dofY][gY] * force2D(xg, yg) );
                   }//end gX
                 }//end gY
               }//end dofX
@@ -277,9 +271,6 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
     DMDAVecGetArrayDOF(da, locSol, &arr3d);
   }
 
-  const int solXfac = 1;
-  const int solYfac = 1;
-
   long double locErrSqr = 0.0;
   if(dim == 1) {
     for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
@@ -293,7 +284,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
                 * myIntPow((0.5L * hx), dofX) * shFnVals[nodeX][dofX][gX] );
           }//end dofX
         }//end nodeX
-        long double err = solVal -  solution1D(xg, solXfac);
+        long double err = solVal -  solution1D(xg);
         locErrSqr += ( gWt[gX] * err * err );
       }//end gX
     }//end xi
@@ -318,7 +309,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
                 }//end dofY
               }//end nodeX
             }//end nodeY
-            long double err = solVal -  solution2D(xg, yg, solXfac, solYfac);
+            long double err = solVal -  solution2D(xg, yg);
             locErrSqr += ( gWt[gY] * gWt[gX] * err * err );
           }//end gX
         }//end gY

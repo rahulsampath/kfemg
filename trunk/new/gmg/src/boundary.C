@@ -220,17 +220,14 @@ void setBoundaries(DM da, Vec vec, const int K) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
   }
 
-  const int solXfac = 1;
-  const int solYfac = 1;
-
   if(dim == 1) {
     PetscScalar** arr; 
     DMDAVecGetArrayDOF(da, vec, &arr);
     if(xs == 0) {
-      arr[0][0] = solution1D(0, solXfac);
+      arr[0][0] = solution1D(0);
     }
     if((xs + nx) == Nx) {
-      arr[Nx - 1][0] = solution1D(1, solXfac);
+      arr[Nx - 1][0] = solution1D(1);
     }
     DMDAVecRestoreArrayDOF(da, vec, &arr);
   } else if(dim == 2) {
@@ -240,7 +237,7 @@ void setBoundaries(DM da, Vec vec, const int K) {
       for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
         long double y = ((static_cast<long double>(yi)) * hy);
         for(int d = 0; d <= K; ++d) {
-          arr[yi][0][d*(K + 1)] = solutionDerivative2D(0, y, 0, d, solXfac, solYfac);
+          arr[yi][0][d*(K + 1)] = solutionDerivative2D(0, y, 0, d);
         }//end d
       }//end yi
     }
@@ -248,7 +245,7 @@ void setBoundaries(DM da, Vec vec, const int K) {
       for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
         long double y = ((static_cast<long double>(yi)) * hy);
         for(int d = 0; d <= K; ++d) {
-          arr[yi][Nx - 1][d*(K + 1)] = solutionDerivative2D(1, y, 0, d, solXfac, solYfac);
+          arr[yi][Nx - 1][d*(K + 1)] = solutionDerivative2D(1, y, 0, d);
         }//end d
       }//end yi
     }
@@ -256,7 +253,7 @@ void setBoundaries(DM da, Vec vec, const int K) {
       for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
         long double x = ((static_cast<long double>(xi)) * hx);
         for(int d = 0; d <= K; ++d) {
-          arr[0][xi][d] = solutionDerivative2D(x, 0, d, 0, solXfac, solYfac);
+          arr[0][xi][d] = solutionDerivative2D(x, 0, d, 0);
         }//end d
       }//end xi
     }
@@ -264,7 +261,7 @@ void setBoundaries(DM da, Vec vec, const int K) {
       for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
         long double x = ((static_cast<long double>(xi)) * hx);
         for(int d = 0; d <= K; ++d) {
-          arr[Ny - 1][xi][d] = solutionDerivative2D(x, 1, d, 0, solXfac, solYfac);
+          arr[Ny - 1][xi][d] = solutionDerivative2D(x, 1, d, 0);
         }//end d
       }//end xi
     }
