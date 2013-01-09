@@ -6,23 +6,13 @@
 
 #define __PI__ 3.1415926535897932L
 
-void suppressSmallValues(const unsigned int len, double* vec);
-
-long double myIntPow(long double base, unsigned int exponent);
-
-int getDofsPerNode(int dim, int K);
+long double legendrePolyPrime(int n, long double x); 
 
 long double legendrePoly(int n, long double x);
-
-long double legendrePolyPrime(int n, long double x); 
 
 long double gaussWeight(int n, long double x); 
 
 void gaussQuad(std::vector<long double> & x, std::vector<long double> & w);
-
-bool softEquals(long double a, long double b);
-
-void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs);
 
 void createPoisson1DelementMatrix(std::vector<unsigned long long int>& factorialsList,
     unsigned int K, std::vector<long long int> & coeffs, long double hx, 
@@ -45,7 +35,17 @@ long double eval1DshFnDerivative(std::vector<unsigned long long int>& factorials
 long double powDerivative(std::vector<unsigned long long int>& factorialsList, long double x,
     unsigned int i, unsigned int l);
 
+int getDofsPerNode(int dim, int K);
+
 void initFactorials(std::vector<unsigned long long int>& fac); 
+
+long double myIntPow(long double base, unsigned int exponent);
+
+void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs);
+
+void suppressSmallValues(const unsigned int len, double* vec);
+
+bool softEquals(long double a, long double b);
 
 inline unsigned long long int factorial(unsigned long long int n) {
   return ( (n <= 1) ? 1 : (n*factorial(n - 1)) );
