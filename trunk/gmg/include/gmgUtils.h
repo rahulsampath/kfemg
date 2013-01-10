@@ -67,17 +67,17 @@ inline long double force3D(long double x, long double y, long double z) {
   return res;
 }
 
-void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs);
-
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
 
-void setBoundaries(DM da, Vec vec, const int K);
+void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs);
 
 void setSolution(DM da, Vec vec, const int K);
 
-void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
+void setBoundaries(DM da, Vec vec, const int K);
 
 void dirichletMatrixCorrection(Mat Kmat, DM da, const int K);
+
+void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
 
 #endif
 
