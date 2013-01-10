@@ -111,20 +111,24 @@ int main(int argc, char *argv[]) {
   }//end cnt
 
   std::vector<PetscInt> partY;
-  PetscInt avgY = Ny/py;
-  PetscInt extraY = Ny%py; 
-  partY.resize(py, avgY);
-  for(int cnt = 0; cnt < extraY; ++cnt) {
-    ++(partY[cnt]);
-  }//end cnt
+  if(dim > 1) {
+    PetscInt avgY = Ny/py;
+    PetscInt extraY = Ny%py; 
+    partY.resize(py, avgY);
+    for(int cnt = 0; cnt < extraY; ++cnt) {
+      ++(partY[cnt]);
+    }//end cnt
+  }
 
   std::vector<PetscInt> partZ;
-  PetscInt avgZ = Nz/pz;
-  PetscInt extraZ = Nz%pz; 
-  partZ.resize(pz, avgZ);
-  for(int cnt = 0; cnt < extraZ; ++cnt) {
-    ++(partZ[cnt]);
-  }//end cnt
+  if(dim > 2) {
+    PetscInt avgZ = Nz/pz;
+    PetscInt extraZ = Nz%pz; 
+    partZ.resize(pz, avgZ);
+    for(int cnt = 0; cnt < extraZ; ++cnt) {
+      ++(partZ[cnt]);
+    }//end cnt
+  }
 
   //Create DA
   DM da;
