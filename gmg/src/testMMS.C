@@ -48,29 +48,47 @@ int main(int argc, char *argv[]) {
   //Compute Partition
   PetscInt Nx = 5;
   PetscOptionsGetInt(PETSC_NULL, "-finestNx", &Nx, PETSC_NULL);
+  if(print) {
+    std::cout<<"Nx = "<<Nx<<std::endl;
+  }
 
   PetscInt Ny = 1;
   if(dim > 1) {
     PetscOptionsGetInt(PETSC_NULL, "-finestNy", &Ny, PETSC_NULL);
+    if(print) {
+      std::cout<<"Ny = "<<Ny<<std::endl;
+    }
   }
 
   PetscInt Nz = 1;
   if(dim > 2) {
     PetscOptionsGetInt(PETSC_NULL, "-finestNz", &Nz, PETSC_NULL);
+    if(print) {
+      std::cout<<"Nz = "<<Nz<<std::endl;
+    }
   }
 
   int px, py, pz;
   if(dim == 1) {
     px = npes;
+    if(print) {
+      std::cout<<"px = "<<px<<std::endl;
+    }
   } else if(dim == 2) {
     px = sqrt(npes);
     py = npes/px;
     assert((px*py) == npes);
+    if(print) {
+      std::cout<<"px = "<<px<<", py = "<<py<<std::endl;
+    }
   } else {
     px = pow(npes, (1.0/3.0));
     py = sqrt(npes/px);
     pz = npes/(px*py);
     assert((px*py*pz) == npes);
+    if(print) {
+      std::cout<<"px = "<<px<<", py = "<<py<<", pz = "<<pz<<std::endl;
+    }
   }
 
   assert(px >= 1);
@@ -181,6 +199,10 @@ int main(int argc, char *argv[]) {
   KSPSetOperators(ksp, Kmat, Kmat, SAME_PRECONDITIONER);
   KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
   KSPSetFromOptions(ksp);
+
+  if(print) {
+    std::cout<<"Solving..."<<std::endl;
+  }
 
   KSPSolve(ksp, rhs, sol);
 
