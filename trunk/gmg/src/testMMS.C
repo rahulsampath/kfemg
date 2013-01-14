@@ -76,19 +76,28 @@ int main(int argc, char *argv[]) {
     }
   } else if(dim == 2) {
     px = sqrt(npes);
-    py = npes/px;
-    assert((px*py) == npes);
     if(print) {
-      std::cout<<"px = "<<px<<", py = "<<py<<std::endl;
+      std::cout<<"px = "<<px<<std::endl;
     }
+    py = npes/px;
+    if(print) {
+      std::cout<<"py = "<<py<<std::endl;
+    }
+    assert((px*py) == npes);
   } else {
     px = pow(npes, (1.0/3.0));
-    py = sqrt(npes/px);
-    pz = npes/(px*py);
-    assert((px*py*pz) == npes);
     if(print) {
-      std::cout<<"px = "<<px<<", py = "<<py<<", pz = "<<pz<<std::endl;
+      std::cout<<"px = "<<px<<std::endl;
     }
+    py = sqrt(npes/px);
+    if(print) {
+      std::cout<<"py = "<<py<<std::endl;
+    }
+    pz = npes/(px*py);
+    if(print) {
+      std::cout<<"pz = "<<pz<<std::endl;
+    }
+    assert((px*py*pz) == npes);
   }
 
   assert(px >= 1);
