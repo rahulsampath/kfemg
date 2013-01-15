@@ -10,7 +10,7 @@ all : $(EXEC)
 ./src/%.o: ./src/%.C
 	$(PCC) -c $(CFLAGS) $(INCLUDE) $< -o $@
 
-bin/testMMS : ./src/testMMS.o ./src/mms.o ./src/assembly.o ./src/boundary.o  
+bin/testMMS : ./src/testMMS.o ./src/mms.o ./src/assembly.o ./src/boundary.o ./src/mesh.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 clean :
