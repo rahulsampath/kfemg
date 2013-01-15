@@ -67,6 +67,8 @@ inline long double force3D(long double x, long double y, long double z) {
   return res;
 }
 
+void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
+
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
 
 void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs);
@@ -116,6 +118,10 @@ void computePartition1D(PetscInt Nx, int maxNpes, std::vector<PetscInt>& partX,
 void destroyDA(std::vector<DM>& da); 
 
 void destroyComms(std::vector<MPI_Comm>& activeComms);
+
+void destroyMat(std::vector<Mat>& mat);
+
+void destroyVec(std::vector<Vec>& vec);
 
 #endif
 
