@@ -198,6 +198,7 @@ int main(int argc, char *argv[]) {
 
   dirichletMatrixCorrection(Kmat, da, K);
 
+  VecScale(sol, -1.0);
   //Build KSP
   PC pc;
   KSP ksp;
@@ -208,7 +209,7 @@ int main(int argc, char *argv[]) {
   PCSetType(pc, PCCHOLESKY);
   PCFactorSetShiftAmount(pc, 1.0e-12);
   PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
-  KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+  KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetOperators(ksp, Kmat, Kmat, SAME_PRECONDITIONER);
   KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
   KSPSetFromOptions(ksp);
