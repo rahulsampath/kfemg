@@ -26,9 +26,6 @@ int main(int argc, char *argv[]) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  int npes;
-  MPI_Comm_size(MPI_COMM_WORLD, &npes);
-
   bool print = (rank == 0);
 
   int dofsPerNode = getDofsPerNode(dim, K);
@@ -45,112 +42,26 @@ int main(int argc, char *argv[]) {
   std::vector<unsigned long long int> factorialsList;
   initFactorials(factorialsList); 
 
-  //Compute Partition
-  PetscInt Nx = 5;
-  PetscOptionsGetInt(PETSC_NULL, "-finestNx", &Nx, PETSC_NULL);
-  if(print) {
-    std::cout<<"Nx = "<<Nx<<std::endl;
-  }
+  std::vector<PetscInt> Nx;
+  std::vector<PetscInt> Ny;
+  std::vector<PetscInt> Nz;
+  createGrids(dim, Nz, Ny, Nx, print);
 
-  PetscInt Ny = 1;
-  if(dim > 1) {
-    PetscOptionsGetInt(PETSC_NULL, "-finestNy", &Ny, PETSC_NULL);
-    if(print) {
-      std::cout<<"Ny = "<<Ny<<std::endl;
-    }
-  }
+  std::vector<std::vector<PetscInt> > partX;
+  std::vector<std::vector<PetscInt> > partY;
+  std::vector<std::vector<PetscInt> > partZ;
+  std::vector<std::vector<PetscInt> > scanX;
+  std::vector<std::vector<PetscInt> > scanY;
+  std::vector<std::vector<PetscInt> > scanZ;
+  std::vector<std::vector<PetscInt> > offsets;
+  std::vector<int> activeNpes;
+  computePartition(dim, Nz, Ny, Nx, partZ, partY, partX, offsets, scanZ, scanY, scanX, activeNpes);
 
-  PetscInt Nz = 1;
-  if(dim > 2) {
-    PetscOptionsGetInt(PETSC_NULL, "-finestNz", &Nz, PETSC_NULL);
-    if(print) {
-      std::cout<<"Nz = "<<Nz<<std::endl;
-    }
-  }
+  std::vector<MPI_Comm> activeComms;
+  createActiveComms(activeNpes, activeComms);
 
-  int px, py, pz;
-  if(dim == 1) {
-    px = npes;
-    if(print) {
-      std::cout<<"px = "<<px<<std::endl;
-    }
-  } else if(dim == 2) {
-    px = sqrt(npes);
-    if(print) {
-      std::cout<<"px = "<<px<<std::endl;
-    }
-    py = npes/px;
-    if(print) {
-      std::cout<<"py = "<<py<<std::endl;
-    }
-    assert((px*py) == npes);
-  } else {
-    px = pow(npes, (1.0/3.0));
-    if(print) {
-      std::cout<<"px = "<<px<<std::endl;
-    }
-    py = sqrt(npes/px);
-    if(print) {
-      std::cout<<"py = "<<py<<std::endl;
-    }
-    pz = npes/(px*py);
-    if(print) {
-      std::cout<<"pz = "<<pz<<std::endl;
-    }
-    assert((px*py*pz) == npes);
-  }
-
-  assert(px >= 1);
-  assert(px <= Nx);
-  if(dim > 1) {
-    assert(py >= 1);
-    assert(py <= Ny);
-  }
-  if(dim > 2) {
-    assert(pz >= 1);
-    assert(pz <= Nz);
-  }
-
-  std::vector<PetscInt> partX;
-  PetscInt avgX = Nx/px;
-  PetscInt extraX = Nx%px; 
-  partX.resize(px, avgX);
-  for(int cnt = 0; cnt < extraX; ++cnt) {
-    ++(partX[cnt]);
-  }//end cnt
-
-  std::vector<PetscInt> partY;
-  if(dim > 1) {
-    PetscInt avgY = Ny/py;
-    PetscInt extraY = Ny%py; 
-    partY.resize(py, avgY);
-    for(int cnt = 0; cnt < extraY; ++cnt) {
-      ++(partY[cnt]);
-    }//end cnt
-  }
-
-  std::vector<PetscInt> partZ;
-  if(dim > 2) {
-    PetscInt avgZ = Nz/pz;
-    PetscInt extraZ = Nz%pz; 
-    partZ.resize(pz, avgZ);
-    for(int cnt = 0; cnt < extraZ; ++cnt) {
-      ++(partZ[cnt]);
-    }//end cnt
-  }
-
-  //Create DA
-  DM da;
-  if(dim == 1) {
-    DMDACreate1d(PETSC_COMM_WORLD, DMDA_BOUNDARY_NONE, Nx, dofsPerNode, 1, &(partX[0]), &da);
-  } else if(dim == 2) {
-    DMDACreate2d(PETSC_COMM_WORLD, DMDA_BOUNDARY_NONE, DMDA_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-        Nx, Ny, px, py, dofsPerNode, 1, &(partX[0]), &(partY[0]), &da);
-  } else {
-    DMDACreate3d(PETSC_COMM_WORLD, DMDA_BOUNDARY_NONE, DMDA_BOUNDARY_NONE, DMDA_BOUNDARY_NONE,
-        DMDA_STENCIL_BOX, Nx, Ny, Nz, px, py, pz, dofsPerNode, 1,
-        &(partX[0]), &(partY[0]), &(partZ[0]), &da);
-  }
+  std::vector<DM> da;
+  createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, partX, activeNpes, activeComms, da);
 
   //Build Kmat
   Mat Kmat;
@@ -234,9 +145,11 @@ int main(int argc, char *argv[]) {
 
   MatDestroy(&Kmat);
 
-  DMDestroy(&da);
+  destroyDA(da); 
 
   PetscFinalize();
+
+  destroyComms(activeComms);
 
   MPI_Finalize();
 

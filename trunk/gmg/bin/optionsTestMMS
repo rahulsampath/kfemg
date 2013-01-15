@@ -1,10 +1,15 @@
 -dim 1
 -K 1
+
 -extraGptsError 0
 -extraGptsRHS 0
+
 -finestNx 5
 -finestNy 5
 -finestNz 5
+-maxNumLevels 1
+-maxCoarseNpes 1
+
 -ksp_max_it 100
 -ksp_converged_reason
 -pc_factor_mat_solver_package mumps
