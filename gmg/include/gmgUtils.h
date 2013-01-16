@@ -77,7 +77,23 @@ void setSolution(DM da, Vec vec, const int K);
 
 void setBoundaries(DM da, Vec vec, const int K);
 
-void dirichletMatrixCorrection(Mat Kmat, DM da, const int K);
+void computePmat2D(std::vector<unsigned long long int>& factorialsList,
+    Mat Pmat, PetscInt Nyc, PetscInt Nxc, PetscInt Nyf, PetscInt Nxf,
+    std::vector<PetscInt>& partYc, std::vector<PetscInt>& partXc,
+    std::vector<PetscInt>& partYf, std::vector<PetscInt>& partXf, 
+    std::vector<PetscInt>& cOffsets, std::vector<PetscInt>& scanYc, std::vector<PetscInt>& scanXc,
+    std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanYf, std::vector<PetscInt>& scanXf,
+    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
+
+void computePmat3D(std::vector<unsigned long long int>& factorialsList,
+    Mat Pmat, PetscInt Nzc, PetscInt Nyc, PetscInt Nxc, PetscInt Nzf, PetscInt Nyf, PetscInt Nxf,
+    std::vector<PetscInt>& partZc, std::vector<PetscInt>& partYc, std::vector<PetscInt>& partXc,
+    std::vector<PetscInt>& partZf, std::vector<PetscInt>& partYf, std::vector<PetscInt>& partXf, 
+    std::vector<PetscInt>& cOffsets, std::vector<PetscInt>& scanZc,
+    std::vector<PetscInt>& scanYc, std::vector<PetscInt>& scanXc,
+    std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanZf, 
+    std::vector<PetscInt>& scanYf, std::vector<PetscInt>& scanXf,
+    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, bool print);
 
@@ -85,9 +101,11 @@ void assembleKmat(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
     std::vector<Mat>& Kmat, std::vector<DM>& da, int K, std::vector<long long int>& coeffs,
     std::vector<unsigned long long int>& factorialsList, bool print);
 
+void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
+
 void correctKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, int K);
 
-void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
+void dirichletMatrixCorrection(Mat Kmat, DM da, const int K);
 
 void createDA(int dim, int dofsPerNode, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
     std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY, 
@@ -95,12 +113,6 @@ void createDA(int dim, int dofsPerNode, std::vector<PetscInt>& Nz, std::vector<P
     std::vector<DM>& da);
 
 void createActiveComms(std::vector<int>& activeNpes, std::vector<MPI_Comm>& activeComms);
-
-void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
-    std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ, 
-    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, 
-    std::vector<std::vector<PetscInt> >& offsets, std::vector<std::vector<PetscInt> >& scanZ,
-    std::vector<std::vector<PetscInt> >& scanY, std::vector<std::vector<PetscInt> >& scanX, std::vector<int>& activeNpes);
 
 void createGrids(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
     std::vector<PetscInt>& Nx, bool print);
@@ -110,6 +122,12 @@ void createGrids1D(std::vector<PetscInt>& Nx, bool print);
 void createGrids2D(std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, bool print);
 
 void createGrids3D(std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, bool print);
+
+void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
+    std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ, 
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, 
+    std::vector<std::vector<PetscInt> >& offsets, std::vector<std::vector<PetscInt> >& scanZ,
+    std::vector<std::vector<PetscInt> >& scanY, std::vector<std::vector<PetscInt> >& scanX, std::vector<int>& activeNpes);
 
 void computePartition3D(PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
     std::vector<PetscInt>& partZ, std::vector<PetscInt>& partY, std::vector<PetscInt>& partX,
