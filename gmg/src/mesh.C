@@ -87,7 +87,7 @@ void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>&
   int npes;
   MPI_Comm_size(MPI_COMM_WORLD, &npes);
 
-  const unsigned int nlevels = Nx.size();
+  int nlevels = Nx.size();
 
   PetscInt maxCoarseNpes = npes;
   PetscOptionsGetInt(PETSC_NULL, "-maxCoarseNpes", &maxCoarseNpes, PETSC_NULL);
@@ -324,7 +324,7 @@ void createGrids1D(std::vector<PetscInt>& Nx, bool print) {
     std::cout<<"Nx (Finest) = "<<currNx<<std::endl;
     std::cout<<"MaxNumLevels = "<<maxNumLevels<<std::endl;
   }
-  const unsigned int minGridSize = 5;
+  int minGridSize = 5;
   Nx.clear();
   //0 is the coarsest level.
   for(int lev = 0; lev < maxNumLevels; ++lev) {
@@ -351,7 +351,7 @@ void createGrids2D(std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, bool pr
     std::cout<<"Ny (Finest) = "<<currNy<<std::endl;
     std::cout<<"MaxNumLevels = "<<maxNumLevels<<std::endl;
   }
-  const unsigned int minGridSize = 5;
+  int minGridSize = 5;
   Nx.clear();
   Ny.clear();
   //0 is the coarsest level.
@@ -388,7 +388,7 @@ void createGrids3D(std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
     std::cout<<"Nz (Finest) = "<<currNz<<std::endl;
     std::cout<<"MaxNumLevels = "<<maxNumLevels<<std::endl;
   }
-  const unsigned int minGridSize = 5;
+  int minGridSize = 5;
   Nx.clear();
   Ny.clear();
   Nz.clear();

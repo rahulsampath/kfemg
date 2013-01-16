@@ -79,6 +79,14 @@ void setBoundaries(DM da, Vec vec, const int K);
 
 void dirichletMatrixCorrection(Mat Kmat, DM da, const int K);
 
+void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, bool print);
+
+void assembleKmat(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
+    std::vector<Mat>& Kmat, std::vector<DM>& da, int K, std::vector<long long int>& coeffs,
+    std::vector<unsigned long long int>& factorialsList, bool print);
+
+void correctKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, int K);
+
 void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat);
 
 void createDA(int dim, int dofsPerNode, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,

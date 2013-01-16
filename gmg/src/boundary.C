@@ -6,6 +6,14 @@
 #include <cassert>
 #endif
 
+void correctKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, int K) {
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    if(Kmat[lev] != NULL) {
+      dirichletMatrixCorrection(Kmat[lev], da[lev], K);
+    }
+  }//end lev
+}
+
 void setBoundaries(DM da, Vec vec, const int K) {
   PetscInt dim;
   PetscInt Nx;
@@ -23,11 +31,11 @@ void setBoundaries(DM da, Vec vec, const int K) {
   DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
-  long double hy;
+  long double hy = 0;
   if(dim > 1) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
   }
-  long double hz;
+  long double hz = 0;
   if(dim > 2) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
