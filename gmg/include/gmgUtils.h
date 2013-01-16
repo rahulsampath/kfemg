@@ -77,12 +77,19 @@ void setSolution(DM da, Vec vec, const int K);
 
 void setBoundaries(DM da, Vec vec, const int K);
 
+void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, 
+    std::vector<Vec>& tmpCvec, std::vector<KSP>& smoother, KSP coarseSolver,
+    std::vector<Vec>& mgSol, std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
+
 void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec);
 
 void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
 
 void buildPmat(int dim, PetscInt dofsPerNode, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes);
+
+void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol, 
+    std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
 
 void computePmat(int dim, std::vector<unsigned long long int>& factorialsList, std::vector<Mat>& Pmat, 
     std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, 
@@ -169,6 +176,8 @@ void destroyComms(std::vector<MPI_Comm>& activeComms);
 void destroyMat(std::vector<Mat>& mat);
 
 void destroyVec(std::vector<Vec>& vec);
+
+void destroyKSP(std::vector<KSP>& ksp);
 
 #endif
 

@@ -39,6 +39,12 @@ int main(int argc, char *argv[]) {
     std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
   }
 
+  std::vector<long long int> coeffs;
+  read1DshapeFnCoeffs(K, coeffs);
+
+  std::vector<unsigned long long int> factorialsList;
+  initFactorials(factorialsList); 
+
   std::vector<PetscInt> Nx;
   std::vector<PetscInt> Ny;
   std::vector<PetscInt> Nz;
@@ -72,12 +78,6 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
 
-  std::vector<long long int> coeffs;
-  read1DshapeFnCoeffs(K, coeffs);
-
-  std::vector<unsigned long long int> factorialsList;
-  initFactorials(factorialsList); 
-
   //Matrix Assembly
   assembleKmat(dim, Nz, Ny, Nx, Kmat, da, K, coeffs, factorialsList, print);
 
@@ -99,6 +99,11 @@ int main(int argc, char *argv[]) {
   VecScale(sol, -1.0);
 
   correctKmat(Kmat, da, K);
+
+  std::vector<Vec> mgSol;
+  std::vector<Vec> mgRhs;
+  std::vector<Vec> mgRes;
+  buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
 
   //Build KSP
   PC pc;
@@ -134,11 +139,11 @@ int main(int argc, char *argv[]) {
   KSPDestroy(&ksp);
 
   destroyMat(Pmat);
-
   destroyVec(tmpCvec);
-
+  destroyVec(mgSol);
+  destroyVec(mgRhs);
+  destroyVec(mgRes);
   destroyMat(Kmat);
-
   destroyDA(da); 
 
   PetscFinalize();
