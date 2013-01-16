@@ -7,6 +7,125 @@
 #include <cassert>
 #endif
 
+void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
+  PetscScalar* arr;
+  if(cVec != NULL) {
+    VecGetArray(cVec, &arr);
+    VecPlaceArray(tmpCvec, arr);
+  }
+  MatMultTranspose(Pmat, fVec, tmpCvec);
+  if(cVec != NULL) {
+    VecResetArray(tmpCvec);
+    VecRestoreArray(cVec, &arr);
+  }
+}
+
+void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
+  PetscScalar* arr;
+  if(cVec != NULL) {
+    VecGetArray(cVec, &arr);
+    VecPlaceArray(tmpCvec, arr);
+  }
+  MatMult(Pmat, tmpCvec, fVec);
+  if(cVec != NULL) {
+    VecResetArray(tmpCvec);
+    VecRestoreArray(cVec, &arr);
+  }
+}
+
+void buildPmat(int dim, PetscInt dofsPerNode, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
+    std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes) {
+  Pmat.resize((da.size() - 1), NULL);
+  tmpCvec.resize(Pmat.size(), NULL);
+  for(int lev = 0; lev < (Pmat.size()); ++lev) {
+    if(da[lev + 1] != NULL) {
+      PetscInt xsf, ysf, zsf;
+      PetscInt nxf, nyf, nzf;
+      DMDAGetCorners(da[lev + 1], &xsf, &ysf, &zsf, &nxf, &nyf, &nzf);
+      PetscInt xsc, ysc, zsc;
+      PetscInt nxc, nyc, nzc;
+      xsc = ysc = zsc = 0;
+      nxc = nyc = nzc = 0;
+      if(da[lev] != NULL) {
+        DMDAGetCorners(da[lev], &xsc, &ysc, &zsc, &nxc, &nyc, &nzc);
+      }
+      if(dim < 3) {
+        nzf = nzc = 1;
+        zsf = zsc = 0;
+      }
+      if(dim < 2) {
+        nyf = nyc = 1;
+        ysf = ysc = 0;
+      }
+      PetscInt locRowSz = dofsPerNode*nxf*nyf*nzf;
+      PetscInt locColSz = dofsPerNode*nxc*nyc*nzc;
+      PetscInt* d_nnz = new PetscInt[locRowSz];
+      PetscInt* o_nnz = NULL;
+      if(activeNpes[lev + 1] > 1) {
+        o_nnz = new PetscInt[locRowSz];
+      }
+      for(PetscInt zi = zsf, cnt = 0; zi < (zsf + nzf); ++zi) {
+        bool oddZ = ((zi%2) != 0);
+        std::vector<PetscInt> oz;
+        oz.push_back((zi/2));
+        if(oddZ) {
+          oz.push_back((zi/2) + 1);
+        }
+        for(PetscInt yi = ysf; yi < (ysf + nyf); ++yi) {
+          bool oddY = ((yi%2) != 0);
+          std::vector<PetscInt> oy;
+          oy.push_back((yi/2));
+          if(oddY) {
+            oy.push_back((yi/2) + 1);
+          }
+          for(PetscInt xi = xsf; xi < (xsf + nxf); ++xi) {
+            bool oddX = ((xi%2) != 0);
+            std::vector<PetscInt> ox;
+            ox.push_back((xi/2));
+            if(oddX) {
+              ox.push_back((xi/2) + 1);
+            }
+            PetscInt diagVal = 0;
+            PetscInt offVal = 0;
+            for(size_t kk = 0; kk < oz.size(); ++kk) {
+              for(size_t jj = 0; jj < oy.size(); ++jj) {
+                for(size_t ii = 0; ii < ox.size(); ++ii) {
+                  if((oz[kk] >= zsc) && (oz[kk] < (zsc + nzc)) &&  
+                      (oy[jj] >= ysc) && (oy[jj] < (ysc + nyc)) &&
+                      (ox[ii] >= xsc) && (ox[ii] < (xsc + nxc))) {
+                    diagVal += dofsPerNode;
+                  } else {
+                    offVal += dofsPerNode;
+                  }                
+                }//end ii
+              }//end jj
+            }//end kk
+            for(int d = 0; d < dofsPerNode; ++d, ++cnt) {
+              d_nnz[cnt] = diagVal;
+              if(o_nnz) {
+                o_nnz[cnt] = offVal;
+              }
+            }//end d
+          }//end xi
+        }//end yi
+      }//end zi
+      MatCreate(activeComms[lev + 1], &(Pmat[lev]));
+      MatSetSizes(Pmat[lev], locRowSz, locColSz, PETSC_DETERMINE, PETSC_DETERMINE);
+      MatSetType(Pmat[lev], MATAIJ);
+      if(activeNpes[lev + 1] > 1) {
+        MatMPIAIJSetPreallocation(Pmat[lev], -1, d_nnz, -1, o_nnz);
+      } else {
+        MatSeqAIJSetPreallocation(Pmat[lev], -1, d_nnz);
+      }
+      delete [] d_nnz;
+      if(activeNpes[lev + 1] > 1) {
+        delete [] o_nnz;
+      }
+      MatGetVecs(Pmat[lev], &(tmpCvec[lev]), PETSC_NULL);
+    }
+  }//end lev
+}
+
 void computePmat(int dim, std::vector<unsigned long long int>& factorialsList, std::vector<Mat>& Pmat, 
     std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, 
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
