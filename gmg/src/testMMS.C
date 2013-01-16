@@ -116,14 +116,29 @@ int main(int argc, char *argv[]) {
     PCFactorSetShiftAmount(coarsePC, 1.0e-12);
     PCFactorSetShiftType(coarsePC, MAT_SHIFT_POSITIVE_DEFINITE);
     PCFactorSetMatSolverPackage(coarsePC, MATSOLVERMUMPS);
-    KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+    KSPSetInitialGuessNonzero(coarseSolver, PETSC_TRUE);
     KSPSetOperators(coarseSolver, Kmat[0], Kmat[0], SAME_PRECONDITIONER);
     KSPSetTolerances(coarseSolver, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
     KSPSetOptionsPrefix(coarseSolver, "coarse_");
     KSPSetFromOptions(coarseSolver);
   }
 
-  std::vector<KSP> smoother;
+  std::vector<KSP> smoother(Pmat.size(), NULL);
+  for(int lev = 0; lev < (smoother.size()); ++lev) {
+    if(rank < activeNpes[lev + 1]) {
+      PC smoothPC;
+      KSPCreate(activeComms[lev + 1], &(smoother[lev]));
+      KSPSetType(smoother[lev], KSPCG);
+      KSPSetPCSide(smoother[lev], PC_LEFT);
+      KSPGetPC(smoother[lev], &smoothPC);
+      PCSetType(smoothPC, PCNONE);
+      KSPSetInitialGuessNonzero(smoother[lev], PETSC_TRUE);
+      KSPSetOperators(smoother[lev], Kmat[lev + 1], Kmat[lev + 1], SAME_PRECONDITIONER);
+      KSPSetTolerances(smoother[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      KSPSetOptionsPrefix(smoother[lev], "smooth_");
+      KSPSetFromOptions(smoother[lev]);
+    }
+  }//end lev
 
   MGdata data;
   PetscInt numVcycles = 1;
@@ -178,6 +193,7 @@ int main(int argc, char *argv[]) {
   if(coarseSolver != NULL) {
     KSPDestroy(&coarseSolver);
   }
+  destroyKSP(smoother);
 
   destroyMat(Pmat);
   destroyVec(tmpCvec);
