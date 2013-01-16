@@ -83,7 +83,8 @@ void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>&
     std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ, 
     std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, 
     std::vector<std::vector<PetscInt> >& offsets, std::vector<std::vector<PetscInt> >& scanZ,
-    std::vector<std::vector<PetscInt> >& scanY, std::vector<std::vector<PetscInt> >& scanX, std::vector<int>& activeNpes) {
+    std::vector<std::vector<PetscInt> >& scanY, std::vector<std::vector<PetscInt> >& scanX,
+    std::vector<int>& activeNpes, bool print) {
   int npes;
   MPI_Comm_size(MPI_COMM_WORLD, &npes);
 
@@ -104,6 +105,11 @@ void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>&
       maxCoarseNpes = maxNpes;
     }
     computePartition1D(Nx[0], maxCoarseNpes, partX[0], offsets[0], scanX[0]);
+    if(print) {
+      for(int lev = 0; lev < nlevels; ++lev) {
+        std::cout<<"Lev = "<<lev<<", px = "<<(partX[lev].size())<<std::endl;
+      }//end lev
+    }
   } else if(dim == 2) {
     partX.resize(nlevels);
     partY.resize(nlevels);
@@ -119,6 +125,11 @@ void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>&
       maxCoarseNpes = maxNpes;
     }
     computePartition2D(Ny[0], Nx[0], maxCoarseNpes, partY[0], partX[0], offsets[0], scanY[0], scanX[0]);
+    if(print) {
+      for(int lev = 0; lev < nlevels; ++lev) {
+        std::cout<<"Lev = "<<lev<<", px = "<<(partX[lev].size())<<", py = "<<(partY[lev].size())<<std::endl;
+      }//end lev
+    }
   } else {
     partX.resize(nlevels);
     partY.resize(nlevels);
@@ -138,6 +149,12 @@ void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>&
     }
     computePartition3D(Nz[0], Ny[0], Nx[0], maxCoarseNpes, partZ[0], partY[0], partX[0], 
         offsets[0], scanZ[0], scanY[0], scanX[0]);
+    if(print) {
+      for(int lev = 0; lev < nlevels; ++lev) {
+        std::cout<<"Lev = "<<lev<<", px = "<<(partX[lev].size())
+          <<", py = "<<(partY[lev].size())<<", pz = "<<(partZ[lev].size())<<std::endl;
+      }//end lev
+    }
   }
 
   activeNpes.resize(nlevels);
@@ -329,7 +346,7 @@ void createGrids1D(std::vector<PetscInt>& Nx, bool print) {
   //0 is the coarsest level.
   for(int lev = 0; lev < maxNumLevels; ++lev) {
     Nx.insert(Nx.begin(), currNx);
-    if( (currNx < minGridSize) || ((currNx%2) == 0) ) {
+    if( (currNx <= minGridSize) || ((currNx%2) == 0) ) {
       break;
     }
     currNx = 1 + ((currNx - 1)/2); 
@@ -358,10 +375,10 @@ void createGrids2D(std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, bool pr
   for(int lev = 0; lev < maxNumLevels; ++lev) {
     Nx.insert(Nx.begin(), currNx);
     Ny.insert(Ny.begin(), currNy);
-    if( (currNx < minGridSize) || ((currNx%2) == 0) ) {
+    if( (currNx <= minGridSize) || ((currNx%2) == 0) ) {
       break;
     }
-    if( (currNy < minGridSize) || ((currNy%2) == 0) ) {
+    if( (currNy <= minGridSize) || ((currNy%2) == 0) ) {
       break;
     }
     currNx = 1 + ((currNx - 1)/2); 
@@ -397,13 +414,13 @@ void createGrids3D(std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
     Nx.insert(Nx.begin(), currNx);
     Ny.insert(Ny.begin(), currNy);
     Nz.insert(Nz.begin(), currNz);
-    if( (currNx < minGridSize) || ((currNx%2) == 0) ) {
+    if( (currNx <= minGridSize) || ((currNx%2) == 0) ) {
       break;
     }
-    if( (currNy < minGridSize) || ((currNy%2) == 0) ) {
+    if( (currNy <= minGridSize) || ((currNy%2) == 0) ) {
       break;
     }
-    if( (currNz < minGridSize) || ((currNz%2) == 0) ) {
+    if( (currNz <= minGridSize) || ((currNz%2) == 0) ) {
       break;
     }
     currNx = 1 + ((currNx - 1)/2); 

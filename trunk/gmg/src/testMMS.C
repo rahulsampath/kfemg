@@ -58,7 +58,8 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<PetscInt> > scanZ;
   std::vector<std::vector<PetscInt> > offsets;
   std::vector<int> activeNpes;
-  computePartition(dim, Nz, Ny, Nx, partZ, partY, partX, offsets, scanZ, scanY, scanX, activeNpes);
+  computePartition(dim, Nz, Ny, Nx, partZ, partY, partX, offsets, 
+      scanZ, scanY, scanX, activeNpes, print);
   assert(activeNpes[activeNpes.size() - 1] == npes);
 
   std::vector<MPI_Comm> activeComms;

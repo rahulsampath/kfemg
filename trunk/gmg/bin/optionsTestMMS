@@ -11,6 +11,7 @@
 -maxCoarseNpes 1
 
 -outer_ksp_max_it 100
+-outer_ksp_monitor
 -outer_ksp_converged_reason
 
 -numVcycles 1
