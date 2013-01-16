@@ -23,6 +23,9 @@ int main(int argc, char *argv[]) {
   PetscInt K;
   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
 
+  int npes;
+  MPI_Comm_size(MPI_COMM_WORLD, &npes);
+
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -56,6 +59,7 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<PetscInt> > offsets;
   std::vector<int> activeNpes;
   computePartition(dim, Nz, Ny, Nx, partZ, partY, partX, offsets, scanZ, scanY, scanX, activeNpes);
+  assert(activeNpes[activeNpes.size() - 1] == npes);
 
   std::vector<MPI_Comm> activeComms;
   createActiveComms(activeNpes, activeComms);
@@ -64,52 +68,62 @@ int main(int argc, char *argv[]) {
   createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, partX, activeNpes, activeComms, da);
 
   //Build Kmat
-  Mat Kmat;
-  DMCreateMatrix(da, MATAIJ, &Kmat);
+  std::vector<Mat> Kmat(da.size(), NULL);
+  for(int lev = 0; lev < (da.size()); ++lev) {
+    if(da[lev] != NULL) {
+      DMCreateMatrix(da[lev], MATAIJ, &(Kmat[lev]));
+      PetscInt sz;
+      MatGetSize(Kmat[lev], &sz, PETSC_NULL);
+      if(print) {
+        std::cout<<"Lev = "<<lev<<", Kmat size = "<<sz<<std::endl;
+      }
+    }
+  }//end lev
 
-  PetscInt sz;
-  MatGetSize(Kmat, &sz, PETSC_NULL);
-  if(print) {
-    std::cout<<"Kmat Size = "<<sz<<std::endl;
-  }
-
-  std::vector<std::vector<long double> > elemMat;
-  if(dim == 1) {
-    long double hx = 1.0L/(static_cast<long double>(Nx - 1));
-    createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, print);
-  } else if(dim == 2) {
-    long double hx = 1.0L/(static_cast<long double>(Nx - 1));
-    long double hy = 1.0L/(static_cast<long double>(Ny - 1));
-    createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, print);
-  } else {
-    long double hx = 1.0L/(static_cast<long double>(Nx - 1));
-    long double hy = 1.0L/(static_cast<long double>(Ny - 1));
-    long double hz = 1.0L/(static_cast<long double>(Nz - 1));
-    createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, print);
-  }
+  //Matrix Assembly
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    if(Kmat[lev] != NULL) {
+      std::vector<std::vector<long double> > elemMat;
+      if(dim == 1) {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, print);
+      } else if(dim == 2) {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        long double hy = 1.0L/(static_cast<long double>(Ny[lev] - 1));
+        createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, print);
+      } else {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        long double hy = 1.0L/(static_cast<long double>(Ny[lev] - 1));
+        long double hz = 1.0L/(static_cast<long double>(Nz[lev] - 1));
+        createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, print);
+      }
+      computeKmat(Kmat[lev], da[lev], elemMat);
+    }
+  }//end lev
 
   Vec rhs;
-  DMCreateGlobalVector(da, &rhs);
+  DMCreateGlobalVector(da[da.size() - 1], &rhs);
 
   Vec sol;
   VecDuplicate(rhs, &sol); 
 
   //ComputeRHS
-  computeRHS(da, coeffs, K, rhs);
+  computeRHS(da[da.size() - 1], coeffs, K, rhs);
 
-  //Matrix Assembly
-  computeKmat(Kmat, da, elemMat);
-
-  //ModifyRHS 
+  //Boundary corrections to rhs and sol. 
   VecZeroEntries(sol);
-  setBoundaries(da, sol, K);
+  setBoundaries(da[da.size() - 1], sol, K);
   VecScale(sol, -1.0);
-  MatMultAdd(Kmat, sol, rhs, rhs);
-  setBoundaries(da, rhs, K);
-
-  dirichletMatrixCorrection(Kmat, da, K);
-
+  MatMultAdd(Kmat[Kmat.size() - 1], sol, rhs, rhs);
+  setBoundaries(da[da.size() - 1], rhs, K);
   VecScale(sol, -1.0);
+
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    if(Kmat[lev] != NULL) {
+      dirichletMatrixCorrection(Kmat[lev], da[lev], K);
+    }
+  }//end lev
+
   //Build KSP
   PC pc;
   KSP ksp;
@@ -121,7 +135,7 @@ int main(int argc, char *argv[]) {
   PCFactorSetShiftAmount(pc, 1.0e-12);
   PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
-  KSPSetOperators(ksp, Kmat, Kmat, SAME_PRECONDITIONER);
+  KSPSetOperators(ksp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
   KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
   KSPSetFromOptions(ksp);
 
@@ -132,7 +146,7 @@ int main(int argc, char *argv[]) {
   KSPSolve(ksp, rhs, sol);
 
   //Compute Error
-  long double err = computeError(da, sol, coeffs, K);
+  long double err = computeError(da[da.size() - 1], sol, coeffs, K);
 
   if(print) {
     std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
@@ -143,7 +157,7 @@ int main(int argc, char *argv[]) {
 
   KSPDestroy(&ksp);
 
-  MatDestroy(&Kmat);
+  destroyMat(Kmat);
 
   destroyDA(da); 
 
