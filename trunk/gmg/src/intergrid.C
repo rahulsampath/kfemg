@@ -7,6 +7,104 @@
 #include <cassert>
 #endif
 
+void computePmat1D(std::vector<unsigned long long int>& factorialsList, Mat Pmat,
+    PetscInt Nxc, PetscInt Nxf, std::vector<PetscInt>& partXc, std::vector<PetscInt>& partXf,
+    std::vector<PetscInt>& cOffsets, std::vector<PetscInt>& scanXc,
+    std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanXf,
+    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int fpi = rank;
+
+  PetscInt fnx = partXf[fpi];
+
+  PetscInt fxs = 0;
+  if(fpi > 0) {
+    fxs = 1 + scanXf[fpi - 1];
+  }
+
+  PetscInt fOff = fOffsets[rank];
+
+  std::vector<std::vector<std::vector<long double> > > eval1Dderivatives(2);
+  for(int nodeId = 0; nodeId < 2; ++nodeId) {
+    eval1Dderivatives[nodeId].resize(K + 1);
+    for(unsigned int cdof = 0; cdof <= K; ++cdof) {
+      eval1Dderivatives[nodeId][cdof].resize(K + 1);
+      for(unsigned int fdof = 0; fdof <= K; ++fdof) {
+        eval1Dderivatives[nodeId][cdof][fdof] = eval1DshFnDerivative(factorialsList, 
+            nodeId, cdof, K, coeffs, 0.0, fdof);
+      }//end fdof
+    }//end cdof
+  }//end nodeId
+
+  MatZeroEntries(Pmat);
+
+  for(PetscInt fxi = fxs; fxi < (fxs + fnx); ++fxi) {
+    PetscInt cxi = fxi/2;
+    bool oddX = ((fxi%2) != 0);
+    std::vector<PetscInt>::iterator xIt = std::lower_bound(scanXc.begin(), scanXc.end(), cxi);
+    std::vector<PetscInt> xVec;
+    std::vector<int> xPid;
+    xVec.push_back(cxi);
+    xPid.push_back((xIt - scanXc.begin()));
+    if(oddX) {
+      xVec.push_back(cxi + 1);
+      if((*xIt) == cxi) {
+        xPid.push_back((xIt - scanXc.begin() + 1));
+      } else {
+        xPid.push_back((xIt - scanXc.begin()));
+      }
+    }
+    PetscInt fLoc = fxi - fxs;
+    for(PetscInt xfd = 0; xfd <= K; ++xfd) {
+      if((xfd == 0) && ((fxi == 0) || (fxi == (Nxf - 1)))) {
+        continue;
+      }
+      PetscInt rowId = ((fOff + fLoc)*dofsPerNode) + xfd;
+      for(size_t i = 0; i < xVec.size(); ++i) {
+        PetscInt xLoc;
+        if(xPid[i] > 0) {
+          xLoc = xVec[i] - (1 + scanXc[xPid[i] - 1]);
+        } else {
+          xLoc = xVec[i];
+        }
+        int cPid = xPid[i];
+        PetscInt cLoc = xLoc;
+        for(PetscInt xcd = 0; xcd <= K; ++xcd) {
+          if((xcd == 0) && ((xVec[i] == 0) || (xVec[i] == (Nxc - 1)))) {
+            continue;
+          }
+          PetscInt colId = ((cOffsets[cPid] + cLoc)*dofsPerNode) + xcd;
+          int xNodeId;
+          if( (xVec[i] == (Nxc - 1)) || i ) {
+            xNodeId = 1;
+          } else {
+            xNodeId = 0;
+          }
+          long double valX;
+          if(oddX) {
+            valX = eval1Dderivatives[xNodeId][xcd][xfd];
+          } else {
+            if(xcd == xfd) {
+              valX = 1;
+            } else {
+              valX = 0;
+            }
+          }
+          long double val = valX;
+          unsigned long long int facExp = xfd;
+          PetscScalar entry = val/(static_cast<long double>(1ull << facExp));
+          MatSetValues(Pmat, 1, &rowId, 1, &colId, &entry, INSERT_VALUES);
+        }//end xcd
+      }//end i
+    }//end xfd
+  }//end fxi
+
+  MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(Pmat, MAT_FINAL_ASSEMBLY);
+}
+
 void computePmat2D(std::vector<unsigned long long int>& factorialsList,
     Mat Pmat, PetscInt Nyc, PetscInt Nxc, PetscInt Nyf, PetscInt Nxf,
     std::vector<PetscInt>& partYc, std::vector<PetscInt>& partXc,

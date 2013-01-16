@@ -77,6 +77,12 @@ void setSolution(DM da, Vec vec, const int K);
 
 void setBoundaries(DM da, Vec vec, const int K);
 
+void computePmat1D(std::vector<unsigned long long int>& factorialsList, Mat Pmat,
+    PetscInt Nxc, PetscInt Nxf, std::vector<PetscInt>& partXc, std::vector<PetscInt>& partXf,
+    std::vector<PetscInt>& cOffsets, std::vector<PetscInt>& scanXc,
+    std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanXf,
+    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K); 
+
 void computePmat2D(std::vector<unsigned long long int>& factorialsList,
     Mat Pmat, PetscInt Nyc, PetscInt Nxc, PetscInt Nyf, PetscInt Nxf,
     std::vector<PetscInt>& partYc, std::vector<PetscInt>& partXc,
