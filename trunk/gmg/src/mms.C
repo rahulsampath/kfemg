@@ -30,7 +30,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
     nxe = nx - 1;
   }
 
-  long double hy;
+  long double hy = 0;
   PetscInt nye = ny;
   if(dim > 1) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
@@ -39,7 +39,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
     }
   }
 
-  long double hz;
+  long double hz = 0;
   PetscInt nze = nz;
   if(dim > 2) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
@@ -213,7 +213,7 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
     nxe = nx - 1;
   }
 
-  long double hy;
+  long double hy = 0;
   PetscInt nye = ny;
   if(dim > 1) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
@@ -222,7 +222,7 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
     }
   }
 
-  long double hz;
+  long double hz = 0;
   PetscInt nze = nz;
   if(dim > 2) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
@@ -383,11 +383,11 @@ void setSolution(DM da, Vec vec, const int K) {
   DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
-  long double hy;
+  long double hy = 0;
   if(dim > 1) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
   }
-  long double hz;
+  long double hz = 0;
   if(dim > 2) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }

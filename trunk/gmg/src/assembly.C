@@ -7,6 +7,45 @@
 #include <cassert>
 #endif
 
+void assembleKmat(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
+    std::vector<Mat>& Kmat, std::vector<DM>& da, int K, std::vector<long long int>& coeffs, 
+    std::vector<unsigned long long int>& factorialsList, bool print) {
+  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+    if(Kmat[lev] != NULL) {
+      std::vector<std::vector<long double> > elemMat;
+      if(dim == 1) {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, print);
+      } else if(dim == 2) {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        long double hy = 1.0L/(static_cast<long double>(Ny[lev] - 1));
+        createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, print);
+      } else {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        long double hy = 1.0L/(static_cast<long double>(Ny[lev] - 1));
+        long double hz = 1.0L/(static_cast<long double>(Nz[lev] - 1));
+        createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, print);
+      }
+      computeKmat(Kmat[lev], da[lev], elemMat);
+    }
+  }//end lev
+}
+
+void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, bool print) {
+  Kmat.clear();
+  Kmat.resize(da.size(), NULL);
+  for(int lev = 0; lev < (da.size()); ++lev) {
+    if(da[lev] != NULL) {
+      DMCreateMatrix(da[lev], MATAIJ, &(Kmat[lev]));
+      PetscInt sz;
+      MatGetSize(Kmat[lev], &sz, PETSC_NULL);
+      if(print) {
+        std::cout<<"Lev = "<<lev<<", Kmat size = "<<sz<<std::endl;
+      }
+    }
+  }//end lev
+}
+
 void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat) {
   PetscInt dim;
   PetscInt dofsPerNode;
