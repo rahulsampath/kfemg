@@ -132,7 +132,7 @@ void computePmat(int dim, std::vector<unsigned long long int>& factorialsList, s
     std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets,
     std::vector<std::vector<PetscInt> >& scanZ, std::vector<std::vector<PetscInt> >& scanY,
     std::vector<std::vector<PetscInt> >& scanX, PetscInt dofsPerNode,
-    std::vector<long long int>& coeffs, const unsigned int K) {
+    std::vector<long long int>& coeffs, const int K) {
   if(dim == 1) {
     for(int lev = 0; lev < (Pmat.size()); ++lev) {
       computePmat1D(factorialsList, Pmat[lev], Nx[lev], Nx[lev + 1], partX[lev], partX[lev + 1],
@@ -161,7 +161,7 @@ void computePmat1D(std::vector<unsigned long long int>& factorialsList, Mat Pmat
     PetscInt Nxc, PetscInt Nxf, std::vector<PetscInt>& partXc, std::vector<PetscInt>& partXf,
     std::vector<PetscInt>& cOffsets, std::vector<PetscInt>& scanXc,
     std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanXf,
-    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
+    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const int K) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -179,9 +179,9 @@ void computePmat1D(std::vector<unsigned long long int>& factorialsList, Mat Pmat
   std::vector<std::vector<std::vector<long double> > > eval1Dderivatives(2);
   for(int nodeId = 0; nodeId < 2; ++nodeId) {
     eval1Dderivatives[nodeId].resize(K + 1);
-    for(unsigned int cdof = 0; cdof <= K; ++cdof) {
+    for(int cdof = 0; cdof <= K; ++cdof) {
       eval1Dderivatives[nodeId][cdof].resize(K + 1);
-      for(unsigned int fdof = 0; fdof <= K; ++fdof) {
+      for(int fdof = 0; fdof <= K; ++fdof) {
         eval1Dderivatives[nodeId][cdof][fdof] = eval1DshFnDerivative(factorialsList, 
             nodeId, cdof, K, coeffs, 0.0, fdof);
       }//end fdof
@@ -261,7 +261,7 @@ void computePmat2D(std::vector<unsigned long long int>& factorialsList,
     std::vector<PetscInt>& partYf, std::vector<PetscInt>& partXf, 
     std::vector<PetscInt>& cOffsets, std::vector<PetscInt>& scanYc, std::vector<PetscInt>& scanXc,
     std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanYf, std::vector<PetscInt>& scanXf,
-    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
+    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const int K) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -290,9 +290,9 @@ void computePmat2D(std::vector<unsigned long long int>& factorialsList,
   std::vector<std::vector<std::vector<long double> > > eval1Dderivatives(2);
   for(int nodeId = 0; nodeId < 2; ++nodeId) {
     eval1Dderivatives[nodeId].resize(K + 1);
-    for(unsigned int cdof = 0; cdof <= K; ++cdof) {
+    for(int cdof = 0; cdof <= K; ++cdof) {
       eval1Dderivatives[nodeId][cdof].resize(K + 1);
-      for(unsigned int fdof = 0; fdof <= K; ++fdof) {
+      for(int fdof = 0; fdof <= K; ++fdof) {
         eval1Dderivatives[nodeId][cdof][fdof] = eval1DshFnDerivative(factorialsList, 
             nodeId, cdof, K, coeffs, 0.0, fdof);
       }//end fdof
@@ -427,7 +427,7 @@ void computePmat3D(std::vector<unsigned long long int>& factorialsList,
     std::vector<PetscInt>& scanYc, std::vector<PetscInt>& scanXc,
     std::vector<PetscInt>& fOffsets, std::vector<PetscInt>& scanZf, 
     std::vector<PetscInt>& scanYf, std::vector<PetscInt>& scanXf,
-    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const unsigned int K) {
+    PetscInt dofsPerNode, std::vector<long long int>& coeffs, const int K) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -465,9 +465,9 @@ void computePmat3D(std::vector<unsigned long long int>& factorialsList,
   std::vector<std::vector<std::vector<long double> > > eval1Dderivatives(2);
   for(int nodeId = 0; nodeId < 2; ++nodeId) {
     eval1Dderivatives[nodeId].resize(K + 1);
-    for(unsigned int cdof = 0; cdof <= K; ++cdof) {
+    for(int cdof = 0; cdof <= K; ++cdof) {
       eval1Dderivatives[nodeId][cdof].resize(K + 1);
-      for(unsigned int fdof = 0; fdof <= K; ++fdof) {
+      for(int fdof = 0; fdof <= K; ++fdof) {
         eval1Dderivatives[nodeId][cdof][fdof] = eval1DshFnDerivative(factorialsList, 
             nodeId, cdof, K, coeffs, 0.0, fdof);
       }//end fdof
