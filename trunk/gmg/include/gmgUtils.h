@@ -77,6 +77,13 @@ void setSolution(DM da, Vec vec, const int K);
 
 void setBoundaries(DM da, Vec vec, const int K);
 
+void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec);
+
+void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
+
+void buildPmat(int dim, PetscInt dofsPerNode, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
+    std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes);
+
 void computePmat(int dim, std::vector<unsigned long long int>& factorialsList, std::vector<Mat>& Pmat, 
     std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx, 
     std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,

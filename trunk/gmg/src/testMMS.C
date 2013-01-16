@@ -61,6 +61,13 @@ int main(int argc, char *argv[]) {
   std::vector<DM> da;
   createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, partX, activeNpes, activeComms, da);
 
+  std::vector<Mat> Pmat;
+  std::vector<Vec> tmpCvec;
+  buildPmat(dim, dofsPerNode, Pmat, tmpCvec, da, activeComms, activeNpes); 
+
+  computePmat(dim, factorialsList, Pmat, Nz, Ny, Nx, partZ, partY, partX, offsets,
+      scanZ, scanY, scanX, dofsPerNode, coeffs, K);
+
   //Build Kmat
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
@@ -125,6 +132,10 @@ int main(int argc, char *argv[]) {
   VecDestroy(&sol);
 
   KSPDestroy(&ksp);
+
+  destroyMat(Pmat);
+
+  destroyVec(tmpCvec);
 
   destroyMat(Kmat);
 
