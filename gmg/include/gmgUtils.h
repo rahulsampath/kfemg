@@ -161,7 +161,8 @@ void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>&
     std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ, 
     std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, 
     std::vector<std::vector<PetscInt> >& offsets, std::vector<std::vector<PetscInt> >& scanZ,
-    std::vector<std::vector<PetscInt> >& scanY, std::vector<std::vector<PetscInt> >& scanX, std::vector<int>& activeNpes);
+    std::vector<std::vector<PetscInt> >& scanY, std::vector<std::vector<PetscInt> >& scanX,
+    std::vector<int>& activeNpes, bool print);
 
 void computePartition3D(PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
     std::vector<PetscInt>& partZ, std::vector<PetscInt>& partY, std::vector<PetscInt>& partX,
