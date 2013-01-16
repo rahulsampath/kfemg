@@ -12,6 +12,18 @@
 #include "mpi.h"
 #include "common/include/commonUtils.h"
 
+struct MGdata {
+  PetscInt numVcycles;
+  std::vector<Mat> Kmat;
+  std::vector<Mat> Pmat;
+  std::vector<Vec> tmpCvec; 
+  std::vector<KSP> smoother;
+  KSP coarseSolver;
+  std::vector<Vec> mgSol;
+  std::vector<Vec> mgRhs;
+  std::vector<Vec> mgRes;
+};
+
 inline long double solution1D(long double x) {
   long double res = sin(__PI__ * x);
   return res;
@@ -69,13 +81,7 @@ inline long double force3D(long double x, long double y, long double z) {
 
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
 
-long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
-
-void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs);
-
-void setSolution(DM da, Vec vec, const int K);
-
-void setBoundaries(DM da, Vec vec, const int K);
+PetscErrorCode applyMG(PC pc, Vec in, Vec out);
 
 void applyVcycle(int currLev, std::vector<Mat>& Kmat, std::vector<Mat>& Pmat, 
     std::vector<Vec>& tmpCvec, std::vector<KSP>& smoother, KSP coarseSolver,
@@ -168,6 +174,14 @@ void computePartition2D(PetscInt Ny, PetscInt Nx, int maxNpes, std::vector<Petsc
 
 void computePartition1D(PetscInt Nx, int maxNpes, std::vector<PetscInt>& partX, 
     std::vector<PetscInt>& offsets, std::vector<PetscInt>& scanX);
+
+void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs);
+
+long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K);
+
+void setSolution(DM da, Vec vec, const int K);
+
+void setBoundaries(DM da, Vec vec, const int K);
 
 void destroyDA(std::vector<DM>& da); 
 

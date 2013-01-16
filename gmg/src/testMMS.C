@@ -105,19 +105,57 @@ int main(int argc, char *argv[]) {
   std::vector<Vec> mgRes;
   buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
 
+  KSP coarseSolver = NULL;
+  if(rank < activeNpes[0]) {
+    PC coarsePC;
+    KSPCreate(activeComms[0], &coarseSolver);
+    KSPSetType(coarseSolver, KSPCG);
+    KSPSetPCSide(coarseSolver, PC_LEFT);
+    KSPGetPC(coarseSolver, &coarsePC);
+    PCSetType(coarsePC, PCCHOLESKY);
+    PCFactorSetShiftAmount(coarsePC, 1.0e-12);
+    PCFactorSetShiftType(coarsePC, MAT_SHIFT_POSITIVE_DEFINITE);
+    PCFactorSetMatSolverPackage(coarsePC, MATSOLVERMUMPS);
+    KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
+    KSPSetOperators(coarseSolver, Kmat[0], Kmat[0], SAME_PRECONDITIONER);
+    KSPSetTolerances(coarseSolver, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
+    KSPSetOptionsPrefix(coarseSolver, "coarse_");
+    KSPSetFromOptions(coarseSolver);
+  }
+
+  std::vector<KSP> smoother;
+
+  MGdata data;
+  PetscInt numVcycles = 1;
+  PetscOptionsGetInt(PETSC_NULL, "-numVcycles", &numVcycles, PETSC_NULL);
+  if(print) {
+    std::cout<<"numVcycles = "<<numVcycles<<std::endl;
+  }
+  data.numVcycles = numVcycles;
+  data.Kmat = Kmat;
+  data.Pmat = Pmat;
+  data.tmpCvec = tmpCvec; 
+  data.smoother = smoother;
+  data.coarseSolver = coarseSolver;
+  data.mgSol = mgSol;
+  data.mgRhs = mgRhs;
+  data.mgRes = mgRes;
+
   //Build KSP
-  PC pc;
   KSP ksp;
-  KSPCreate(PETSC_COMM_WORLD, &ksp);
-  KSPSetType(ksp, KSPCG);
-  KSPSetPCSide(ksp, PC_LEFT);
+  PC pc;
+  KSPCreate(activeComms[activeComms.size() - 1], &ksp);
+  KSPSetType(ksp, KSPFGMRES);
+  KSPSetPCSide(ksp, PC_RIGHT);
   KSPGetPC(ksp, &pc);
-  PCSetType(pc, PCCHOLESKY);
-  PCFactorSetShiftAmount(pc, 1.0e-12);
-  PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
+  PCSetType(pc, PCSHELL);
+  PCShellSetContext(pc, &data);
+  PCShellSetName(pc, "MyVcycle");
+  PCShellSetApply(pc, &applyMG);
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetOperators(ksp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
   KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
+  KSPSetOptionsPrefix(ksp, "outer_");
   KSPSetFromOptions(ksp);
 
   if(print) {
@@ -137,6 +175,9 @@ int main(int argc, char *argv[]) {
   VecDestroy(&sol);
 
   KSPDestroy(&ksp);
+  if(coarseSolver != NULL) {
+    KSPDestroy(&coarseSolver);
+  }
 
   destroyMat(Pmat);
   destroyVec(tmpCvec);
