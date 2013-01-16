@@ -10,7 +10,7 @@
 void assembleKmat(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<Mat>& Kmat, std::vector<DM>& da, int K, std::vector<long long int>& coeffs, 
     std::vector<unsigned long long int>& factorialsList, bool print) {
-  for(int lev = 0; lev < (Kmat.size()); ++lev) {
+  for(int lev = 0; lev < (Kmat.size()); ++lev, print = false) {
     if(Kmat[lev] != NULL) {
       std::vector<std::vector<long double> > elemMat;
       if(dim == 1) {
