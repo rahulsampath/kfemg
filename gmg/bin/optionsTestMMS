@@ -7,8 +7,8 @@
 -finestNx 5
 -finestNy 5
 -finestNz 5
--maxNumLevels 1
--maxCoarseNpes 1
+-maxNumLevels 100
+-maxCoarseNpes 100
 
 -outer_ksp_max_it 100
 -outer_ksp_monitor
