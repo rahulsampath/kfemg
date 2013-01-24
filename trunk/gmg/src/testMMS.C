@@ -171,10 +171,10 @@ int main(int argc, char *argv[]) {
     if(rank < activeNpes[lev + 1]) {
       PC smoothPC;
       KSPCreate(activeComms[lev + 1], &(smoother[lev]));
-      //KSPSetType(smoother[lev], KSPCG);
-      //KSPSetPCSide(smoother[lev], PC_LEFT);
-      KSPSetType(smoother[lev], KSPFGMRES);
-      KSPSetPCSide(smoother[lev], PC_RIGHT);
+      KSPSetType(smoother[lev], KSPCG);
+      KSPSetPCSide(smoother[lev], PC_LEFT);
+      //KSPSetType(smoother[lev], KSPFGMRES);
+      //KSPSetPCSide(smoother[lev], PC_RIGHT);
       KSPGetPC(smoother[lev], &smoothPC);
       PCSetType(smoothPC, PCNONE);
       KSPSetInitialGuessNonzero(smoother[lev], PETSC_TRUE);
