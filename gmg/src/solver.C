@@ -69,26 +69,3 @@ void destroyKSP(std::vector<KSP>& ksp) {
   ksp.clear();
 }
 
-
-//HIGH-PASS FILTERING
-/*
-   {
-   computeResidual(Kmat[currLev], mgSol[currLev], mgRhs[currLev], mgRes[currLev]);
-   Vec roughErr;
-   VecDuplicate(mgSol[currLev], &roughErr);
-   Vec tmpRhs;
-   VecDuplicate(mgRhs[currLev], &tmpRhs);
-   Vec coarseRes;
-   VecDuplicate(mgRhs[currLev - 1], &coarseRes);
-   applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], mgRes[currLev], coarseRes);
-   applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], coarseRes, tmpRhs);
-   VecAYPX(tmpRhs, -1.0, mgRes[currLev]);
-   VecZeroEntries(roughErr);
-   KSPSolve(smoother[currLev - 1], tmpRhs, roughErr);
-   VecAXPY(mgSol[currLev], 1.0, roughErr);
-   VecDestroy(&roughErr);
-   VecDestroy(&tmpRhs);
-   VecDestroy(&coarseRes);
-   }
-   */
-

@@ -689,4 +689,3 @@ void dirichletMatrixCorrection(Mat Kmat, DM da, const int K) {
 }
 
 
-
