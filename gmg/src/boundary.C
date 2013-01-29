@@ -1225,5 +1225,389 @@ void blkDirichletMatCorrection3D(std::vector<std::vector<Mat> >& blkKmat, DM da,
   }//end i
 }
 
+void blkDirichletMatCorrection2D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partX,
+    std::vector<PetscInt>& offsets, int K) {
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  DMDAGetInfo(da, PETSC_NULL, &Nx, &Ny, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt nx;
+  PetscInt ny;
+  DMDAGetCorners(da, &xs, &ys, PETSC_NULL, &nx, &ny, PETSC_NULL);
+
+  PetscScalar one = 1.0;
+  PetscScalar zero = 0.0;
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int px = partX.size();
+
+  int rj = rank/px;
+  int ri = rank%px;
+
+  if(xs == 0) {
+    PetscInt xi = 0;
+    PetscInt bXloc = xi - xs;
+    for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+      PetscInt bYloc = yi - ys;
+      PetscInt bLoc = (bYloc*partX[ri]) + bXloc;
+      PetscInt bnd = offsets[rank] + bLoc;
+      int dx = 0;
+      for(int dy = 0; dy <= K; ++dy) {
+        PetscInt bd = (dy*(K + 1)) + dx;
+        for(PetscInt oyi = (yi - 1); oyi <= (yi + 1); ++oyi) {
+          if((oyi < 0) || (oyi >= Ny)) {
+            continue;
+          }
+          PetscInt pj = rj;
+          PetscInt oys = ys;
+          if(oyi >= (ys + ny)) {
+            pj = rj + 1;
+            oys = ys + ny;
+          }
+          if(oyi < ys) {
+            pj = rj - 1;
+            oys = ys - partY[pj];
+          }
+          PetscInt oYloc = oyi - oys;
+          for(PetscInt oxi = (xi - 1); oxi <= (xi + 1); ++oxi) {
+            if((oxi < 0) || (oxi >= Nx)) {
+              continue;
+            }
+            PetscInt pi = ri;
+            PetscInt oxs = xs;
+            if(oxi >= (xs + nx)) {
+              pi = ri + 1;
+              oxs = xs + nx;
+            }
+            if(oxi < xs) {
+              pi = ri - 1;
+              oxs = xs - partX[pi];
+            }
+            PetscInt oXloc = oxi - oxs;
+            int pid = (pj*px) + pi;
+            PetscInt oLoc = (oYloc*partX[pi]) + oXloc;
+            PetscInt oth = offsets[pid] + oLoc;
+            for(int od = 0; od < dofsPerNode; ++od) {
+              if(od == bd) {
+                if(bnd == oth) {
+                  MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+                } else {
+                  MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                  MatSetValues(blkKmat[bd][0], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+                }
+              } else if(od > bd) {
+                MatSetValues(blkKmat[bd][od - bd], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+              } else {
+                MatSetValues(blkKmat[od][bd - od], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+              }
+            }//end od
+          }//end oxi
+        }//end oyi
+      }//end dy 
+    }//end yi
+  }
+  if((xs + nx) == Nx) {
+    PetscInt xi = Nx - 1;
+    PetscInt bXloc = xi - xs;
+    for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+      PetscInt bYloc = yi - ys;
+      PetscInt bLoc = (bYloc*partX[ri]) + bXloc;
+      PetscInt bnd = offsets[rank] + bLoc;
+      int dx = 0;
+      for(int dy = 0; dy <= K; ++dy) {
+        PetscInt bd = (dy*(K + 1)) + dx;
+        for(PetscInt oyi = (yi - 1); oyi <= (yi + 1); ++oyi) {
+          if((oyi < 0) || (oyi >= Ny)) {
+            continue;
+          }
+          PetscInt pj = rj;
+          PetscInt oys = ys;
+          if(oyi >= (ys + ny)) {
+            pj = rj + 1;
+            oys = ys + ny;
+          }
+          if(oyi < ys) {
+            pj = rj - 1;
+            oys = ys - partY[pj];
+          }
+          PetscInt oYloc = oyi - oys;
+          for(PetscInt oxi = (xi - 1); oxi <= (xi + 1); ++oxi) {
+            if((oxi < 0) || (oxi >= Nx)) {
+              continue;
+            }
+            PetscInt pi = ri;
+            PetscInt oxs = xs;
+            if(oxi >= (xs + nx)) {
+              pi = ri + 1;
+              oxs = xs + nx;
+            }
+            if(oxi < xs) {
+              pi = ri - 1;
+              oxs = xs - partX[pi];
+            }
+            PetscInt oXloc = oxi - oxs;
+            int pid = (pj*px) + pi;
+            PetscInt oLoc = (oYloc*partX[pi]) + oXloc;
+            PetscInt oth = offsets[pid] + oLoc;
+            for(int od = 0; od < dofsPerNode; ++od) {
+              if(od == bd) {
+                if(bnd == oth) {
+                  MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+                } else {
+                  MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                  MatSetValues(blkKmat[bd][0], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+                }
+              } else if(od > bd) {
+                MatSetValues(blkKmat[bd][od - bd], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+              } else {
+                MatSetValues(blkKmat[od][bd - od], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+              }
+            }//end od
+          }//end oxi
+        }//end oyi
+      }//end dy 
+    }//end yi
+  }
+  if(ys == 0) {
+    PetscInt yi = 0;
+    PetscInt bYloc = yi - ys;
+    for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+      PetscInt bXloc = xi - xs;
+      PetscInt bLoc = (bYloc*partX[ri]) + bXloc;
+      PetscInt bnd = offsets[rank] + bLoc;
+      int dy = 0;
+      for(int dx = 0; dx <= K; ++dx) {
+        PetscInt bd = (dy*(K + 1)) + dx;
+        for(PetscInt oyi = (yi - 1); oyi <= (yi + 1); ++oyi) {
+          if((oyi < 0) || (oyi >= Ny)) {
+            continue;
+          }
+          PetscInt pj = rj;
+          PetscInt oys = ys;
+          if(oyi >= (ys + ny)) {
+            pj = rj + 1;
+            oys = ys + ny;
+          }
+          if(oyi < ys) {
+            pj = rj - 1;
+            oys = ys - partY[pj];
+          }
+          PetscInt oYloc = oyi - oys;
+          for(PetscInt oxi = (xi - 1); oxi <= (xi + 1); ++oxi) {
+            if((oxi < 0) || (oxi >= Nx)) {
+              continue;
+            }
+            PetscInt pi = ri;
+            PetscInt oxs = xs;
+            if(oxi >= (xs + nx)) {
+              pi = ri + 1;
+              oxs = xs + nx;
+            }
+            if(oxi < xs) {
+              pi = ri - 1;
+              oxs = xs - partX[pi];
+            }
+            PetscInt oXloc = oxi - oxs;
+            int pid = (pj*px) + pi;
+            PetscInt oLoc = (oYloc*partX[pi]) + oXloc;
+            PetscInt oth = offsets[pid] + oLoc;
+            for(int od = 0; od < dofsPerNode; ++od) {
+              if(od == bd) {
+                if(bnd == oth) {
+                  MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+                } else {
+                  MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                  MatSetValues(blkKmat[bd][0], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+                }
+              } else if(od > bd) {
+                MatSetValues(blkKmat[bd][od - bd], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+              } else {
+                MatSetValues(blkKmat[od][bd - od], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+              }
+            }//end od
+          }//end oxi
+        }//end oyi
+      }//end dx 
+    }//end xi
+  }
+  if((ys + ny) == Ny) {
+    PetscInt yi = Ny - 1;
+    PetscInt bYloc = yi - ys;
+    for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+      PetscInt bXloc = xi - xs;
+      PetscInt bLoc = (bYloc*partX[ri]) + bXloc;
+      PetscInt bnd = offsets[rank] + bLoc;
+      int dy = 0;
+      for(int dx = 0; dx <= K; ++dx) {
+        PetscInt bd = (dy*(K + 1)) + dx;
+        for(PetscInt oyi = (yi - 1); oyi <= (yi + 1); ++oyi) {
+          if((oyi < 0) || (oyi >= Ny)) {
+            continue;
+          }
+          PetscInt pj = rj;
+          PetscInt oys = ys;
+          if(oyi >= (ys + ny)) {
+            pj = rj + 1;
+            oys = ys + ny;
+          }
+          if(oyi < ys) {
+            pj = rj - 1;
+            oys = ys - partY[pj];
+          }
+          PetscInt oYloc = oyi - oys;
+          for(PetscInt oxi = (xi - 1); oxi <= (xi + 1); ++oxi) {
+            if((oxi < 0) || (oxi >= Nx)) {
+              continue;
+            }
+            PetscInt pi = ri;
+            PetscInt oxs = xs;
+            if(oxi >= (xs + nx)) {
+              pi = ri + 1;
+              oxs = xs + nx;
+            }
+            if(oxi < xs) {
+              pi = ri - 1;
+              oxs = xs - partX[pi];
+            }
+            PetscInt oXloc = oxi - oxs;
+            int pid = (pj*px) + pi;
+            PetscInt oLoc = (oYloc*partX[pi]) + oXloc;
+            PetscInt oth = offsets[pid] + oLoc;
+            for(int od = 0; od < dofsPerNode; ++od) {
+              if(od == bd) {
+                if(bnd == oth) {
+                  MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+                } else {
+                  MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+                  MatSetValues(blkKmat[bd][0], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+                }
+              } else if(od > bd) {
+                MatSetValues(blkKmat[bd][od - bd], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+              } else {
+                MatSetValues(blkKmat[od][bd - od], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+              }
+            }//end od
+          }//end oxi
+        }//end oyi
+      }//end dx 
+    }//end xi
+  }
+
+  for(int i = 0; i < (blkKmat.size()); ++i) {
+    for(int j = 0; j < (blkKmat[i].size()); ++j) {
+      MatAssemblyBegin(blkKmat[i][j], MAT_FINAL_ASSEMBLY);
+      MatAssemblyEnd(blkKmat[i][j], MAT_FINAL_ASSEMBLY);
+    }//end j
+  }//end i
+}
+
+void blkDirichletMatCorrection1D(std::vector<std::vector<Mat> >& blkKmat, DM da,
+    std::vector<PetscInt>& offsets, int K) {
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  DMDAGetInfo(da, PETSC_NULL, &Nx, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt nx;
+  DMDAGetCorners(da, &xs, PETSC_NULL, PETSC_NULL, &nx, PETSC_NULL, PETSC_NULL);
+
+  PetscScalar one = 1.0;
+  PetscScalar zero = 0.0;
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int ri = rank;
+
+  if(xs == 0) {
+    PetscInt xi = 0;
+    PetscInt bLoc = xi - xs;
+    PetscInt bnd = offsets[rank] + bLoc;
+    PetscInt bd = 0;
+    for(PetscInt oxi = (xi - 1); oxi <= (xi + 1); ++oxi) {
+      if((oxi < 0) || (oxi >= Nx)) {
+        continue;
+      }
+      PetscInt pi = ri;
+      PetscInt oxs = xs;
+      if(oxi >= (xs + nx)) {
+        pi = ri + 1;
+        oxs = xs + nx;
+      }
+      if(oxi < xs) {
+        pi = ri - 1;
+        oxs = xs - partX[pi];
+      }
+      PetscInt oLoc = oxi - oxs;
+      PetscInt oth = offsets[pi] + oLoc;
+      for(int od = 0; od < dofsPerNode; ++od) {
+        if(od == bd) {
+          if(bnd == oth) {
+            MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+          } else {
+            MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+            MatSetValues(blkKmat[bd][0], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+          }
+        } else if(od > bd) {
+          MatSetValues(blkKmat[bd][od - bd], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+        } else {
+          MatSetValues(blkKmat[od][bd - od], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+        }
+      }//end od
+    }//end oxi
+  }
+  if((xs + nx) == Nx) {
+    PetscInt xi = Nx - 1;
+    PetscInt bLoc = xi - xs;
+    PetscInt bnd = offsets[rank] + bLoc;
+    PetscInt bd = 0;
+    for(PetscInt oxi = (xi - 1); oxi <= (xi + 1); ++oxi) {
+      if((oxi < 0) || (oxi >= Nx)) {
+        continue;
+      }
+      PetscInt pi = ri;
+      PetscInt oxs = xs;
+      if(oxi >= (xs + nx)) {
+        pi = ri + 1;
+        oxs = xs + nx;
+      }
+      if(oxi < xs) {
+        pi = ri - 1;
+        oxs = xs - partX[pi];
+      }
+      PetscInt oLoc = oxi - oxs;
+      PetscInt oth = offsets[pi] + oLoc;
+      for(int od = 0; od < dofsPerNode; ++od) {
+        if(od == bd) {
+          if(bnd == oth) {
+            MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &bnd, &one, INSERT_VALUES);
+          } else {
+            MatSetValues(blkKmat[bd][0], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+            MatSetValues(blkKmat[bd][0], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+          }
+        } else if(od > bd) {
+          MatSetValues(blkKmat[bd][od - bd], 1, &bnd, 1, &oth, &zero, INSERT_VALUES);
+        } else {
+          MatSetValues(blkKmat[od][bd - od], 1, &oth, 1, &bnd, &zero, INSERT_VALUES);
+        }
+      }//end od
+    }//end oxi
+  }
+
+  for(int i = 0; i < (blkKmat.size()); ++i) {
+    for(int j = 0; j < (blkKmat[i].size()); ++j) {
+      MatAssemblyBegin(blkKmat[i][j], MAT_FINAL_ASSEMBLY);
+      MatAssemblyEnd(blkKmat[i][j], MAT_FINAL_ASSEMBLY);
+    }//end j
+  }//end i
+}
+
 
 
