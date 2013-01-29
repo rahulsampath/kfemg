@@ -46,6 +46,92 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, bool print) {
   }//end lev
 }
 
+void buildBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<DM>& da,
+    std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes) {
+  blkKmats.clear();
+  blkKmats.resize(da.size());
+  for(int lev = 0; lev < (da.size()); ++lev) {
+    if(da[lev] != NULL) {
+      PetscInt xs, ys, zs;
+      PetscInt nx, ny, nz;
+      DMDAGetCorners(da[i], &xs, &ys, &zs, &nx, &ny, &nz);
+      PetscInt dim;
+      PetscInt dofsPerNode;
+      PetscInt Nx;
+      PetscInt Ny;
+      PetscInt Nz;
+      DMDAGetInfo(da[i], &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+          &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+      if(dim < 2) {
+        Ny = 1;
+        ny = 1;
+        ys = 0;
+      }
+      if(dim < 3) {
+        Nz = 1;
+        nz = 1;
+        zs = 0;
+      }
+      PetscInt locSz = (nx*ny*nz);
+      PetscInt* d_nnz = new PetscInt[locSz];
+      PetscInt* o_nnz = NULL;
+      if(activeNpes[i] > 1) {
+        o_nnz = new PetscInt[locSz];
+      }
+      for(PetscInt zi = zs, cnt = 0; zi < (zs + nz); ++zi) {
+        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+          for(PetscInt xi = xs; xi < (xs + nx); ++xi, ++cnt) {
+            d_nnz[cnt] = 0;
+            if(o_nnz) {
+              o_nnz[cnt] = 0;
+            }
+            for(int kk = -1; kk < 2; ++kk) {
+              PetscInt oz = zi + kk;
+              if((oz >= 0) && (oz < Nz)) {
+                for(int jj = -1; jj < 2; ++jj) {
+                  PetscInt oy = yi + jj;
+                  if((oy >= 0) && (oy < Ny)) {
+                    for(int ii = -1; ii < 2; ++ii) {
+                      PetscInt ox = xi + ii;
+                      if((ox >= 0) && (ox < Nx)) {
+                        if((oz >= zs) && (oz < (zs + nz)) &&  
+                            (oy >= ys) && (oy < (ys + ny)) &&
+                            (ox >= xs) && (ox < (xs + nx))) {
+                          ++(d_nnz[cnt]);
+                        } else {
+                          ++(o_nnz[cnt]);
+                        }                
+                      }
+                    }//end ii
+                  }
+                }//end jj
+              }
+            }//end kk
+          }//end xi
+        }//end yi
+      }//end zi
+      blkKmats[lev].resize(dofsPerNode);
+      for(int di = 0; di < dofsPerNode; ++di) {
+        blkKmats[lev][di].resize((dofsPerNode - di), NULL);
+        for(int dj = 0; dj < (dofsPerNode - di); ++dj) {
+          MatCreate(activeComms[lev], &(blkKmats[lev][di][dj]));
+          MatSetSizes(blkKmats[lev][di][dj], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
+          MatSetType(blkKmats[lev][di][dj], MATAIJ);
+          if(activeNpes[i] > 1) {
+            MatMPIAIJSetPreallocation(blkKmats[lev][di][dj], -1, d_nnz, -1, o_nnz);
+          } else {
+            MatSeqAIJSetPreallocation(blkKmats[lev][di][dj], -1, d_nnz);
+          }
+        }//end dj
+      }//end di
+      delete [] d_nnz;
+      if(activeNpes[i] > 1) {
+        delete [] o_nnz;
+      }
+    }
+  }//end lev
+}
+
 void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMat) {
   PetscInt dim;
   PetscInt dofsPerNode;
@@ -169,4 +255,223 @@ void computeKmat(Mat Kmat, DM da, std::vector<std::vector<long double> >& elemMa
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
 }
 
+void computeBlkKmat1D(Mat blkKmat, DM da, std::vector<PetscInt>& offsets,
+    std::vector<std::vector<long double> >& elemMat, int rDof, int cDof) {
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  DMDAGetInfo(da, PETSC_NULL, &Nx, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt nx;
+  DMDAGetCorners(da, &xs, PETSC_NULL, PETSC_NULL, &nx, PETSC_NULL, PETSC_NULL);
+
+  PetscInt nxe = nx;
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int ri = rank;
+
+  MatZeroEntries(blkKmat);
+
+  for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+    std::vector<PetscInt> indices(2);
+    for(PetscInt x = 0; x < 2; ++x) {
+      PetscInt vi = (xi + x);
+      int pi = ri;
+      PetscInt vXs = xs;
+      if(vi >= (xs + nx)) {
+        ++pi;
+        vXs += nx;
+      }
+      PetscInt loc = vi - vXs;
+      indices[x] = offsets[pi] + loc;
+    }//end x
+    for(int rNd = 0; rNd < 2; ++rNd) {
+      int r = (rNd*dofsPerNode) + rDof;
+      for(int cNd = 0; cNd < 2; ++cNd) {
+        int c = (cNd*dofsPerNode) + cDof;
+        PetscScalar val = elemMat[r][c];
+        MatSetValues(blkKmat, 1, &(indices[rNd]), 1, &(indices[cNd]), &val, ADD_VALUES);
+      }//end cNd
+    }//end rNd
+  }//end xi
+
+  MatAssemblyBegin(blkKmat, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(blkKmat, MAT_FINAL_ASSEMBLY);
+}
+
+void computeBlkKmat2D(Mat blkKmat, DM da, std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets,
+    std::vector<std::vector<long double> >& elemMat, int rDof, int cDof) {
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  DMDAGetInfo(da, PETSC_NULL, &Nx, &Ny, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt nx;
+  PetscInt ny;
+  DMDAGetCorners(da, &xs, &ys, PETSC_NULL, &nx, &ny, PETSC_NULL);
+
+  PetscInt nxe = nx;
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
+  PetscInt nye = ny;
+  if((ys + ny) == Ny) {
+    nye = ny - 1;
+  }
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int px = partX.size();
+
+  int rj = rank/px;
+  int ri = rank%px;
+
+  MatZeroEntries(blkKmat);
+
+  for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+    for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+      std::vector<PetscInt> indices(4);
+      for(PetscInt y = 0, v = 0; y < 2; ++y) {
+        PetscInt vj = (yi + y);
+        int pj = rj;
+        PetscInt vYs = ys;
+        if(vj >= (ys + ny)) {
+          ++pj;
+          vYs += ny;
+        }
+        PetscInt yLoc = vj - vYs;
+        for(PetscInt x = 0; x < 2; ++x, ++v) {
+          PetscInt vi = (xi + x);
+          int pi = ri;
+          PetscInt vXs = xs;
+          if(vi >= (xs + nx)) {
+            ++pi;
+            vXs += nx;
+          }
+          PetscInt xLoc = vi - vXs;
+          int pid = (pj*px) + pi;
+          PetscInt loc = (yLoc*partX[pi]) + xLoc;
+          indices[v] = offsets[pid] + loc;
+        }//end x
+      }//end y
+      for(int rNd = 0; rNd < 4; ++rNd) {
+        int r = (rNd*dofsPerNode) + rDof;
+        for(int cNd = 0; cNd < 4; ++cNd) {
+          int c = (cNd*dofsPerNode) + cDof;
+          PetscScalar val = elemMat[r][c];
+          MatSetValues(blkKmat, 1, &(indices[rNd]), 1, &(indices[cNd]), &val, ADD_VALUES);
+        }//end cNd
+      }//end rNd
+    }//end xi
+  }//end yi
+
+  MatAssemblyBegin(blkKmat, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(blkKmat, MAT_FINAL_ASSEMBLY);
+}
+
+void computeBlkKmat3D(Mat blkKmat, DM da, std::vector<PetscInt>& partY,i
+    std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, 
+    std::vector<std::vector<long double> >& elemMat, int rDof, int cDof) {
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, PETSC_NULL, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  PetscInt nxe = nx;
+  if((xs + nx) == Nx) {
+    nxe = nx - 1;
+  }
+  PetscInt nye = ny;
+  if((ys + ny) == Ny) {
+    nye = ny - 1;
+  }
+  PetscInt nze = nz;
+  if((zs + nz) == Nz) {
+    nze = nz - 1;
+  }
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int px = partX.size();
+  int py = partY.size();
+
+  int rk = rank/(px*py);
+  int rj = (rank/px)%py;
+  int ri = rank%px;
+
+  MatZeroEntries(blkKmat);
+
+  for(PetscInt zi = zs; zi < (zs + nze); ++zi) {
+    for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+      for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+        std::vector<PetscInt> indices(8);
+        for(PetscInt z = 0, v = 0; z < 2; ++z) {
+          PetscInt vk = (zi + z);
+          int pk = rk;
+          PetscInt vZs = zs;
+          if(vk >= (zs + nz)) {
+            ++pk;
+            vZs += nz;
+          }
+          PetscInt zLoc = vk - vZs;
+          for(PetscInt y = 0; y < 2; ++y) {
+            PetscInt vj = (yi + y);
+            int pj = rj;
+            PetscInt vYs = ys;
+            if(vj >= (ys + ny)) {
+              ++pj;
+              vYs += ny;
+            }
+            PetscInt yLoc = vj - vYs;
+            for(PetscInt x = 0; x < 2; ++x, ++v) {
+              PetscInt vi = (xi + x);
+              int pi = ri;
+              PetscInt vXs = xs;
+              if(vi >= (xs + nx)) {
+                ++pi;
+                vXs += nx;
+              }
+              PetscInt xLoc = vi - vXs;
+              int pid = (((pk*py) + pj)*px) + pi;
+              PetscInt loc = (((zLoc*partY[pj]) + yLoc)*partX[pi]) + xLoc;
+              indices[v] = offsets[pid] + loc;
+            }//end x
+          }//end y
+        }//end z
+        for(int rNd = 0; rNd < 8; ++rNd) {
+          int r = (rNd*dofsPerNode) + rDof;
+          for(int cNd = 0; cNd < 8; ++cNd) {
+            int c = (cNd*dofsPerNode) + cDof;
+            PetscScalar val = elemMat[r][c];
+            MatSetValues(blkKmat, 1, &(indices[rNd]), 1, &(indices[cNd]), &val, ADD_VALUES);
+          }//end cNd
+        }//end rNd
+      }//end xi
+    }//end yi
+  }//end zi
+
+  MatAssemblyBegin(blkKmat, MAT_FINAL_ASSEMBLY);
+  MatAssemblyEnd(blkKmat, MAT_FINAL_ASSEMBLY);
+}
 
