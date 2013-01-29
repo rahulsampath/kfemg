@@ -155,6 +155,19 @@ void computePmat3D(std::vector<unsigned long long int>& factorialsList,
     std::vector<PetscInt>& scanYf, std::vector<PetscInt>& scanXf,
     PetscInt dofsPerNode, std::vector<long long int>& coeffs, const int K); 
 
+void buildBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<DM>& da,
+    std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes);
+
+void computeBlkKmat1D(Mat blkKmat, DM da, std::vector<PetscInt>& offsets,
+    std::vector<std::vector<long double> >& elemMat, int rDof, int cDof);
+
+void computeBlkKmat2D(Mat blkKmat, DM da, std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, 
+    std::vector<std::vector<long double> >& elemMat, int rDof, int cDof);
+
+void computeBlkKmat3D(Mat blkKmat, DM da, std::vector<PetscInt>& partY,
+    std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, 
+    std::vector<std::vector<long double> >& elemMat, int rDof, int cDof);
+
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, bool print);
 
 void assembleKmat(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,

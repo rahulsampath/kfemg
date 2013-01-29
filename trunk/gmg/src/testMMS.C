@@ -106,6 +106,9 @@ int main(int argc, char *argv[]) {
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
   //Build Kmat
+  std::vector<std::vector<std::vector<Mat> > > blkKmats;
+  buildBlkKmats(blkKmats, da, activeComms, activeNpes);
+
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
 
@@ -257,6 +260,12 @@ int main(int argc, char *argv[]) {
   destroyVec(mgRes);
   destroyMat(Kmat);
   destroyDA(da); 
+
+  for(int i = 0; i < blkKmats.size(); ++i) {
+    for(int j = 0; j < blkKmats[i].size(); ++j) {
+      destroyMat(blkKmats[i][j]);
+    }//end j
+  }//end i
 
   PetscLogEventEnd(cleanupEvent, 0, 0, 0, 0);
 
