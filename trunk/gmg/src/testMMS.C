@@ -113,6 +113,9 @@ int main(int argc, char *argv[]) {
   buildKmat(Kmat, da, print);
 
   //Matrix Assembly
+  assembleBlkKmats(blkKmats, dim, dofsPerNode, Nz, Ny, Nx, partY, partX,
+      offsets, da, K, coeffs, factorialsList);
+
   assembleKmat(dim, Nz, Ny, Nx, Kmat, da, K, coeffs, factorialsList, print);
 
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);

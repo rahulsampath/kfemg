@@ -158,6 +158,12 @@ void computePmat3D(std::vector<unsigned long long int>& factorialsList,
 void buildBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<DM>& da,
     std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes);
 
+void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, int dim, int dofsPerNode,
+    std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX,
+    std::vector<std::vector<PetscInt> >& offsets, std::vector<DM>& da, int K, 
+    std::vector<long long int>& coeffs, std::vector<unsigned long long int>& factorialsList);
+
 void computeBlkKmat1D(Mat blkKmat, DM da, std::vector<PetscInt>& offsets,
     std::vector<std::vector<long double> >& elemMat, int rDof, int cDof);
 

@@ -31,6 +31,48 @@ void assembleKmat(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
   }//end lev
 }
 
+void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, int dim, int dofsPerNode,
+    std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX,
+    std::vector<std::vector<PetscInt> >& offsets, std::vector<DM>& da, int K, 
+    std::vector<long long int>& coeffs, std::vector<unsigned long long int>& factorialsList) {
+  for(int lev = 0; lev < (da.size()); ++lev) {
+    if(da[lev] != NULL) {
+      std::vector<std::vector<long double> > elemMat;
+      if(dim == 1) {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, false);
+        for(int rDof = 0; rDof < dofsPerNode; ++rDof) {
+          for(int cDof = rDof; cDof < dofsPerNode; ++cDof) {
+            computeBlkKmat1D(blkKmats[lev][rDof][cDof - rDof], da[lev], offsets[lev], elemMat, rDof, cDof);
+          }//end cDof
+        }//end rDof
+      } else if(dim == 2) {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        long double hy = 1.0L/(static_cast<long double>(Ny[lev] - 1));
+        createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, false);
+        for(int rDof = 0; rDof < dofsPerNode; ++rDof) {
+          for(int cDof = rDof; cDof < dofsPerNode; ++cDof) {
+            computeBlkKmat2D(blkKmats[lev][rDof][cDof - rDof], da[lev], partX[lev], offsets[lev],
+                elemMat, rDof, cDof);
+          }//end cDof
+        }//end rDof
+      } else {
+        long double hx = 1.0L/(static_cast<long double>(Nx[lev] - 1));
+        long double hy = 1.0L/(static_cast<long double>(Ny[lev] - 1));
+        long double hz = 1.0L/(static_cast<long double>(Nz[lev] - 1));
+        createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, false);
+        for(int rDof = 0; rDof < dofsPerNode; ++rDof) {
+          for(int cDof = rDof; cDof < dofsPerNode; ++cDof) {
+            computeBlkKmat3D(blkKmats[lev][rDof][cDof - rDof], da[lev], partY[lev], partX[lev], 
+                offsets[lev], elemMat, rDof, cDof);
+          }//end cDof
+        }//end rDof
+      }
+    }
+  }//end lev
+}
+
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, bool print) {
   Kmat.clear();
   Kmat.resize(da.size(), NULL);
