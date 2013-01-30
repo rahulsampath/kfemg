@@ -6,6 +6,22 @@
 #include <cassert>
 #endif
 
+void correctBlkKmats(int dim, std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<DM>& da,
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, 
+    std::vector<std::vector<PetscInt> >& offsets, int K) {
+  for(int lev = 0; lev < (da.size()); ++lev) {
+    if(da[lev] != NULL) {
+      if(dim == 1) {
+        blkDirichletMatCorrection1D(blkKmats[lev], da[lev], offsets[lev], K);
+      } else if(dim == 2) {
+        blkDirichletMatCorrection2D(blkKmats[lev], da[lev], partX[lev], offsets[lev], K);
+      } else {
+        blkDirichletMatCorrection3D(blkKmats[lev], da[lev], partY[lev], partX[lev], offsets[lev], K);
+      }
+    }
+  }//end lev
+}
+
 void correctKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, int K) {
   for(int lev = 0; lev < (Kmat.size()); ++lev) {
     if(Kmat[lev] != NULL) {

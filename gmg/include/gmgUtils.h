@@ -164,6 +164,10 @@ void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, in
     std::vector<std::vector<PetscInt> >& offsets, std::vector<DM>& da, int K, 
     std::vector<long long int>& coeffs, std::vector<unsigned long long int>& factorialsList);
 
+void correctBlkKmats(int dim, std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<DM>& da,
+    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, 
+    std::vector<std::vector<PetscInt> >& offsets, int K);
+
 void blkDirichletMatCorrection1D(std::vector<std::vector<Mat> >& blkKmat, DM da,
     std::vector<PetscInt>& offsets, int K);
 
