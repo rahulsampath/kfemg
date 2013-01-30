@@ -145,6 +145,8 @@ int main(int argc, char *argv[]) {
 
   correctKmat(Kmat, da, K);
 
+  correctBlkKmats(dim, blkKmats, da, partY, partX, offsets, K);
+
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 
   PetscLogEventBegin(solverSetupEvent, 0, 0, 0, 0);
