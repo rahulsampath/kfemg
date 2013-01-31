@@ -117,6 +117,8 @@ void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec);
 
 void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
 
+void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out);
+
 void buildPmat(int dim, PetscInt dofsPerNode, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes);
 
