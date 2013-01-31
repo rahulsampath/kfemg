@@ -24,6 +24,23 @@ struct MGdata {
   std::vector<Vec> mgRes;
 };
 
+struct Khat1Ddata {
+  Mat K11;
+  Mat K12;
+  std::vector<PetscInt>* partX;
+  int numDofs;
+  Vec u;
+  Vec uPrime;
+  Vec tmpOut;
+};
+
+struct Kcol1Ddata {
+  Mat Ku;
+  Mat Kl;
+  Vec u;
+  Vec l;
+};
+
 /*
    inline long double solution1D(long double x) {
    long double res = sin(__PI__ * x);
@@ -118,6 +135,10 @@ void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec);
 void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
 
 void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out);
+
+PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out);
+
+PetscErrorCode Kcol1Dmult(Mat mat, Vec in, Vec out);
 
 void buildPmat(int dim, PetscInt dofsPerNode, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes);
