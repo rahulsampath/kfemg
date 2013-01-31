@@ -69,6 +69,9 @@ struct Kcol1Ddata {
   int nx;
 };
 
+void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blkKmats,
+    std::vector<PetscInt>& partX, std::vector<Mat>& Khat1Dmats);
+
 PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out);
 
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);

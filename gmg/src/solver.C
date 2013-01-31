@@ -8,6 +8,44 @@
 #include <cassert>
 #endif
 
+void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blkKmats,
+    std::vector<PetscInt>& partX, std::vector<Mat>& Khat1Dmats) {
+  Khat1Dmats.resize(K, NULL);
+
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+
+  int nx = partX[rank];
+
+  {
+    Khat1Ddata* hatData = new Khat1Ddata; 
+    hatData->K11 = blkKmats[0][0];
+    hatData->K12 = blkKmats[0][1];
+    MatGetVecs(blkKmats[0][0], &(hatData->u), &(hatData->uPrime));
+    MatGetVecs((hatData->K11), PETSC_NULL, &(hatData->tmpOut));
+    hatData->partX = &partX;
+    hatData->numDofs = 1;
+  }
+  for(int i = 1; i < K; ++i) {
+    Kcol1Ddata* colData = new Kcol1Ddata;
+    (colData->Kblk).resize(i + 1);
+    for(int d = 0; d <= i; ++d) {
+      (colData->Kblk)[d] = blkKmats[d][i + 1 - d];
+    }//end d
+    MatGetVecs(blkKmats[0][0], PETSC_NULL, &(colData->tmp));
+    colData->nx = nx;
+    Mat Kcol1Dmat;
+
+    Khat1Ddata* hatData = new Khat1Ddata; 
+    hatData->K11 = Khat1Dmats[i - 1];
+    hatData->K12 = Kcol1Dmat;
+    MatGetVecs(blkKmats[0][0], &(hatData->u), &(hatData->uPrime));
+    MatGetVecs((hatData->K11), PETSC_NULL, &(hatData->tmpOut));
+    hatData->partX = &partX;
+    hatData->numDofs = i + 1;
+  }//end i
+}
+
 PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
   PCFD1Ddata* data;
   PCShellGetContext(pc, (void**)(&data));
