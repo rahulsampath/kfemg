@@ -45,30 +45,22 @@ PetscErrorCode Kcol1Dmult(Mat mat, Vec in, Vec out) {
   Kcol1Ddata* data;
   MatShellGetContext(mat, &data);
 
-  MatMult((data->Kl), in, (data->l));
-  MatMult((data->Kh), in, (data->h));
+  int nx = data->nx;
+  int numDofs = (data->Kblk).size();
 
   double* outArr;
   VecGetArray(out, &outArr);
 
-  double* lArr;
-  VecGetArray((data->l), &lArr);
+  for(int d = 0; d < numDofs; ++d) {
+    MatMult(((data->Kblk)[d]), in, (data->tmp));
+    double* tmpArr;
+    VecGetArray((data->tmp), &tmpArr);
+    for(int i = 0; i < nx; ++i) {
+      outArr[(numDofs * i) + d] = tmpArr[i];
+    }//end i
+    VecRestoreArray((data->tmp), &tmpArr);
+  }//end d
 
-  double* hArr;
-  VecGetArray((data->h), &hArr);
-
-  int nx = data->nx;
-  int numDofs = data->numDofs;
-
-  for(int i = 0; i < nx; ++i) {
-    for(int d = 0; d < (numDofs - 1); ++d) {
-      outArr[(numDofs * i) + d] = lArr[((numDofs - 1) * i) + d];
-    }//end d
-    outArr[(numDofs * i) + (numDofs - 1)] = hArr[i];
-  }//end i
-
-  VecRestoreArray((data->l), &lArr);
-  VecRestoreArray((data->h), &hArr);
   VecRestoreArray(out, &outArr);
 
   return 0;
@@ -281,6 +273,34 @@ void destroyKSP(std::vector<KSP>& ksp) {
     }
   }//end i
   ksp.clear();
+}
+
+void destroyKhat1Dmat(Mat& mat) {
+  Khat1Ddata* data;
+  MatShellGetContext(mat, &data);
+  PetscBool isShell;
+  PetscObjectTypeCompare((data->K11), MATSHELL, &isShell);
+  if(isShell) {
+    destroyKhat1Dmat(data->K11);
+  }
+  PetscObjectTypeCompare((data->K12), MATSHELL, &isShell);
+  if(isShell) {
+    destroyKcol1Dmat(data->K12);
+  }
+  VecDestroy(&(data->u));
+  VecDestroy(&(data->uPrime));
+  VecDestroy(&(data->tmpOut));
+  delete data;
+  MatDestroy(&mat);
+}
+
+void destroyKcol1Dmat(Mat& mat) {
+  Kcol1Ddata* data;
+  MatShellGetContext(mat, &data);
+  (data->Kblk).clear();
+  VecDestroy(&(data->tmp));
+  delete data;
+  MatDestroy(&mat);
 }
 
 
