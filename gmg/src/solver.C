@@ -8,20 +8,11 @@
 #include <cassert>
 #endif
 
-void applyFD1D(DM da, std::vector<PetscInt>& partX, Vec in, Vec out) {
-  PetscInt nx;
-  DMDAGetCorners(da, PETSC_NULL, PETSC_NULL, PETSC_NULL, &nx, PETSC_NULL, PETSC_NULL);
-
-  PetscInt Nx;
-  DMDAGetInfo(da, PETSC_NULL, &Nx, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
-      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
-
-  MPI_Comm comm;
-  PetscObjectGetComm(da, &comm);
-
+void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
   int rank;
   MPI_Comm_rank(comm, &rank);
 
+  int nx = partX[rank];
   int px = partX.size();
 
   double* inArr;
@@ -123,6 +114,43 @@ void applyFD1D(DM da, std::vector<PetscInt>& partX, Vec in, Vec out) {
 
   double* outArr;
   VecGetArray(out, &outArr);
+
+  for(int i = 1; i < (nx - 1); ++i) {
+    outArr[i] = 0.25*(inArr[i + 1] - inArr[i - 1]);
+  }//end i
+
+  if(rank == 0) {
+    if(nx == 1) {
+      outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*right1) + right2);
+    } else if(nx == 2) {
+      outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*inArr[1]) + right1);
+      outArr[1] = 0.25*(right1 - inArr[0]);
+    } else {
+      outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*inArr[1]) + inArr[2]);
+      if(px == 1) {
+        outArr[nx - 1] = 0.25*((3.0*inArr[nx - 1]) - (4.0*inArr[nx - 2]) + inArr[nx - 3]);
+      } else {
+        outArr[nx - 1] = 0.25*(right1 - inArr[nx - 2]);
+      }
+    }
+  } else if(rank == (px - 1)) {
+    if(nx == 1) {
+      outArr[0] = 0.25*((3.0*inArr[0]) - (4.0*left1) + left2);
+    } else if(nx == 2) {
+      outArr[0] = 0.25*(inArr[1] - left1);
+      outArr[1] = 0.25*((3.0*inArr[1]) - (4.0*inArr[0]) + left1);
+    } else {
+      outArr[0] = 0.25*(inArr[1] - left1);
+      outArr[nx - 1] = 0.25*((3.0*inArr[nx - 1]) - (4.0*inArr[nx - 2]) + inArr[nx - 3]);
+    }
+  } else {
+    if(nx == 1) {
+      outArr[0] = 0.25*(right1 - left1);
+    } else {
+      outArr[0] = 0.25*(inArr[1] - left1);
+      outArr[nx - 1] = 0.25*(right1 - inArr[nx - 2]);
+    }
+  }
 
   VecRestoreArray(in, &inArr);
   VecRestoreArray(out, &outArr);
