@@ -8,6 +8,70 @@
 #include <cassert>
 #endif
 
+PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
+  PCFD1Ddata* data;
+  PCShellGetContext(pc, (void**)(&data));
+
+  MPI_Comm comm;
+  PetscObjectGetComm(pc, &comm);
+
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+
+  int nx = (*(data->partX))[rank];
+  int numDofs = data->numDofs;
+
+  double* rhsArr;
+  VecGetArray((data->rhs), &rhsArr);
+
+  double* inArr;
+  VecGetArray(in, &inArr);
+
+  for(int i = 0; i < nx; ++i) {
+    for(int d = 0; d < (numDofs - 1); ++d) {
+      rhsArr[((numDofs - 1) * i) + d] = inArr[(numDofs * i) + d];
+    }//end d
+  }//end i
+
+  VecRestoreArray((data->rhs), &rhsArr);
+  VecRestoreArray(in, &inArr);
+
+  KSPSolve((data->ksp), (data->rhs), (data->sol));
+
+  double* solArr;
+  VecGetArray((data->sol), &solArr);
+
+  double* uArr;
+  VecGetArray((data->u), &uArr);
+
+  double* outArr;
+  VecGetArray(out, &outArr);
+
+  for(int i = 0; i < nx; ++i) {
+    for(int d = 0; d < (numDofs - 1); ++d) {
+      outArr[(numDofs * i) + d] = solArr[((numDofs - 1) * i) + d];
+    }//end d
+    uArr[i] = solArr[((numDofs - 1) * i) + (numDofs - 2)];
+  }//end i
+
+  VecRestoreArray((data->sol), &solArr);
+  VecRestoreArray((data->u), &uArr);
+
+  applyFD1D(comm, *(data->partX), (data->u), (data->uPrime));
+
+  double* uPrimeArr;
+  VecGetArray((data->uPrime), &uPrimeArr);
+
+  for(int i = 0; i < nx; ++i) {
+    outArr[(numDofs * i) + (numDofs - 1)] = uPrimeArr[i];
+  }//end i
+
+  VecRestoreArray((data->uPrime), &uPrimeArr);
+  VecRestoreArray(out, &outArr);
+
+  return 0;
+}
+
 PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out) {
   Khat1Ddata* data;
   MatShellGetContext(mat, &data);
@@ -15,6 +79,7 @@ PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out) {
   MPI_Comm comm;
   PetscObjectGetComm(mat, &comm);
 
+  int rank;
   MPI_Comm_rank(comm, &rank);
 
   int nx = (*(data->partX))[rank];
@@ -301,6 +366,14 @@ void destroyKcol1Dmat(Mat& mat) {
   VecDestroy(&(data->tmp));
   delete data;
   MatDestroy(&mat);
+}
+
+void destroyPCFD1Ddata(PCFD1Ddata* data) {
+  VecDestroy(&(data->rhs));
+  VecDestroy(&(data->sol));
+  VecDestroy(&(data->u));
+  VecDestroy(&(data->uPrime));
+  delete data;
 }
 
 
