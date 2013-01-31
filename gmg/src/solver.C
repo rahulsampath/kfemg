@@ -25,6 +25,9 @@ void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
     MatGetVecs((hatData->K11), PETSC_NULL, &(hatData->tmpOut));
     hatData->partX = &partX;
     hatData->numDofs = 1;
+    MatCreateShell(comm, nx, nx, PETSC_DETERMINE, PETSC_DETERMINE, 
+        hatData, &(Khat1Dmats[0]));
+    MatShellSetOperation(Khat1Dmats[0], MATOP_MULT, &Khat1Dmult);
   }
   for(int i = 1; i < K; ++i) {
     Kcol1Ddata* colData = new Kcol1Ddata;
@@ -35,6 +38,9 @@ void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
     MatGetVecs(blkKmats[0][0], PETSC_NULL, &(colData->tmp));
     colData->nx = nx;
     Mat Kcol1Dmat;
+    MatCreateShell(comm, (nx*(i + 1)), nx, PETSC_DETERMINE,
+        PETSC_DETERMINE, colData, &Kcol1Dmat);
+    MatShellSetOperation(Kcol1Dmat, MATOP_MULT, &Kcol1Dmult);
 
     Khat1Ddata* hatData = new Khat1Ddata; 
     hatData->K11 = Khat1Dmats[i - 1];
@@ -43,6 +49,9 @@ void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
     MatGetVecs((hatData->K11), PETSC_NULL, &(hatData->tmpOut));
     hatData->partX = &partX;
     hatData->numDofs = i + 1;
+    MatCreateShell(comm, (nx*(i + 1)), (nx*(i + 1)), PETSC_DETERMINE,
+        PETSC_DETERMINE, hatData, &(Khat1Dmats[i]));
+    MatShellSetOperation(Khat1Dmats[i], MATOP_MULT, &Khat1Dmult);
   }//end i
 }
 
