@@ -35,10 +35,12 @@ struct Khat1Ddata {
 };
 
 struct Kcol1Ddata {
-  Mat Ku;
   Mat Kl;
-  Vec u;
+  Mat Kh;
   Vec l;
+  Vec h;
+  int nx;
+  int numDofs;
 };
 
 /*
