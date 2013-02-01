@@ -69,6 +69,8 @@ struct Kcol1Ddata {
   int nx;
 };
 
+void createAll1DhatPc(std::vector<std::vector<Mat> >& Khat1Dmats, std::vector<std::vector<PC> >& hatPc);
+
 void createAll1DmatShells(int K, std::vector<MPI_Comm>& activeComms, 
     std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<Mat> >& Khat1Dmats);

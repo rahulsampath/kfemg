@@ -8,6 +8,41 @@
 #include <cassert>
 #endif
 
+void createAll1DhatPc(std::vector<std::vector<Mat> >& Khat1Dmats, std::vector<std::vector<PC> >& hatPc) {
+  hatPc.resize(Khat1Dmats.size());
+  for(int i = 0; i < (Khat1Dmats.size()); ++i) {
+    hatPc[i].resize(Khat1Dmats[i].size());
+    for(int j = 0; j < (Khat1Dmats[i].size()); ++j) {
+      MPI_Comm comm;
+      PetscObjectGetComm((PetscObject)(Khat1Dmats[i][j]), &comm);
+      PCCreate(comm, &(hatPc[i][j]));
+      PCSetType(hatPc[i][j], PCSHELL);
+      PCFD1Ddata* data = new PCFD1Ddata; 
+      PCShellSetContext(hatPc[i][j], data);
+      PCShellSetName(hatPc[i][j], "MyPCFD");
+      PCShellSetApply(hatPc[i][j], &applyPCFD1D);
+      KSP ksp;
+      KSPCreate(comm, &ksp);
+      KSPSetType(ksp, KSPFGMRES);
+      KSPSetPCSide(ksp, PC_RIGHT);
+      KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+      KSPSetOperators(ksp, Khat1Dmats[i][j], Khat1Dmats[i][j], SAME_PRECONDITIONER);
+      KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      if(j == 0) {
+        PC pc;
+        KSPGetPC(ksp, &pc);
+        PCSetType(pc, PCNONE);
+        KSPSetOptionsPrefix(ksp, "hat0_");
+      } else {
+        KSPSetPC(ksp, hatPc[i][j - 1]);
+        KSPSetOptionsPrefix(ksp, "hat1_");
+      }
+      KSPSetFromOptions(ksp);
+      data->ksp = ksp;
+    }//end j
+  }//end i
+}
+
 void createAll1DmatShells(int K, std::vector<MPI_Comm>& activeComms, 
     std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<Mat> >& Khat1Dmats) {
@@ -22,13 +57,12 @@ void createAll1DmatShells(int K, std::vector<MPI_Comm>& activeComms,
 
 void create1DmatShells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blkKmats,
     std::vector<PetscInt>& partX, std::vector<Mat>& Khat1Dmats) {
-  Khat1Dmats.resize(K, NULL);
-
   int rank;
   MPI_Comm_rank(comm, &rank);
 
   int nx = partX[rank];
 
+  Khat1Dmats.resize(K, NULL);
   {
     Khat1Ddata* hatData = new Khat1Ddata; 
     hatData->K11 = blkKmats[0][0];
