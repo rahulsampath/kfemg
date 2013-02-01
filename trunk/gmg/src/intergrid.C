@@ -35,7 +35,8 @@ void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
 
 void buildPmat(int dim, PetscInt dofsPerNode, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes) {
-  Pmat.resize((da.size() - 1), NULL);
+  int nlevels = da.size();
+  Pmat.resize((nlevels - 1), NULL);
   tmpCvec.resize(Pmat.size(), NULL);
   for(int lev = 0; lev < (Pmat.size()); ++lev) {
     if(da[lev + 1] != NULL) {

@@ -8,7 +8,19 @@
 #include <cassert>
 #endif
 
-void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blkKmats,
+void createAll1DmatShells(int K, std::vector<MPI_Comm>& activeComms, 
+    std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<std::vector<PetscInt> >& partX,
+    std::vector<std::vector<Mat> >& Khat1Dmats) {
+  int nlevels = activeComms.size();
+  Khat1Dmats.resize(nlevels - 1);
+  for(int lev = 1; lev < nlevels; ++lev) {
+    if(activeComms[lev] != MPI_COMM_NULL) {
+      create1DmatShells(activeComms[lev], K, blkKmats[lev - 1], partX[lev], Khat1Dmats[lev - 1]); 
+    }
+  }//end lev
+}
+
+void create1DmatShells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blkKmats,
     std::vector<PetscInt>& partX, std::vector<Mat>& Khat1Dmats) {
   Khat1Dmats.resize(K, NULL);
 
@@ -27,7 +39,7 @@ void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
     hatData->numDofs = 1;
     MatCreateShell(comm, nx, nx, PETSC_DETERMINE, PETSC_DETERMINE, 
         hatData, &(Khat1Dmats[0]));
-    MatShellSetOperation(Khat1Dmats[0], MATOP_MULT, &Khat1Dmult);
+    MatShellSetOperation(Khat1Dmats[0], MATOP_MULT, (void(*)(void))(&Khat1Dmult));
   }
   for(int i = 1; i < K; ++i) {
     Kcol1Ddata* colData = new Kcol1Ddata;
@@ -40,7 +52,7 @@ void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
     Mat Kcol1Dmat;
     MatCreateShell(comm, (nx*(i + 1)), nx, PETSC_DETERMINE,
         PETSC_DETERMINE, colData, &Kcol1Dmat);
-    MatShellSetOperation(Kcol1Dmat, MATOP_MULT, &Kcol1Dmult);
+    MatShellSetOperation(Kcol1Dmat, MATOP_MULT, (void(*)(void))(&Kcol1Dmult));
 
     Khat1Ddata* hatData = new Khat1Ddata; 
     hatData->K11 = Khat1Dmats[i - 1];
@@ -51,7 +63,7 @@ void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
     hatData->numDofs = i + 1;
     MatCreateShell(comm, (nx*(i + 1)), (nx*(i + 1)), PETSC_DETERMINE,
         PETSC_DETERMINE, hatData, &(Khat1Dmats[i]));
-    MatShellSetOperation(Khat1Dmats[i], MATOP_MULT, &Khat1Dmult);
+    MatShellSetOperation(Khat1Dmats[i], MATOP_MULT, (void(*)(void))(&Khat1Dmult));
   }//end i
 }
 
@@ -60,7 +72,7 @@ PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
   PCShellGetContext(pc, (void**)(&data));
 
   MPI_Comm comm;
-  PetscObjectGetComm(pc, &comm);
+  PetscObjectGetComm((PetscObject)pc, &comm);
 
   int rank;
   MPI_Comm_rank(comm, &rank);
@@ -124,7 +136,7 @@ PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out) {
   MatShellGetContext(mat, &data);
 
   MPI_Comm comm;
-  PetscObjectGetComm(mat, &comm);
+  PetscObjectGetComm((PetscObject)mat, &comm);
 
   int rank;
   MPI_Comm_rank(comm, &rank);
@@ -134,16 +146,13 @@ PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out) {
 
   double* uArr;
   VecGetArray((data->u), &uArr);
-
   double* inArr;
-  VecGetArray((data->in), &inArr);
-
+  VecGetArray(in, &inArr);
   for(int i = 0; i < nx; ++i) {
     uArr[i] = inArr[(numDofs * i) + (numDofs - 1)];
   }//end i
-
   VecRestoreArray((data->u), &uArr);
-  VecRestoreArray((data->in), &inArr);
+  VecRestoreArray(in, &inArr);
 
   applyFD1D(comm, *(data->partX), (data->u), (data->uPrime));
   MatMult((data->K12), (data->uPrime), (data->tmpOut));
@@ -387,32 +396,25 @@ void destroyKSP(std::vector<KSP>& ksp) {
   ksp.clear();
 }
 
-void destroyKhat1Dmat(Mat& mat) {
-  Khat1Ddata* data;
-  MatShellGetContext(mat, &data);
+void destroyKhat1Ddata(Khat1Ddata* data) {
   PetscBool isShell;
-  PetscObjectTypeCompare((data->K11), MATSHELL, &isShell);
+  PetscObjectTypeCompare((PetscObject)(data->K12), MATSHELL, &isShell);
   if(isShell) {
-    destroyKhat1Dmat(data->K11);
-  }
-  PetscObjectTypeCompare((data->K12), MATSHELL, &isShell);
-  if(isShell) {
-    destroyKcol1Dmat(data->K12);
+    Kcol1Ddata* colData;
+    MatShellGetContext((data->K12), &colData);
+    destroyKcol1Ddata(colData);
+    MatDestroy(&(data->K12));
   }
   VecDestroy(&(data->u));
   VecDestroy(&(data->uPrime));
   VecDestroy(&(data->tmpOut));
   delete data;
-  MatDestroy(&mat);
 }
 
-void destroyKcol1Dmat(Mat& mat) {
-  Kcol1Ddata* data;
-  MatShellGetContext(mat, &data);
+void destroyKcol1Ddata(Kcol1Ddata* data) {
   (data->Kblk).clear();
   VecDestroy(&(data->tmp));
   delete data;
-  MatDestroy(&mat);
 }
 
 void destroyPCFD1Ddata(PCFD1Ddata* data) {
