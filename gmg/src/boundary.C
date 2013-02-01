@@ -7,24 +7,28 @@
 #endif
 
 void correctBlkKmats(int dim, std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<DM>& da,
-    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, 
-    std::vector<std::vector<PetscInt> >& offsets, int K) {
-  for(int lev = 0; lev < (da.size()); ++lev) {
+    std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
+    std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets, int K) {
+  int nlevels = da.size();
+  for(int lev = 1; lev < nlevels; ++lev) {
     if(da[lev] != NULL) {
       if(dim == 1) {
-        blkDirichletMatCorrection1D(blkKmats[lev], da[lev], offsets[lev], K);
+        blkDirichletMatCorrection1D(blkKmats[lev - 1], da[lev], partX[lev], offsets[lev], K);
       } else if(dim == 2) {
-        blkDirichletMatCorrection2D(blkKmats[lev], da[lev], partX[lev], offsets[lev], K);
+        blkDirichletMatCorrection2D(blkKmats[lev - 1], da[lev], partY[lev], 
+            partX[lev], offsets[lev], K);
       } else {
-        blkDirichletMatCorrection3D(blkKmats[lev], da[lev], partY[lev], partX[lev], offsets[lev], K);
+        blkDirichletMatCorrection3D(blkKmats[lev - 1], da[lev], partZ[lev],
+            partY[lev], partX[lev], offsets[lev], K);
       }
     }
   }//end lev
 }
 
 void correctKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, int K) {
-  for(int lev = 0; lev < (Kmat.size()); ++lev) {
-    if(Kmat[lev] != NULL) {
+  int nlevels = da.size();
+  for(int lev = 0; lev < nlevels; ++lev) {
+    if(da[lev] != NULL) {
       dirichletMatrixCorrection(Kmat[lev], da[lev], K);
     }
   }//end lev
@@ -704,8 +708,8 @@ void dirichletMatrixCorrection(Mat Kmat, DM da, const int K) {
   MatAssemblyEnd(Kmat, MAT_FINAL_ASSEMBLY);
 }
 
-void blkDirichletMatCorrection3D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partY,
-    std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, int K) {
+void blkDirichletMatCorrection3D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partZ,
+    std::vector<PetscInt>& partY, std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, int K) {
   PetscInt dofsPerNode;
   PetscInt Nx;
   PetscInt Ny;
@@ -1241,8 +1245,8 @@ void blkDirichletMatCorrection3D(std::vector<std::vector<Mat> >& blkKmat, DM da,
   }//end i
 }
 
-void blkDirichletMatCorrection2D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partX,
-    std::vector<PetscInt>& offsets, int K) {
+void blkDirichletMatCorrection2D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partY,
+    std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, int K) {
   PetscInt dofsPerNode;
   PetscInt Nx;
   PetscInt Ny;
@@ -1524,7 +1528,7 @@ void blkDirichletMatCorrection2D(std::vector<std::vector<Mat> >& blkKmat, DM da,
 }
 
 void blkDirichletMatCorrection1D(std::vector<std::vector<Mat> >& blkKmat, DM da,
-    std::vector<PetscInt>& offsets, int K) {
+    std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, int K) {
   PetscInt dofsPerNode;
   PetscInt Nx;
   DMDAGetInfo(da, PETSC_NULL, &Nx, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,

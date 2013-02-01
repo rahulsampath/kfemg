@@ -112,6 +112,13 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
 
+  std::vector<std::vector<Mat> > KhatMats;
+  if(dim == 1) {
+    createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
+  } else {
+    assert(false);
+  }
+
   //Matrix Assembly
   assembleBlkKmats(blkKmats, dim, dofsPerNode, Nz, Ny, Nx, partY, partX,
       offsets, da, K, coeffs, factorialsList);
@@ -145,7 +152,7 @@ int main(int argc, char *argv[]) {
 
   correctKmat(Kmat, da, K);
 
-  correctBlkKmats(dim, blkKmats, da, partY, partX, offsets, K);
+  correctBlkKmats(dim, blkKmats, da, partZ, partY, partX, offsets, K);
 
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 
@@ -266,9 +273,18 @@ int main(int argc, char *argv[]) {
   destroyMat(Kmat);
   destroyDA(da); 
 
-  for(int i = 0; i < blkKmats.size(); ++i) {
-    for(int j = 0; j < blkKmats[i].size(); ++j) {
+  for(size_t i = 0; i < blkKmats.size(); ++i) {
+    for(size_t j = 0; j < blkKmats[i].size(); ++j) {
       destroyMat(blkKmats[i][j]);
+    }//end j
+  }//end i
+
+  for(size_t i = 0; i < KhatMats.size(); ++i) {
+    for(size_t j = 0; j < KhatMats[i].size(); ++j) {
+      Khat1Ddata* hatData;
+      MatShellGetContext(KhatMats[i][j], &hatData);
+      destroyKhat1Ddata(hatData);
+      MatDestroy(&(KhatMats[i][j]));
     }//end j
   }//end i
 

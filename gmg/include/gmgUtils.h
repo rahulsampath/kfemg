@@ -69,7 +69,11 @@ struct Kcol1Ddata {
   int nx;
 };
 
-void create1Dmatshells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blkKmats,
+void createAll1DmatShells(int K, std::vector<MPI_Comm>& activeComms, 
+    std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<std::vector<PetscInt> >& partX,
+    std::vector<std::vector<Mat> >& Khat1Dmats);
+
+void create1DmatShells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blkKmats,
     std::vector<PetscInt>& partX, std::vector<Mat>& Khat1Dmats);
 
 PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out);
@@ -140,17 +144,17 @@ void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, in
     std::vector<long long int>& coeffs, std::vector<unsigned long long int>& factorialsList);
 
 void correctBlkKmats(int dim, std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<DM>& da,
-    std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX, 
-    std::vector<std::vector<PetscInt> >& offsets, int K);
+    std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY,
+    std::vector<std::vector<PetscInt> >& partX, std::vector<std::vector<PetscInt> >& offsets, int K);
 
 void blkDirichletMatCorrection1D(std::vector<std::vector<Mat> >& blkKmat, DM da,
-    std::vector<PetscInt>& offsets, int K);
-
-void blkDirichletMatCorrection2D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partX,
-    std::vector<PetscInt>& offsets, int K);
-
-void blkDirichletMatCorrection3D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partY,
     std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, int K);
+
+void blkDirichletMatCorrection2D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partY,
+    std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, int K);
+
+void blkDirichletMatCorrection3D(std::vector<std::vector<Mat> >& blkKmat, DM da, std::vector<PetscInt>& partZ,
+    std::vector<PetscInt>& partY, std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, int K);
 
 void computeBlkKmat1D(Mat blkKmat, DM da, std::vector<PetscInt>& offsets,
     std::vector<std::vector<long double> >& elemMat, int rDof, int cDof);
@@ -227,9 +231,9 @@ void destroyVec(std::vector<Vec>& vec);
 
 void destroyKSP(std::vector<KSP>& ksp);
 
-void destroyKhat1Dmat(Mat& mat);
+void destroyKhat1Ddata(Khat1Ddata* data);
 
-void destroyKcol1Dmat(Mat& mat);
+void destroyKcol1Ddata(Kcol1Ddata* data);
 
 void destroyPCFD1Ddata(PCFD1Ddata* data); 
 

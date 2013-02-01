@@ -10,7 +10,8 @@
 void assembleKmat(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny, std::vector<PetscInt>& Nx,
     std::vector<Mat>& Kmat, std::vector<DM>& da, int K, std::vector<long long int>& coeffs, 
     std::vector<unsigned long long int>& factorialsList, bool print) {
-  for(int lev = 0; lev < (Kmat.size()); ++lev, print = false) {
+  int nlevels = Kmat.size();
+  for(int lev = 0; lev < nlevels; ++lev, print = false) {
     if(Kmat[lev] != NULL) {
       std::vector<std::vector<long double> > elemMat;
       if(dim == 1) {
@@ -36,7 +37,8 @@ void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, in
     std::vector<std::vector<PetscInt> >& partY, std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<PetscInt> >& offsets, std::vector<DM>& da, int K, 
     std::vector<long long int>& coeffs, std::vector<unsigned long long int>& factorialsList) {
-  for(int lev = 0; lev < (da.size()); ++lev) {
+  int nlevels = da.size();
+  for(int lev = 1; lev < nlevels; ++lev) {
     if(da[lev] != NULL) {
       std::vector<std::vector<long double> > elemMat;
       if(dim == 1) {
@@ -44,7 +46,7 @@ void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, in
         createPoisson1DelementMatrix(factorialsList, K, coeffs, hx, elemMat, false);
         for(int rDof = 0; rDof < dofsPerNode; ++rDof) {
           for(int cDof = rDof; cDof < dofsPerNode; ++cDof) {
-            computeBlkKmat1D(blkKmats[lev][rDof][cDof - rDof], da[lev], offsets[lev], elemMat, rDof, cDof);
+            computeBlkKmat1D(blkKmats[lev - 1][rDof][cDof - rDof], da[lev], offsets[lev], elemMat, rDof, cDof);
           }//end cDof
         }//end rDof
       } else if(dim == 2) {
@@ -53,7 +55,7 @@ void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, in
         createPoisson2DelementMatrix(factorialsList, K, coeffs, hy, hx, elemMat, false);
         for(int rDof = 0; rDof < dofsPerNode; ++rDof) {
           for(int cDof = rDof; cDof < dofsPerNode; ++cDof) {
-            computeBlkKmat2D(blkKmats[lev][rDof][cDof - rDof], da[lev], partX[lev], offsets[lev],
+            computeBlkKmat2D(blkKmats[lev - 1][rDof][cDof - rDof], da[lev], partX[lev], offsets[lev],
                 elemMat, rDof, cDof);
           }//end cDof
         }//end rDof
@@ -64,7 +66,7 @@ void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, in
         createPoisson3DelementMatrix(factorialsList, K, coeffs, hz, hy, hx, elemMat, false);
         for(int rDof = 0; rDof < dofsPerNode; ++rDof) {
           for(int cDof = rDof; cDof < dofsPerNode; ++cDof) {
-            computeBlkKmat3D(blkKmats[lev][rDof][cDof - rDof], da[lev], partY[lev], partX[lev], 
+            computeBlkKmat3D(blkKmats[lev - 1][rDof][cDof - rDof], da[lev], partY[lev], partX[lev], 
                 offsets[lev], elemMat, rDof, cDof);
           }//end cDof
         }//end rDof
@@ -74,9 +76,9 @@ void assembleBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, in
 }
 
 void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, bool print) {
-  Kmat.clear();
-  Kmat.resize(da.size(), NULL);
-  for(int lev = 0; lev < (da.size()); ++lev) {
+  int nlevels = da.size();
+  Kmat.resize(nlevels, NULL);
+  for(int lev = 0; lev < nlevels; ++lev) {
     if(da[lev] != NULL) {
       DMCreateMatrix(da[lev], MATAIJ, &(Kmat[lev]));
       PetscInt sz;
@@ -90,19 +92,19 @@ void buildKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, bool print) {
 
 void buildBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<DM>& da,
     std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes) {
-  blkKmats.clear();
-  blkKmats.resize(da.size());
-  for(int lev = 0; lev < (da.size()); ++lev) {
+  int nlevels = da.size();
+  blkKmats.resize(nlevels - 1);
+  for(int lev = 1; lev < nlevels; ++lev) {
     if(da[lev] != NULL) {
       PetscInt xs, ys, zs;
       PetscInt nx, ny, nz;
-      DMDAGetCorners(da[i], &xs, &ys, &zs, &nx, &ny, &nz);
+      DMDAGetCorners(da[lev], &xs, &ys, &zs, &nx, &ny, &nz);
       PetscInt dim;
       PetscInt dofsPerNode;
       PetscInt Nx;
       PetscInt Ny;
       PetscInt Nz;
-      DMDAGetInfo(da[i], &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      DMDAGetInfo(da[lev], &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
           &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
       if(dim < 2) {
         Ny = 1;
@@ -117,7 +119,7 @@ void buildBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::
       PetscInt locSz = (nx*ny*nz);
       PetscInt* d_nnz = new PetscInt[locSz];
       PetscInt* o_nnz = NULL;
-      if(activeNpes[i] > 1) {
+      if(activeNpes[lev] > 1) {
         o_nnz = new PetscInt[locSz];
       }
       for(PetscInt zi = zs, cnt = 0; zi < (zs + nz); ++zi) {
@@ -152,22 +154,22 @@ void buildBlkKmats(std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::
           }//end xi
         }//end yi
       }//end zi
-      blkKmats[lev].resize(dofsPerNode);
+      blkKmats[lev - 1].resize(dofsPerNode);
       for(int di = 0; di < dofsPerNode; ++di) {
-        blkKmats[lev][di].resize((dofsPerNode - di), NULL);
+        blkKmats[lev - 1][di].resize((dofsPerNode - di), NULL);
         for(int dj = 0; dj < (dofsPerNode - di); ++dj) {
-          MatCreate(activeComms[lev], &(blkKmats[lev][di][dj]));
-          MatSetSizes(blkKmats[lev][di][dj], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
-          MatSetType(blkKmats[lev][di][dj], MATAIJ);
-          if(activeNpes[i] > 1) {
-            MatMPIAIJSetPreallocation(blkKmats[lev][di][dj], -1, d_nnz, -1, o_nnz);
+          MatCreate(activeComms[lev], &(blkKmats[lev - 1][di][dj]));
+          MatSetSizes(blkKmats[lev - 1][di][dj], locSz, locSz, PETSC_DETERMINE, PETSC_DETERMINE);
+          MatSetType(blkKmats[lev - 1][di][dj], MATAIJ);
+          if(activeNpes[lev] > 1) {
+            MatMPIAIJSetPreallocation(blkKmats[lev - 1][di][dj], -1, d_nnz, -1, o_nnz);
           } else {
-            MatSeqAIJSetPreallocation(blkKmats[lev][di][dj], -1, d_nnz);
+            MatSeqAIJSetPreallocation(blkKmats[lev - 1][di][dj], -1, d_nnz);
           }
         }//end dj
       }//end di
       delete [] d_nnz;
-      if(activeNpes[i] > 1) {
+      if(activeNpes[lev] > 1) {
         delete [] o_nnz;
       }
     }
@@ -421,7 +423,7 @@ void computeBlkKmat2D(Mat blkKmat, DM da, std::vector<PetscInt>& partX, std::vec
   MatAssemblyEnd(blkKmat, MAT_FINAL_ASSEMBLY);
 }
 
-void computeBlkKmat3D(Mat blkKmat, DM da, std::vector<PetscInt>& partY,i
+void computeBlkKmat3D(Mat blkKmat, DM da, std::vector<PetscInt>& partY,
     std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, 
     std::vector<std::vector<long double> >& elemMat, int rDof, int cDof) {
   PetscInt dofsPerNode;
