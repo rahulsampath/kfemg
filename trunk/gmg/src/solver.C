@@ -8,7 +8,9 @@
 #include <cassert>
 #endif
 
-void createAll1DhatPc(std::vector<std::vector<Mat> >& Khat1Dmats, std::vector<std::vector<PC> >& hatPc) {
+void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
+    std::vector<std::vector<std::vector<Mat> > >& blkKmats,
+    std::vector<std::vector<Mat> >& Khat1Dmats, std::vector<std::vector<PC> >& hatPc) {
   hatPc.resize(Khat1Dmats.size());
   for(int i = 0; i < (Khat1Dmats.size()); ++i) {
     hatPc[i].resize(Khat1Dmats[i].size());
@@ -39,6 +41,10 @@ void createAll1DhatPc(std::vector<std::vector<Mat> >& Khat1Dmats, std::vector<st
       }
       KSPSetFromOptions(ksp);
       data->ksp = ksp;
+      data->partX = &(partX[i + 1]);
+      data->numDofs = j + 2;
+      MatGetVecs(Khat1Dmats[i][j], &(data->sol), &(data->rhs));
+      MatGetVecs(blkKmats[i][0][0], &(data->u), &(data->uPrime));
     }//end j
   }//end i
 }
@@ -452,6 +458,7 @@ void destroyKcol1Ddata(Kcol1Ddata* data) {
 }
 
 void destroyPCFD1Ddata(PCFD1Ddata* data) {
+  KSPDestroy(&(data->ksp));
   VecDestroy(&(data->rhs));
   VecDestroy(&(data->sol));
   VecDestroy(&(data->u));
