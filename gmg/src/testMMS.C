@@ -158,10 +158,8 @@ int main(int argc, char *argv[]) {
 
   PetscLogEventBegin(solverSetupEvent, 0, 0, 0, 0);
 
-  std::vector<Vec> mgSol;
-  std::vector<Vec> mgRhs;
-  std::vector<Vec> mgRes;
-  buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
+  std::vector<std::vector<PC> > hatPc;
+  createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
 
   KSP coarseSolver = NULL;
   if(rank < activeNpes[0]) {
@@ -197,6 +195,11 @@ int main(int argc, char *argv[]) {
       KSPSetFromOptions(smoother[lev]);
     }
   }//end lev
+
+  std::vector<Vec> mgSol;
+  std::vector<Vec> mgRhs;
+  std::vector<Vec> mgRes;
+  buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
 
   MGdata data;
   PetscInt numVcycles = 1;
