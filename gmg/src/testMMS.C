@@ -182,12 +182,13 @@ int main(int argc, char *argv[]) {
   std::vector<KSP> smoother(Pmat.size(), NULL);
   for(int lev = 0; lev < (smoother.size()); ++lev) {
     if(rank < activeNpes[lev + 1]) {
-      PC smoothPC;
+      //PC smoothPC;
       KSPCreate(activeComms[lev + 1], &(smoother[lev]));
       KSPSetType(smoother[lev], KSPFGMRES);
       KSPSetPCSide(smoother[lev], PC_RIGHT);
-      KSPGetPC(smoother[lev], &smoothPC);
-      PCSetType(smoothPC, PCNONE);
+      KSPSetPC(smoother[lev], *(hatPc[lev].end() - 1));
+      //KSPGetPC(smoother[lev], &smoothPC);
+      //PCSetType(smoothPC, PCNONE);
       KSPSetInitialGuessNonzero(smoother[lev], PETSC_TRUE);
       KSPSetOperators(smoother[lev], Kmat[lev + 1], Kmat[lev + 1], SAME_PRECONDITIONER);
       KSPSetTolerances(smoother[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
@@ -261,6 +262,16 @@ int main(int argc, char *argv[]) {
 
   VecDestroy(&rhs);
   VecDestroy(&sol);
+
+  for(size_t i = 0; i < hatPc.size(); ++i) {
+    for(size_t j = 0; j < (hatPc[i].size()); ++j) {
+      PCFD1Ddata* data;
+      PCShellGetContext(hatPc[i][j], (void**)(&data));
+      destroyPCFD1Ddata(data);
+      PCDestroy(&(hatPc[i][j]));
+    }//end j
+  }//end i
+  hatPc.clear();
 
   KSPDestroy(&ksp);
   if(coarseSolver != NULL) {
