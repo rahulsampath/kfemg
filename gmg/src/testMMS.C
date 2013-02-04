@@ -107,21 +107,27 @@ int main(int argc, char *argv[]) {
 
   //Build Kmat
   std::vector<std::vector<std::vector<Mat> > > blkKmats;
-  buildBlkKmats(blkKmats, da, activeComms, activeNpes);
+  if(K > 0) {
+    buildBlkKmats(blkKmats, da, activeComms, activeNpes);
+  }
 
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
 
   std::vector<std::vector<Mat> > KhatMats;
-  if(dim == 1) {
-    createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
-  } else {
-    assert(false);
+  if(K > 0) {
+    if(dim == 1) {
+      createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
+    } else {
+      assert(false);
+    }
   }
 
   //Matrix Assembly
-  assembleBlkKmats(blkKmats, dim, dofsPerNode, Nz, Ny, Nx, partY, partX,
-      offsets, da, K, coeffs, factorialsList);
+  if(K > 0) {
+    assembleBlkKmats(blkKmats, dim, dofsPerNode, Nz, Ny, Nx, partY, partX,
+        offsets, da, K, coeffs, factorialsList);
+  }
 
   assembleKmat(dim, Nz, Ny, Nx, Kmat, da, K, coeffs, factorialsList, print);
 
@@ -152,14 +158,39 @@ int main(int argc, char *argv[]) {
 
   correctKmat(Kmat, da, K);
 
-  correctBlkKmats(dim, blkKmats, da, partZ, partY, partX, offsets, K);
+  if(K > 0) {
+    correctBlkKmats(dim, blkKmats, da, partZ, partY, partX, offsets, K);
+  }
 
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 
   PetscLogEventBegin(solverSetupEvent, 0, 0, 0, 0);
 
   std::vector<std::vector<PC> > hatPc;
-  createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
+  if(K > 0) {
+    createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
+  }
+
+  std::vector<KSP> smoother(Pmat.size(), NULL);
+  for(int lev = 0; lev < (smoother.size()); ++lev) {
+    if(rank < activeNpes[lev + 1]) {
+      PC smoothPC;
+      KSPCreate(activeComms[lev + 1], &(smoother[lev]));
+      KSPSetType(smoother[lev], KSPFGMRES);
+      KSPSetPCSide(smoother[lev], PC_RIGHT);
+      if(K > 0) {
+        KSPSetPC(smoother[lev], hatPc[lev][K - 1]);
+      } else {
+        KSPGetPC(smoother[lev], &smoothPC);
+        PCSetType(smoothPC, PCNONE);
+      }
+      KSPSetInitialGuessNonzero(smoother[lev], PETSC_TRUE);
+      KSPSetOperators(smoother[lev], Kmat[lev + 1], Kmat[lev + 1], SAME_PRECONDITIONER);
+      KSPSetTolerances(smoother[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+      KSPSetOptionsPrefix(smoother[lev], "smooth_");
+      KSPSetFromOptions(smoother[lev]);
+    }
+  }//end lev
 
   KSP coarseSolver = NULL;
   if(rank < activeNpes[0]) {
@@ -178,24 +209,6 @@ int main(int argc, char *argv[]) {
     KSPSetOptionsPrefix(coarseSolver, "coarse_");
     KSPSetFromOptions(coarseSolver);
   }
-
-  std::vector<KSP> smoother(Pmat.size(), NULL);
-  for(int lev = 0; lev < (smoother.size()); ++lev) {
-    if(rank < activeNpes[lev + 1]) {
-      //PC smoothPC;
-      KSPCreate(activeComms[lev + 1], &(smoother[lev]));
-      KSPSetType(smoother[lev], KSPFGMRES);
-      KSPSetPCSide(smoother[lev], PC_RIGHT);
-      KSPSetPC(smoother[lev], *(hatPc[lev].end() - 1));
-      //KSPGetPC(smoother[lev], &smoothPC);
-      //PCSetType(smoothPC, PCNONE);
-      KSPSetInitialGuessNonzero(smoother[lev], PETSC_TRUE);
-      KSPSetOperators(smoother[lev], Kmat[lev + 1], Kmat[lev + 1], SAME_PRECONDITIONER);
-      KSPSetTolerances(smoother[lev], 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
-      KSPSetOptionsPrefix(smoother[lev], "smooth_");
-      KSPSetFromOptions(smoother[lev]);
-    }
-  }//end lev
 
   std::vector<Vec> mgSol;
   std::vector<Vec> mgRhs;
