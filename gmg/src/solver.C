@@ -27,9 +27,6 @@ void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
       KSPCreate(comm, &ksp);
       KSPSetType(ksp, KSPFGMRES);
       KSPSetPCSide(ksp, PC_RIGHT);
-      KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
-      KSPSetOperators(ksp, Khat1Dmats[i][j], Khat1Dmats[i][j], SAME_PRECONDITIONER);
-      KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
       if(j == 0) {
         PC pc;
         KSPGetPC(ksp, &pc);
@@ -39,6 +36,9 @@ void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
         KSPSetPC(ksp, hatPc[i][j - 1]);
         KSPSetOptionsPrefix(ksp, "hat1_");
       }
+      KSPSetOperators(ksp, Khat1Dmats[i][j], Khat1Dmats[i][j], SAME_PRECONDITIONER);
+      KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+      KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
       KSPSetFromOptions(ksp);
       data->ksp = ksp;
       data->partX = &(partX[i + 1]);

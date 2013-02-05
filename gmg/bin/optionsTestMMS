@@ -1,16 +1,18 @@
 -dim 1
--K 1
+-K 2
 
 -extraGptsError 0
 -extraGptsRHS 0
 
--finestNx 5
+-finestNx 9
 -finestNy 5
 -finestNz 5
 -maxNumLevels 100
 -maxCoarseNpes 100
 
--outer_ksp_max_it 100
+-outer_ksp_max_it 1
+-hat1_ksp_max_it 1
+-hat0_ksp_max_it 1
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 
