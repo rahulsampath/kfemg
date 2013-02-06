@@ -114,6 +114,7 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
 
+  /*
   std::vector<std::vector<Mat> > KhatMats;
   if(K > 0) {
     if(dim == 1) {
@@ -122,6 +123,7 @@ int main(int argc, char *argv[]) {
       assert(false);
     }
   }
+  */
 
   //Matrix Assembly
   if(K > 0) {
@@ -166,10 +168,12 @@ int main(int argc, char *argv[]) {
 
   PetscLogEventBegin(solverSetupEvent, 0, 0, 0, 0);
 
-  std::vector<std::vector<PC> > hatPc;
-  if(K > 0) {
-    createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
-  }
+  /*
+     std::vector<std::vector<PC> > hatPc;
+     if(K > 0) {
+     createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
+     }
+     */
 
   std::vector<KSP> smoother(Pmat.size(), NULL);
   for(int lev = 0; lev < (smoother.size()); ++lev) {
@@ -178,7 +182,7 @@ int main(int argc, char *argv[]) {
       KSPSetType(smoother[lev], KSPFGMRES);
       KSPSetPCSide(smoother[lev], PC_RIGHT);
       if(K > 0) {
-        KSPSetPC(smoother[lev], hatPc[lev][K - 1]);
+        //     KSPSetPC(smoother[lev], hatPc[lev][K - 1]);
       } else {
         PC smoothPC;
         KSPGetPC(smoother[lev], &smoothPC);
@@ -276,21 +280,23 @@ int main(int argc, char *argv[]) {
   VecDestroy(&rhs);
   VecDestroy(&sol);
 
-  for(size_t i = 0; i < hatPc.size(); ++i) {
-    for(size_t j = 0; j < (hatPc[i].size()); ++j) {
-      PCFD1Ddata* data;
-      PCShellGetContext(hatPc[i][j], (void**)(&data));
-      destroyPCFD1Ddata(data);
-      PCDestroy(&(hatPc[i][j]));
-    }//end j
-  }//end i
-  hatPc.clear();
+  /*
+     for(size_t i = 0; i < hatPc.size(); ++i) {
+     for(size_t j = 0; j < (hatPc[i].size()); ++j) {
+     PCFD1Ddata* data;
+     PCShellGetContext(hatPc[i][j], (void**)(&data));
+     destroyPCFD1Ddata(data);
+     PCDestroy(&(hatPc[i][j]));
+     }//end j
+     }//end i
+     hatPc.clear();
+     */
 
-  KSPDestroy(&ksp);
   if(coarseSolver != NULL) {
     KSPDestroy(&coarseSolver);
   }
   destroyKSP(smoother);
+  KSPDestroy(&ksp);
 
   destroyMat(Pmat);
   destroyVec(tmpCvec);
@@ -306,14 +312,16 @@ int main(int argc, char *argv[]) {
     }//end j
   }//end i
 
-  for(size_t i = 0; i < KhatMats.size(); ++i) {
-    for(size_t j = 0; j < KhatMats[i].size(); ++j) {
-      Khat1Ddata* hatData;
-      MatShellGetContext(KhatMats[i][j], &hatData);
-      destroyKhat1Ddata(hatData);
-      MatDestroy(&(KhatMats[i][j]));
-    }//end j
-  }//end i
+  /*
+     for(size_t i = 0; i < KhatMats.size(); ++i) {
+     for(size_t j = 0; j < KhatMats[i].size(); ++j) {
+     Khat1Ddata* hatData;
+     MatShellGetContext(KhatMats[i][j], &hatData);
+     destroyKhat1Ddata(hatData);
+     MatDestroy(&(KhatMats[i][j]));
+     }//end j
+     }//end i
+     */
 
   PetscLogEventEnd(cleanupEvent, 0, 0, 0, 0);
 
