@@ -49,7 +49,6 @@ void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
   }//end i
 }
 
-/*
 void createAll1DmatShells(int K, std::vector<MPI_Comm>& activeComms, 
     std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<Mat> >& Khat1Dmats) {
@@ -66,79 +65,20 @@ void create1DmatShells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
     std::vector<PetscInt>& partX, std::vector<Mat>& Khat1Dmats) {
   int rank;
   MPI_Comm_rank(comm, &rank);
-
   int nx = partX[rank];
-
   Khat1Dmats.resize(K, NULL);
-  {
+  for(int i = 0; i < K; ++i) {
     Khat1Ddata* hatData = new Khat1Ddata; 
-    hatData->K11 = blkKmats[0][0];
-    hatData->K12 = blkKmats[0][1];
     MatGetVecs(blkKmats[0][0], &(hatData->u), &(hatData->uPrime));
-    MatGetVecs((hatData->K11), PETSC_NULL, &(hatData->tmpOut));
-    hatData->partX = &partX;
-    hatData->numDofs = 1;
-    MatCreateShell(comm, nx, nx, PETSC_DETERMINE, PETSC_DETERMINE, 
-        hatData, &(Khat1Dmats[0]));
-    MatShellSetOperation(Khat1Dmats[0], MATOP_MULT, (void(*)(void))(&Khat1Dmult));
-  }
-  for(int i = 1; i < K; ++i) {
-    Kcol1Ddata* colData = new Kcol1Ddata;
-    (colData->Kblk).resize(i + 1);
-    for(int d = 0; d <= i; ++d) {
-      (colData->Kblk)[d] = blkKmats[d][i + 1 - d];
-    }//end d
-    MatGetVecs(blkKmats[0][0], PETSC_NULL, &(colData->tmp));
-    colData->nx = nx;
-    Mat Kcol1Dmat;
-    MatCreateShell(comm, (nx*(i + 1)), nx, PETSC_DETERMINE,
-        PETSC_DETERMINE, colData, &Kcol1Dmat);
-    MatShellSetOperation(Kcol1Dmat, MATOP_MULT, (void(*)(void))(&Kcol1Dmult));
-
-    Khat1Ddata* hatData = new Khat1Ddata; 
-    hatData->K11 = Khat1Dmats[i - 1];
-    hatData->K12 = Kcol1Dmat;
-    MatGetVecs(blkKmats[0][0], &(hatData->u), &(hatData->uPrime));
-    MatGetVecs((hatData->K11), PETSC_NULL, &(hatData->tmpOut));
+    MatGetVecs(blkKmats[0][0], PETSC_NULL, &(hatData->tmpOut));
+    hatData->blkKmats = &blkKmats;
     hatData->partX = &partX;
     hatData->numDofs = i + 1;
-    MatCreateShell(comm, (nx*(i + 1)), (nx*(i + 1)), PETSC_DETERMINE,
-        PETSC_DETERMINE, hatData, &(Khat1Dmats[i]));
+    hatData->K = K;
+    MatCreateShell(comm, (nx*(i + 1)), (nx*(i + 1)), PETSC_DETERMINE, PETSC_DETERMINE, hatData, &(Khat1Dmats[i]));
     MatShellSetOperation(Khat1Dmats[i], MATOP_MULT, (void(*)(void))(&Khat1Dmult));
   }//end i
 }
-
-PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out) {
-  Khat1Ddata* data;
-  MatShellGetContext(mat, &data);
-
-  MPI_Comm comm;
-  PetscObjectGetComm((PetscObject)mat, &comm);
-
-  int rank;
-  MPI_Comm_rank(comm, &rank);
-
-  int nx = (*(data->partX))[rank];
-  int numDofs = data->numDofs;
-
-  double* uArr;
-  VecGetArray((data->u), &uArr);
-  double* inArr;
-  VecGetArray(in, &inArr);
-  for(int i = 0; i < nx; ++i) {
-    uArr[i] = inArr[(numDofs * i) + (numDofs - 1)];
-  }//end i
-  VecRestoreArray((data->u), &uArr);
-  VecRestoreArray(in, &inArr);
-
-  applyFD1D(comm, *(data->partX), (data->u), (data->uPrime));
-  MatMult((data->K12), (data->uPrime), (data->tmpOut));
-  MatMult((data->K11), in, out);
-  VecAXPY(out, 1.0, (data->tmpOut));
-
-  return 0;
-}
-*/
 
 PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   MGdata* data;
@@ -192,6 +132,70 @@ void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol,
   MatGetVecs(Kmat[Kmat.size() - 1], NULL, &(mgRes[Kmat.size() - 1]));
 }
 
+PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out) {
+  Khat1Ddata* data;
+  MatShellGetContext(mat, &data);
+
+  MPI_Comm comm;
+  PetscObjectGetComm((PetscObject)mat, &comm);
+
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+
+  int nx = (*(data->partX))[rank];
+  int numDofs = data->numDofs;
+  int K = data->K;
+
+  VecZeroEntries(out);
+
+  double* outArr;
+  VecGetArray(out, &outArr);
+
+  double* inArr;
+  VecGetArray(in, &inArr);
+  for(int c = 0; c < numDofs; ++c) {
+    double* uArr;
+    VecGetArray((data->u), &uArr);
+    for(int i = 0; i < nx; ++i) {
+      uArr[i] = inArr[(numDofs * i) + c];
+    }//end i
+    VecRestoreArray((data->u), &uArr);
+
+    for(int r = 0; r < numDofs; ++r) {
+      if(r <= c) {
+        MatMult(((*(data->blkKmats))[r][c - r]), (data->u), (data->tmpOut));
+      } else {
+        MatMultTranspose(((*(data->blkKmats))[c][r - c]), (data->u), (data->tmpOut));
+      }
+      double* tmpArr;
+      VecGetArray((data->tmpOut), &tmpArr);
+      for(int i = 0; i < nx; ++i) {
+        outArr[(numDofs * i) + r] += tmpArr[i];
+      }//end i
+      VecRestoreArray((data->tmpOut), &tmpArr);
+    }//end r
+  }//end c
+  VecRestoreArray(in, &inArr);
+
+  for(int c = numDofs; c <= K; ++c) {
+    applyFD1D(comm, *(data->partX), (data->u), (data->uPrime));
+    for(int r = 0; r < numDofs; ++r) {
+      MatMult(((*(data->blkKmats))[r][c - r]), (data->uPrime), (data->tmpOut));
+      double* tmpArr;
+      VecGetArray((data->tmpOut), &tmpArr);
+      for(int i = 0; i < nx; ++i) {
+        outArr[(numDofs * i) + r] += tmpArr[i];
+      }//end i
+      VecRestoreArray((data->tmpOut), &tmpArr);
+    }//end r
+    VecSwap((data->u), (data->uPrime));
+  }//end c
+
+  VecRestoreArray(out, &outArr);
+
+  return 0;
+}
+
 PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
   PCFD1Ddata* data;
   PCShellGetContext(pc, (void**)(&data));
@@ -221,7 +225,7 @@ PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
 
   double* outArr;
   VecGetArray(out, &outArr);
-  
+
   double* solArr;
   double* uArr;
   VecGetArray((data->sol), &solArr);
@@ -243,7 +247,7 @@ PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
     outArr[(numDofs * i) + (numDofs - 1)] = uPrimeArr[i];
   }//end i
   VecRestoreArray((data->uPrime), &uPrimeArr);
-  
+
   VecRestoreArray(out, &outArr);
 
   return 0;
@@ -415,22 +419,12 @@ void destroyPCFD1Ddata(PCFD1Ddata* data) {
   delete data;
 }
 
-/*
 void destroyKhat1Ddata(Khat1Ddata* data) {
-  PetscBool isShell;
-  PetscObjectTypeCompare((PetscObject)(data->K12), MATSHELL, &isShell);
-  if(isShell) {
-    Kcol1Ddata* colData;
-    MatShellGetContext((data->K12), &colData);
-    destroyKcol1Ddata(colData);
-    MatDestroy(&(data->K12));
-  }
   VecDestroy(&(data->u));
   VecDestroy(&(data->uPrime));
   VecDestroy(&(data->tmpOut));
   delete data;
 }
-*/
 
 
 
