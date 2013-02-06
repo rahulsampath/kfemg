@@ -8,6 +8,7 @@
 #include <cassert>
 #endif
 
+/*
 void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<std::vector<Mat> > >& blkKmats,
     std::vector<std::vector<Mat> >& Khat1Dmats, std::vector<std::vector<PC> >& hatPc) {
@@ -226,6 +227,7 @@ PetscErrorCode Kcol1Dmult(Mat mat, Vec in, Vec out) {
 
   return 0;
 }
+*/
 
 PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   MGdata* data;
@@ -436,6 +438,7 @@ void destroyKSP(std::vector<KSP>& ksp) {
   ksp.clear();
 }
 
+/*
 void destroyKhat1Ddata(Khat1Ddata* data) {
   PetscBool isShell;
   PetscObjectTypeCompare((PetscObject)(data->K12), MATSHELL, &isShell);
@@ -465,5 +468,8 @@ void destroyPCFD1Ddata(PCFD1Ddata* data) {
   VecDestroy(&(data->uPrime));
   delete data;
 }
+
+*/
+
 
 

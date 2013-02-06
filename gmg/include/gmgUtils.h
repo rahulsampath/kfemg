@@ -43,6 +43,7 @@ struct MGdata {
   std::vector<Vec> mgRes;
 };
 
+/*
 struct PCFD1Ddata {
   KSP ksp;
   Vec rhs;
@@ -82,6 +83,17 @@ void create1DmatShells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
 
 PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out);
 
+PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out);
+
+PetscErrorCode Kcol1Dmult(Mat mat, Vec in, Vec out);
+
+void destroyKhat1Ddata(Khat1Ddata* data);
+
+void destroyKcol1Ddata(Kcol1Ddata* data);
+
+void destroyPCFD1Ddata(PCFD1Ddata* data); 
+*/
+
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
 
 PetscErrorCode applyMG(PC pc, Vec in, Vec out);
@@ -95,10 +107,6 @@ void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec);
 void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec);
 
 void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out);
-
-PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out);
-
-PetscErrorCode Kcol1Dmult(Mat mat, Vec in, Vec out);
 
 void buildPmat(int dim, PetscInt dofsPerNode, std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec,
     std::vector<DM>& da, std::vector<MPI_Comm>& activeComms, std::vector<int>& activeNpes);
@@ -234,12 +242,6 @@ void destroyMat(std::vector<Mat>& mat);
 void destroyVec(std::vector<Vec>& vec);
 
 void destroyKSP(std::vector<KSP>& ksp);
-
-void destroyKhat1Ddata(Khat1Ddata* data);
-
-void destroyKcol1Ddata(Kcol1Ddata* data);
-
-void destroyPCFD1Ddata(PCFD1Ddata* data); 
 
 #endif
 
