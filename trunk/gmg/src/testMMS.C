@@ -115,15 +115,13 @@ int main(int argc, char *argv[]) {
   buildKmat(Kmat, da, print);
 
   std::vector<std::vector<Mat> > KhatMats;
-  /*
-     if(K > 0) {
-     if(dim == 1) {
-     createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
-     } else {
-     assert(false);
-     }
-     }
-     */
+  if(K > 0) {
+    if(dim == 1) {
+      createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
+    } else {
+      assert(false);
+    }
+  }
 
   //Matrix Assembly
   if(K > 0) {
@@ -310,16 +308,14 @@ int main(int argc, char *argv[]) {
     }//end j
   }//end i
 
-  /*
-     for(size_t i = 0; i < KhatMats.size(); ++i) {
-     for(size_t j = 0; j < KhatMats[i].size(); ++j) {
-     Khat1Ddata* hatData;
-     MatShellGetContext(KhatMats[i][j], &hatData);
-     destroyKhat1Ddata(hatData);
-     MatDestroy(&(KhatMats[i][j]));
-     }//end j
-     }//end i
-     */
+  for(size_t i = 0; i < KhatMats.size(); ++i) {
+    for(size_t j = 0; j < KhatMats[i].size(); ++j) {
+      Khat1Ddata* hatData;
+      MatShellGetContext(KhatMats[i][j], &hatData);
+      destroyKhat1Ddata(hatData);
+      MatDestroy(&(KhatMats[i][j]));
+    }//end j
+  }//end i
 
   PetscLogEventEnd(cleanupEvent, 0, 0, 0, 0);
 

@@ -53,15 +53,14 @@ struct PCFD1Ddata {
   int numDofs;
 };
 
-/*
 struct Khat1Ddata {
-  Mat K11;
-  Mat K12;
   Vec u;
   Vec uPrime;
   Vec tmpOut;
+  std::vector<std::vector<Mat> >* blkKmats;
   std::vector<PetscInt>* partX;
   int numDofs;
+  int K;
 };
 
 void createAll1DmatShells(int K, std::vector<MPI_Comm>& activeComms, 
@@ -72,9 +71,6 @@ void create1DmatShells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
     std::vector<PetscInt>& partX, std::vector<Mat>& Khat1Dmats);
 
 PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out);
-
-void destroyKhat1Ddata(Khat1Ddata* data);
-*/
 
 void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<std::vector<Mat> > >& blkKmats,
@@ -232,6 +228,8 @@ void destroyVec(std::vector<Vec>& vec);
 void destroyKSP(std::vector<KSP>& ksp);
 
 void destroyPCFD1Ddata(PCFD1Ddata* data); 
+
+void destroyKhat1Ddata(Khat1Ddata* data);
 
 #endif
 
