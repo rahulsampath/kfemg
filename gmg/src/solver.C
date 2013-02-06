@@ -8,7 +8,6 @@
 #include <cassert>
 #endif
 
-/*
 void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<std::vector<Mat> > >& blkKmats,
     std::vector<std::vector<Mat> >& Khat1Dmats, std::vector<std::vector<PC> >& hatPc) {
@@ -50,6 +49,7 @@ void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
   }//end i
 }
 
+/*
 void createAll1DmatShells(int K, std::vector<MPI_Comm>& activeComms, 
     std::vector<std::vector<std::vector<Mat> > >& blkKmats, std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<Mat> >& Khat1Dmats) {
@@ -108,70 +108,6 @@ void create1DmatShells(MPI_Comm comm, int K, std::vector<std::vector<Mat> >& blk
   }//end i
 }
 
-PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
-  PCFD1Ddata* data;
-  PCShellGetContext(pc, (void**)(&data));
-
-  MPI_Comm comm;
-  PetscObjectGetComm((PetscObject)pc, &comm);
-
-  int rank;
-  MPI_Comm_rank(comm, &rank);
-
-  int nx = (*(data->partX))[rank];
-  int numDofs = data->numDofs;
-
-  double* rhsArr;
-  VecGetArray((data->rhs), &rhsArr);
-
-  double* inArr;
-  VecGetArray(in, &inArr);
-
-  for(int i = 0; i < nx; ++i) {
-    for(int d = 0; d < (numDofs - 1); ++d) {
-      rhsArr[((numDofs - 1) * i) + d] = inArr[(numDofs * i) + d];
-    }//end d
-  }//end i
-
-  VecRestoreArray((data->rhs), &rhsArr);
-  VecRestoreArray(in, &inArr);
-
-  KSPSolve((data->ksp), (data->rhs), (data->sol));
-
-  double* solArr;
-  VecGetArray((data->sol), &solArr);
-
-  double* uArr;
-  VecGetArray((data->u), &uArr);
-
-  double* outArr;
-  VecGetArray(out, &outArr);
-
-  for(int i = 0; i < nx; ++i) {
-    for(int d = 0; d < (numDofs - 1); ++d) {
-      outArr[(numDofs * i) + d] = solArr[((numDofs - 1) * i) + d];
-    }//end d
-    uArr[i] = solArr[((numDofs - 1) * i) + (numDofs - 2)];
-  }//end i
-
-  VecRestoreArray((data->sol), &solArr);
-  VecRestoreArray((data->u), &uArr);
-
-  applyFD1D(comm, *(data->partX), (data->u), (data->uPrime));
-
-  double* uPrimeArr;
-  VecGetArray((data->uPrime), &uPrimeArr);
-
-  for(int i = 0; i < nx; ++i) {
-    outArr[(numDofs * i) + (numDofs - 1)] = uPrimeArr[i];
-  }//end i
-
-  VecRestoreArray((data->uPrime), &uPrimeArr);
-  VecRestoreArray(out, &outArr);
-
-  return 0;
-}
-
 PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out) {
   Khat1Ddata* data;
   MatShellGetContext(mat, &data);
@@ -199,31 +135,6 @@ PetscErrorCode Khat1Dmult(Mat mat, Vec in, Vec out) {
   MatMult((data->K12), (data->uPrime), (data->tmpOut));
   MatMult((data->K11), in, out);
   VecAXPY(out, 1.0, (data->tmpOut));
-
-  return 0;
-}
-
-PetscErrorCode Kcol1Dmult(Mat mat, Vec in, Vec out) {
-  Kcol1Ddata* data;
-  MatShellGetContext(mat, &data);
-
-  int nx = data->nx;
-  int numDofs = (data->Kblk).size();
-
-  double* outArr;
-  VecGetArray(out, &outArr);
-
-  for(int d = 0; d < numDofs; ++d) {
-    MatMult(((data->Kblk)[d]), in, (data->tmp));
-    double* tmpArr;
-    VecGetArray((data->tmp), &tmpArr);
-    for(int i = 0; i < nx; ++i) {
-      outArr[(numDofs * i) + d] = tmpArr[i];
-    }//end i
-    VecRestoreArray((data->tmp), &tmpArr);
-  }//end d
-
-  VecRestoreArray(out, &outArr);
 
   return 0;
 }
@@ -279,6 +190,63 @@ void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol,
     }
   }//end i
   MatGetVecs(Kmat[Kmat.size() - 1], NULL, &(mgRes[Kmat.size() - 1]));
+}
+
+PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
+  PCFD1Ddata* data;
+  PCShellGetContext(pc, (void**)(&data));
+
+  MPI_Comm comm;
+  PetscObjectGetComm((PetscObject)pc, &comm);
+
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+
+  int nx = (*(data->partX))[rank];
+  int numDofs = data->numDofs;
+
+  double* inArr;
+  double* rhsArr;
+  VecGetArray((data->rhs), &rhsArr);
+  VecGetArray(in, &inArr);
+  for(int i = 0; i < nx; ++i) {
+    for(int d = 0; d < (numDofs - 1); ++d) {
+      rhsArr[((numDofs - 1) * i) + d] = inArr[(numDofs * i) + d];
+    }//end d
+  }//end i
+  VecRestoreArray((data->rhs), &rhsArr);
+  VecRestoreArray(in, &inArr);
+
+  KSPSolve((data->ksp), (data->rhs), (data->sol));
+
+  double* outArr;
+  VecGetArray(out, &outArr);
+  
+  double* solArr;
+  double* uArr;
+  VecGetArray((data->sol), &solArr);
+  VecGetArray((data->u), &uArr);
+  for(int i = 0; i < nx; ++i) {
+    for(int d = 0; d < (numDofs - 1); ++d) {
+      outArr[(numDofs * i) + d] = solArr[((numDofs - 1) * i) + d];
+    }//end d
+    uArr[i] = solArr[((numDofs - 1) * i) + (numDofs - 2)];
+  }//end i
+  VecRestoreArray((data->sol), &solArr);
+  VecRestoreArray((data->u), &uArr);
+
+  applyFD1D(comm, *(data->partX), (data->u), (data->uPrime));
+
+  double* uPrimeArr;
+  VecGetArray((data->uPrime), &uPrimeArr);
+  for(int i = 0; i < nx; ++i) {
+    outArr[(numDofs * i) + (numDofs - 1)] = uPrimeArr[i];
+  }//end i
+  VecRestoreArray((data->uPrime), &uPrimeArr);
+  
+  VecRestoreArray(out, &outArr);
+
+  return 0;
 }
 
 void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
@@ -438,6 +406,15 @@ void destroyKSP(std::vector<KSP>& ksp) {
   ksp.clear();
 }
 
+void destroyPCFD1Ddata(PCFD1Ddata* data) {
+  KSPDestroy(&(data->ksp));
+  VecDestroy(&(data->rhs));
+  VecDestroy(&(data->sol));
+  VecDestroy(&(data->u));
+  VecDestroy(&(data->uPrime));
+  delete data;
+}
+
 /*
 void destroyKhat1Ddata(Khat1Ddata* data) {
   PetscBool isShell;
@@ -453,22 +430,6 @@ void destroyKhat1Ddata(Khat1Ddata* data) {
   VecDestroy(&(data->tmpOut));
   delete data;
 }
-
-void destroyKcol1Ddata(Kcol1Ddata* data) {
-  (data->Kblk).clear();
-  VecDestroy(&(data->tmp));
-  delete data;
-}
-
-void destroyPCFD1Ddata(PCFD1Ddata* data) {
-  KSPDestroy(&(data->ksp));
-  VecDestroy(&(data->rhs));
-  VecDestroy(&(data->sol));
-  VecDestroy(&(data->u));
-  VecDestroy(&(data->uPrime));
-  delete data;
-}
-
 */
 
 

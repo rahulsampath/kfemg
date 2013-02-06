@@ -114,16 +114,16 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
 
-  /*
   std::vector<std::vector<Mat> > KhatMats;
-  if(K > 0) {
-    if(dim == 1) {
-      createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
-    } else {
-      assert(false);
-    }
-  }
-  */
+  /*
+     if(K > 0) {
+     if(dim == 1) {
+     createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
+     } else {
+     assert(false);
+     }
+     }
+     */
 
   //Matrix Assembly
   if(K > 0) {
@@ -168,23 +168,23 @@ int main(int argc, char *argv[]) {
 
   PetscLogEventBegin(solverSetupEvent, 0, 0, 0, 0);
 
-  /*
-     std::vector<std::vector<PC> > hatPc;
-     if(K > 0) {
-     createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
-     }
-     */
+  std::vector<std::vector<PC> > hatPc;
+  if(K > 0) {
+    createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
+  }
 
   std::vector<KSP> smoother(Pmat.size(), NULL);
   for(int lev = 0; lev < (smoother.size()); ++lev) {
     if(rank < activeNpes[lev + 1]) {
       KSPCreate(activeComms[lev + 1], &(smoother[lev]));
-      KSPSetType(smoother[lev], KSPFGMRES);
-      KSPSetPCSide(smoother[lev], PC_RIGHT);
       if(K > 0) {
-        //     KSPSetPC(smoother[lev], hatPc[lev][K - 1]);
+        KSPSetType(smoother[lev], KSPFGMRES);
+        KSPSetPCSide(smoother[lev], PC_RIGHT);
+        KSPSetPC(smoother[lev], hatPc[lev][K - 1]);
       } else {
         PC smoothPC;
+        KSPSetType(smoother[lev], KSPCG);
+        KSPSetPCSide(smoother[lev], PC_LEFT);
         KSPGetPC(smoother[lev], &smoothPC);
         PCSetType(smoothPC, PCNONE);
       }
@@ -280,17 +280,15 @@ int main(int argc, char *argv[]) {
   VecDestroy(&rhs);
   VecDestroy(&sol);
 
-  /*
-     for(size_t i = 0; i < hatPc.size(); ++i) {
-     for(size_t j = 0; j < (hatPc[i].size()); ++j) {
-     PCFD1Ddata* data;
-     PCShellGetContext(hatPc[i][j], (void**)(&data));
-     destroyPCFD1Ddata(data);
-     PCDestroy(&(hatPc[i][j]));
-     }//end j
-     }//end i
-     hatPc.clear();
-     */
+  for(size_t i = 0; i < hatPc.size(); ++i) {
+    for(size_t j = 0; j < (hatPc[i].size()); ++j) {
+      PCFD1Ddata* data;
+      PCShellGetContext(hatPc[i][j], (void**)(&data));
+      destroyPCFD1Ddata(data);
+      PCDestroy(&(hatPc[i][j]));
+    }//end j
+  }//end i
+  hatPc.clear();
 
   if(coarseSolver != NULL) {
     KSPDestroy(&coarseSolver);
