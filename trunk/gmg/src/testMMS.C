@@ -174,13 +174,13 @@ int main(int argc, char *argv[]) {
   std::vector<KSP> smoother(Pmat.size(), NULL);
   for(int lev = 0; lev < (smoother.size()); ++lev) {
     if(rank < activeNpes[lev + 1]) {
-      PC smoothPC;
       KSPCreate(activeComms[lev + 1], &(smoother[lev]));
       KSPSetType(smoother[lev], KSPFGMRES);
       KSPSetPCSide(smoother[lev], PC_RIGHT);
       if(K > 0) {
         KSPSetPC(smoother[lev], hatPc[lev][K - 1]);
       } else {
+        PC smoothPC;
         KSPGetPC(smoother[lev], &smoothPC);
         PCSetType(smoothPC, PCNONE);
       }
