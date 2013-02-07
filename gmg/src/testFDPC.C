@@ -85,6 +85,9 @@ int main(int argc, char *argv[]) {
 
   correctBlkKmats(dim, blkKmats, da, partZ, partY, partX, offsets, K);
 
+  int nlevels = da.size();
+  MatZeroEntries(blkKmats[nlevels - 2][0][1]);
+
   std::vector<std::vector<Mat> > KhatMats;
   if(dim == 1) {
     createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
@@ -95,7 +98,6 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<PC> > hatPc;
   createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
 
-  int nlevels = da.size();
   Vec sol;
   Vec update;
   Vec rhs;
@@ -104,15 +106,35 @@ int main(int argc, char *argv[]) {
   VecDuplicate(rhs, &res);
   VecDuplicate(sol, &update);
 
+  Vec blkRes;
+  MatGetVecs(blkKmats[nlevels - 2][0][0], &blkRes, PETSC_NULL);
+  PetscInt blkSz;
+  VecGetLocalSize(blkRes, &blkSz);
+
   VecSetRandom(sol, PETSC_NULL);
   MatMult(Kmat[nlevels - 1], sol, rhs);
 
   VecZeroEntries(sol);
 
+  std::cout<<"Using HatPC: "<<std::endl;
   computeResidual(Kmat[nlevels - 1], sol, rhs, res);
-
   PetscReal initNorm;
   VecNorm(res, NORM_2, &initNorm);
+  std::cout<<"Full Init = "<<std::setprecision(13)<<initNorm<<std::endl;
+  for(int d = 0; d < dofsPerNode; ++d) {
+    double* blkArr;
+    double* fullArr;
+    VecGetArray(res, &fullArr);
+    VecGetArray(blkRes, &blkArr);
+    for(int i = 0; i < blkSz; ++i) {
+      blkArr[i] = fullArr[(dofsPerNode * i) + d];
+    }//end i
+    VecRestoreArray(res, &fullArr);
+    VecRestoreArray(blkRes, &blkArr);
+    PetscReal norm;
+    VecNorm(blkRes, NORM_2, &norm);
+    std::cout<<"Init["<<d<<"]= "<<std::setprecision(13)<<norm<<std::endl;
+  }//end d
 
   PCSetOperators(hatPc[nlevels - 2][K - 1], Kmat[nlevels - 1], Kmat[nlevels - 1], SAME_PRECONDITIONER);
   PCApply(hatPc[nlevels - 2][K - 1], res, update);
@@ -120,12 +142,54 @@ int main(int argc, char *argv[]) {
   VecAXPY(sol, 1.0, update);
 
   computeResidual(Kmat[nlevels - 1], sol, rhs, res);
-
   PetscReal finalNorm;
   VecNorm(res, NORM_2, &finalNorm);
+  std::cout<<"Full Final = "<<std::setprecision(13)<<finalNorm<<std::endl;
+  for(int d = 0; d < dofsPerNode; ++d) {
+    double* blkArr;
+    double* fullArr;
+    VecGetArray(res, &fullArr);
+    VecGetArray(blkRes, &blkArr);
+    for(int i = 0; i < blkSz; ++i) {
+      blkArr[i] = fullArr[(dofsPerNode * i) + d];
+    }//end i
+    VecRestoreArray(res, &fullArr);
+    VecRestoreArray(blkRes, &blkArr);
+    PetscReal norm;
+    VecNorm(blkRes, NORM_2, &norm);
+    std::cout<<"Final["<<d<<"]= "<<std::setprecision(13)<<norm<<std::endl;
+  }//end d
 
-  std::cout<<"Init = "<<std::setprecision(13)<<initNorm<<std::endl;
-  std::cout<<"Final = "<<std::setprecision(13)<<finalNorm<<std::endl;
+  KSP ksp;
+  PC pc;
+  KSPCreate(PETSC_COMM_WORLD, &ksp);
+  KSPSetType(ksp, KSPCG);
+  KSPSetPCSide(ksp, PC_LEFT);
+  KSPGetPC(ksp, &pc);
+  PCSetType(pc, PCNONE);
+  KSPSetOperators(ksp, Kmat[nlevels - 1], Kmat[nlevels - 1], SAME_PRECONDITIONER);
+  KSPSetInitialGuessNonzero(ksp, PETSC_FALSE);
+  KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 1);
+  KSPSetOptionsPrefix(ksp, "plain_");
+  KSPSetFromOptions(ksp);
+
+  KSPSolve(ksp, rhs, sol);
+
+  computeResidual(Kmat[nlevels - 1], sol, rhs, res);
+  for(int d = 0; d < dofsPerNode; ++d) {
+    double* blkArr;
+    double* fullArr;
+    VecGetArray(res, &fullArr);
+    VecGetArray(blkRes, &blkArr);
+    for(int i = 0; i < blkSz; ++i) {
+      blkArr[i] = fullArr[(dofsPerNode * i) + d];
+    }//end i
+    VecRestoreArray(res, &fullArr);
+    VecRestoreArray(blkRes, &blkArr);
+    PetscReal norm;
+    VecNorm(blkRes, NORM_2, &norm);
+    std::cout<<"Plain["<<d<<"]= "<<std::setprecision(13)<<norm<<std::endl;
+  }//end d
 
   for(size_t i = 0; i < hatPc.size(); ++i) {
     for(size_t j = 0; j < (hatPc[i].size()); ++j) {
@@ -141,6 +205,7 @@ int main(int argc, char *argv[]) {
   VecDestroy(&sol);
   VecDestroy(&rhs);
   VecDestroy(&res);
+  VecDestroy(&blkRes);
 
   destroyMat(Kmat);
   destroyDA(da); 

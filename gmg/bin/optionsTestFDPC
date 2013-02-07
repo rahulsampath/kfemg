@@ -2,7 +2,7 @@
 -dim 1
 -K 1
 
--finestNx 9
+-finestNx 33
 -maxNumLevels 2
 -maxCoarseNpes 1
 
@@ -11,4 +11,7 @@
 
 -hat0_ksp_max_it 1
 -hat0_ksp_monitor
+
+-plain_ksp_max_it 1
+-plain_ksp_monitor
 
