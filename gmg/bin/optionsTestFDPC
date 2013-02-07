@@ -1,0 +1,14 @@
+
+-dim 1
+-K 1
+
+-finestNx 9
+-maxNumLevels 2
+-maxCoarseNpes 1
+
+%-hat1_ksp_max_it 1
+%-hat1_ksp_monitor
+
+-hat0_ksp_max_it 1
+-hat0_ksp_monitor
+

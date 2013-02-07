@@ -274,152 +274,152 @@ void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
 }
 
 /*
-void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
-  int rank;
-  MPI_Comm_rank(comm, &rank);
+   void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
+   int rank;
+   MPI_Comm_rank(comm, &rank);
 
-  int nx = partX[rank];
-  int px = partX.size();
+   int nx = partX[rank];
+   int px = partX.size();
 
-  double* inArr;
-  VecGetArray(in, &inArr);
+   double* inArr;
+   VecGetArray(in, &inArr);
 
-  double left1;
-  double left2;
-  double right1;
-  double right2;
+   double left1;
+   double left2;
+   double right1;
+   double right2;
 
-  MPI_Request reqR1;
-  MPI_Request reqR2;
-  MPI_Request reqS1;
-  MPI_Request reqS2;
+   MPI_Request reqR1;
+   MPI_Request reqR2;
+   MPI_Request reqS1;
+   MPI_Request reqS2;
 
-  if(rank < (px - 1)) {
-    MPI_Irecv(&right1, 1, MPI_DOUBLE, (rank + 1), 2, comm, &reqR2);
-    MPI_Isend(&(inArr[nx - 1]), 1, MPI_DOUBLE, (rank + 1), 1, comm, &reqS1);
-  }
+   if(rank < (px - 1)) {
+   MPI_Irecv(&right1, 1, MPI_DOUBLE, (rank + 1), 2, comm, &reqR2);
+   MPI_Isend(&(inArr[nx - 1]), 1, MPI_DOUBLE, (rank + 1), 1, comm, &reqS1);
+   }
 
-  if(rank > 0) {
-    MPI_Irecv(&left1, 1, MPI_DOUBLE, (rank - 1), 1, comm, &reqR1);
-    MPI_Isend(&(inArr[0]), 1, MPI_DOUBLE, (rank - 1), 2, comm, &reqS2);
-  }
+   if(rank > 0) {
+   MPI_Irecv(&left1, 1, MPI_DOUBLE, (rank - 1), 1, comm, &reqR1);
+   MPI_Isend(&(inArr[0]), 1, MPI_DOUBLE, (rank - 1), 2, comm, &reqS2);
+   }
 
-  if(rank < (px - 1)) {
+   if(rank < (px - 1)) {
+   MPI_Status status;
+   MPI_Wait(&reqR2, &status);
+   }
+
+   MPI_Request reqR3;
+   MPI_Request reqS3;
+
+   if(partX[0] == 1) {
+   if(rank == 1) {
+   if(partX[1] == 1) {
+   MPI_Isend(&right1, 1, MPI_DOUBLE, 0, 3, comm, &reqS3);
+   } else {
+   MPI_Isend(&(in[1]), 1, MPI_DOUBLE, 0, 3, comm, &reqS3);
+   }
+   }
+   if(rank == 0) {
+   MPI_Irecv(&right2, 1, MPI_DOUBLE, 1, 3, comm, &reqR3);
+   }
+   }
+
+   if(rank > 0) {
+   MPI_Status status;
+   MPI_Wait(&reqR1, &status);
+   }
+
+   MPI_Request reqR4;
+   MPI_Request reqS4;
+
+   if(partX[px - 1] == 1) {
+   if(rank == (px - 2)) {
+   if(partX[px - 2] == 1) {
+   MPI_Isend(&left1, 1, MPI_DOUBLE, (px - 1), 4, comm, &reqS4);
+   } else {
+   MPI_Isend(&(in[nx - 2]), 1, MPI_DOUBLE, (px - 1), 4, comm, &reqS4);
+   }
+   } 
+   if(rank == (px - 1)) {
+   MPI_Irecv(&left2, 1, MPI_DOUBLE, (px - 2), 4, comm, &reqR4);
+   }
+}
+
+if(rank < (px - 1)) {
+  MPI_Status status;
+  MPI_Wait(&reqS1, &status);
+}
+
+if(rank > 0) {
+  MPI_Status status;
+  MPI_Wait(&reqS2, &status);
+}
+
+if(partX[0] == 1) {
+  if(rank == 1) {
     MPI_Status status;
-    MPI_Wait(&reqR2, &status);
+    MPI_Wait(&reqS3, &status);
   }
-
-  MPI_Request reqR3;
-  MPI_Request reqS3;
-
-  if(partX[0] == 1) {
-    if(rank == 1) {
-      if(partX[1] == 1) {
-        MPI_Isend(&right1, 1, MPI_DOUBLE, 0, 3, comm, &reqS3);
-      } else {
-        MPI_Isend(&(in[1]), 1, MPI_DOUBLE, 0, 3, comm, &reqS3);
-      }
-    }
-    if(rank == 0) {
-      MPI_Irecv(&right2, 1, MPI_DOUBLE, 1, 3, comm, &reqR3);
-    }
-  }
-
-  if(rank > 0) {
-    MPI_Status status;
-    MPI_Wait(&reqR1, &status);
-  }
-
-  MPI_Request reqR4;
-  MPI_Request reqS4;
-
-  if(partX[px - 1] == 1) {
-    if(rank == (px - 2)) {
-      if(partX[px - 2] == 1) {
-        MPI_Isend(&left1, 1, MPI_DOUBLE, (px - 1), 4, comm, &reqS4);
-      } else {
-        MPI_Isend(&(in[nx - 2]), 1, MPI_DOUBLE, (px - 1), 4, comm, &reqS4);
-      }
-    } 
-    if(rank == (px - 1)) {
-      MPI_Irecv(&left2, 1, MPI_DOUBLE, (px - 2), 4, comm, &reqR4);
-    }
-  }
-
-  if(rank < (px - 1)) {
-    MPI_Status status;
-    MPI_Wait(&reqS1, &status);
-  }
-
-  if(rank > 0) {
-    MPI_Status status;
-    MPI_Wait(&reqS2, &status);
-  }
-
-  if(partX[0] == 1) {
-    if(rank == 1) {
-      MPI_Status status;
-      MPI_Wait(&reqS3, &status);
-    }
-    if(rank == 0) {
-      MPI_Status status;
-      MPI_Wait(&reqR3, &status);
-    }
-  }
-
-  if(partX[px - 1] == 1) {
-    if(rank == (px - 2)) {
-      MPI_Status status;
-      MPI_Wait(&reqS4, &status);
-    } 
-    if(rank == (px - 1)) {
-      MPI_Status status;
-      MPI_Wait(&reqR4, &status);
-    }
-  }
-
-  double* outArr;
-  VecGetArray(out, &outArr);
-
-  for(int i = 1; i < (nx - 1); ++i) {
-    outArr[i] = 0.25*(inArr[i + 1] - inArr[i - 1]);
-  }//end i
-
   if(rank == 0) {
-    if(nx == 1) {
-      outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*right1) + right2);
-    } else if(nx == 2) {
-      outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*inArr[1]) + right1);
-      outArr[1] = 0.25*(right1 - inArr[0]);
-    } else {
-      outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*inArr[1]) + inArr[2]);
-      if(px == 1) {
-        outArr[nx - 1] = 0.25*((3.0*inArr[nx - 1]) - (4.0*inArr[nx - 2]) + inArr[nx - 3]);
-      } else {
-        outArr[nx - 1] = 0.25*(right1 - inArr[nx - 2]);
-      }
-    }
-  } else if(rank == (px - 1)) {
-    if(nx == 1) {
-      outArr[0] = 0.25*((3.0*inArr[0]) - (4.0*left1) + left2);
-    } else if(nx == 2) {
-      outArr[0] = 0.25*(inArr[1] - left1);
-      outArr[1] = 0.25*((3.0*inArr[1]) - (4.0*inArr[0]) + left1);
-    } else {
-      outArr[0] = 0.25*(inArr[1] - left1);
-      outArr[nx - 1] = 0.25*((3.0*inArr[nx - 1]) - (4.0*inArr[nx - 2]) + inArr[nx - 3]);
-    }
+    MPI_Status status;
+    MPI_Wait(&reqR3, &status);
+  }
+}
+
+if(partX[px - 1] == 1) {
+  if(rank == (px - 2)) {
+    MPI_Status status;
+    MPI_Wait(&reqS4, &status);
+  } 
+  if(rank == (px - 1)) {
+    MPI_Status status;
+    MPI_Wait(&reqR4, &status);
+  }
+}
+
+double* outArr;
+VecGetArray(out, &outArr);
+
+for(int i = 1; i < (nx - 1); ++i) {
+  outArr[i] = 0.25*(inArr[i + 1] - inArr[i - 1]);
+}//end i
+
+if(rank == 0) {
+  if(nx == 1) {
+    outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*right1) + right2);
+  } else if(nx == 2) {
+    outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*inArr[1]) + right1);
+    outArr[1] = 0.25*(right1 - inArr[0]);
   } else {
-    if(nx == 1) {
-      outArr[0] = 0.25*(right1 - left1);
+    outArr[0] = -0.25*((3.0*inArr[0]) - (4.0*inArr[1]) + inArr[2]);
+    if(px == 1) {
+      outArr[nx - 1] = 0.25*((3.0*inArr[nx - 1]) - (4.0*inArr[nx - 2]) + inArr[nx - 3]);
     } else {
-      outArr[0] = 0.25*(inArr[1] - left1);
       outArr[nx - 1] = 0.25*(right1 - inArr[nx - 2]);
     }
   }
+} else if(rank == (px - 1)) {
+  if(nx == 1) {
+    outArr[0] = 0.25*((3.0*inArr[0]) - (4.0*left1) + left2);
+  } else if(nx == 2) {
+    outArr[0] = 0.25*(inArr[1] - left1);
+    outArr[1] = 0.25*((3.0*inArr[1]) - (4.0*inArr[0]) + left1);
+  } else {
+    outArr[0] = 0.25*(inArr[1] - left1);
+    outArr[nx - 1] = 0.25*((3.0*inArr[nx - 1]) - (4.0*inArr[nx - 2]) + inArr[nx - 3]);
+  }
+} else {
+  if(nx == 1) {
+    outArr[0] = 0.25*(right1 - left1);
+  } else {
+    outArr[0] = 0.25*(inArr[1] - left1);
+    outArr[nx - 1] = 0.25*(right1 - inArr[nx - 2]);
+  }
+}
 
-  VecRestoreArray(in, &inArr);
-  VecRestoreArray(out, &outArr);
+VecRestoreArray(in, &inArr);
+VecRestoreArray(out, &outArr);
 }
 */
 
