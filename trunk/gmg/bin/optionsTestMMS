@@ -1,5 +1,5 @@
 -dim 1
--K 2
+-K 1
 
 -extraGptsError 0
 -extraGptsRHS 0
@@ -11,8 +11,8 @@
 -maxCoarseNpes 100
 
 -outer_ksp_max_it 10
--hat1_ksp_max_it 2
--hat0_ksp_max_it 2
+-hat1_ksp_max_it 1
+-hat0_ksp_max_it 1
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 

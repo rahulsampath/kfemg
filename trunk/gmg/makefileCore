@@ -3,7 +3,7 @@ INCLUDE = -I.. ${PETSC_CC_INCLUDES}
 
 LIBS = -L../common/lib -lcommon ${PETSC_LIB}
 
-EXEC = bin/testMMS
+EXEC = bin/testMMS bin/testBlkKmat
 
 all : $(EXEC)
 
@@ -12,6 +12,10 @@ all : $(EXEC)
 
 bin/testMMS : ./src/testMMS.o ./src/solver.o ./src/intergrid.o ./src/mms.o \
 	./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
+
+bin/testBlkKmat : ./src/testBlkKmat.o ./src/assembly.o ./src/boundary.o \
+		  ./src/mesh.o ./src/gmgUtils.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
 clean :
