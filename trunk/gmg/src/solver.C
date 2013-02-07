@@ -264,10 +264,31 @@ void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
   VecGetArray(in, &inArr);
   VecGetArray(out, &outArr);
 
+  /*
+  //First Order
   for(int i = 0; i < (nx - 1); ++i) {
     outArr[i] = (inArr[i + 1] - inArr[i])/2.0;
   }//end i
   outArr[nx - 1] = (inArr[nx - 1] - inArr[nx - 2])/2.0;
+  */
+
+  //Second Order
+  outArr[0] = -((3.0 * inArr[0]) - (4.0 * inArr[1]) + inArr[2])/4.0;
+  for(int i = 1; i < (nx - 1); ++i) {
+  outArr[i] = (inArr[i + 1] - inArr[i - 1])/4.0;
+  }//end i
+  outArr[nx - 1] = ((3.0 * inArr[nx - 1]) - (4.0 * inArr[nx - 2]) + inArr[nx - 3])/4.0;
+
+  /*
+  //Fourth Order
+  outArr[0] = -((25.0 * inArr[0]) - (48.0 * inArr[1]) + (36.0 * inArr[2]) - (16.0 * inArr[3]) + (3.0 * inArr[4]))/24.0;
+  outArr[1] = -((25.0 * inArr[1]) - (48.0 * inArr[2]) + (36.0 * inArr[3]) - (16.0 * inArr[4]) + (3.0 * inArr[5]))/24.0;
+  for(int i = 2; i < (nx - 2); ++i) {
+  outArr[i] = (-inArr[i + 2] + (8.0 * inArr[i + 1]) - (8.0 * inArr[i - 1]) + inArr[i - 2])/24.0;
+  }//end i
+  outArr[nx - 2] = ((25.0 * inArr[nx - 2]) - (48.0 * inArr[nx - 3]) + (36.0 * inArr[nx - 4]) - (16.0 * inArr[nx - 5]) + (3.0 * inArr[nx - 6]))/24.0;
+  outArr[nx - 1] = ((25.0 * inArr[nx - 1]) - (48.0 * inArr[nx - 2]) + (36.0 * inArr[nx - 3]) - (16.0 * inArr[nx - 4]) + (3.0 * inArr[nx - 5]))/24.0;
+  */
 
   VecRestoreArray(in, &inArr);
   VecRestoreArray(out, &outArr);
