@@ -258,6 +258,27 @@ void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
   MPI_Comm_rank(comm, &rank);
 
   int nx = partX[rank];
+
+  double* inArr;
+  double* outArr;
+  VecGetArray(in, &inArr);
+  VecGetArray(out, &outArr);
+
+  for(int i = 0; i < (nx - 1); ++i) {
+    outArr[i] = (inArr[i + 1] - inArr[i])/2.0;
+  }//end i
+  outArr[nx - 1] = (inArr[nx - 1] - inArr[nx - 2])/2.0;
+
+  VecRestoreArray(in, &inArr);
+  VecRestoreArray(out, &outArr);
+}
+
+/*
+void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+
+  int nx = partX[rank];
   int px = partX.size();
 
   double* inArr;
@@ -400,6 +421,7 @@ void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
   VecRestoreArray(in, &inArr);
   VecRestoreArray(out, &outArr);
 }
+*/
 
 void destroyKSP(std::vector<KSP>& ksp) {
   for(size_t i = 0; i < ksp.size(); ++i) {

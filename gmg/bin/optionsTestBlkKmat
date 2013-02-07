@@ -1,0 +1,10 @@
+-dim 1
+-K 1
+
+-finestNx 9
+-finestNy 9
+-finestNz 9
+-maxNumLevels 100
+-maxCoarseNpes 100
+
+
