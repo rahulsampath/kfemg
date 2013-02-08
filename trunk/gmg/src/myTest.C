@@ -14,8 +14,10 @@ void applyFDapprox(Vec in, Vec out) {
   VecGetSize(in, &sz);
   double* inArr;
   double* outArr;
-  VecGetArray(in, &inArr);
-  VecGetArray(out, &outArr);
+//  VecGetArray(in, &inArr);
+//  VecGetArray(out, &outArr);
+
+  VecZeroEntries(out);
 
   /*
   //First Order
@@ -34,6 +36,7 @@ void applyFDapprox(Vec in, Vec out) {
   outArr[sz - 1] = ((3.0 * inArr[sz - 1]) - (4.0 * inArr[sz - 2]) + inArr[sz - 3])/4.0;
   */
 
+  /*
   int nx = sz;
   //Fourth Order
   outArr[0] = -((25.0 * inArr[0]) - (48.0 * inArr[1]) + (36.0 * inArr[2]) - (16.0 * inArr[3]) + (3.0 * inArr[4]))/24.0;
@@ -43,9 +46,10 @@ void applyFDapprox(Vec in, Vec out) {
   }//end i
   outArr[nx - 2] = ((25.0 * inArr[nx - 2]) - (48.0 * inArr[nx - 3]) + (36.0 * inArr[nx - 4]) - (16.0 * inArr[nx - 5]) + (3.0 * inArr[nx - 6]))/24.0;
   outArr[nx - 1] = ((25.0 * inArr[nx - 1]) - (48.0 * inArr[nx - 2]) + (36.0 * inArr[nx - 3]) - (16.0 * inArr[nx - 4]) + (3.0 * inArr[nx - 5]))/24.0;
+  */
 
-  VecRestoreArray(in, &inArr);
-  VecRestoreArray(out, &outArr);
+//  VecRestoreArray(in, &inArr);
+//  VecRestoreArray(out, &outArr);
 }
 
 PetscErrorCode myMatMult(Mat mat, Vec in, Vec out) {
