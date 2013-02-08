@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   correctBlkKmats(dim, blkKmats, da, partZ, partY, partX, offsets, K);
 
   int nlevels = da.size();
-  MatZeroEntries(blkKmats[nlevels - 2][0][1]);
+ //MatZeroEntries(blkKmats[nlevels - 2][0][1]);
 
   std::vector<std::vector<Mat> > KhatMats;
   if(dim == 1) {
@@ -115,6 +115,14 @@ int main(int argc, char *argv[]) {
   MatMult(Kmat[nlevels - 1], sol, rhs);
 
   VecZeroEntries(sol);
+  double* rhsArr;
+  double* solArr;
+  VecGetArray(rhs, &rhsArr);
+  VecGetArray(sol, &solArr);
+  solArr[0] = rhsArr[0];
+  solArr[(2*Nx[nlevels - 1]) - 2] = rhsArr[(2*Nx[nlevels - 1]) - 2]; 
+  VecRestoreArray(rhs, &rhsArr);
+  VecRestoreArray(sol, &solArr);
 
   std::cout<<"Using HatPC: "<<std::endl;
   computeResidual(Kmat[nlevels - 1], sol, rhs, res);
@@ -134,6 +142,7 @@ int main(int argc, char *argv[]) {
     PetscReal norm;
     VecNorm(blkRes, NORM_2, &norm);
     std::cout<<"Init["<<d<<"]= "<<std::setprecision(13)<<norm<<std::endl;
+    //VecView(blkRes, PETSC_VIEWER_STDOUT_WORLD);
   }//end d
 
   PCSetOperators(hatPc[nlevels - 2][K - 1], Kmat[nlevels - 1], Kmat[nlevels - 1], SAME_PRECONDITIONER);
@@ -158,6 +167,7 @@ int main(int argc, char *argv[]) {
     PetscReal norm;
     VecNorm(blkRes, NORM_2, &norm);
     std::cout<<"Final["<<d<<"]= "<<std::setprecision(13)<<norm<<std::endl;
+    //VecView(blkRes, PETSC_VIEWER_STDOUT_WORLD);
   }//end d
 
   KSP ksp;
@@ -189,6 +199,7 @@ int main(int argc, char *argv[]) {
     PetscReal norm;
     VecNorm(blkRes, NORM_2, &norm);
     std::cout<<"Plain["<<d<<"]= "<<std::setprecision(13)<<norm<<std::endl;
+    //VecView(blkRes, PETSC_VIEWER_STDOUT_WORLD);
   }//end d
 
   for(size_t i = 0; i < hatPc.size(); ++i) {

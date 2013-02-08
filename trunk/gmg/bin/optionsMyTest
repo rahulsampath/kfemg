@@ -1,0 +1,11 @@
+
+-finestNx 9
+-maxNumLevels 2
+-maxCoarseNpes 1
+
+-inner_ksp_max_it 1
+-inner_ksp_monitor
+
+-plain_ksp_max_it 1
+-plain_ksp_monitor
+
