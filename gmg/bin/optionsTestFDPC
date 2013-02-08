@@ -2,7 +2,7 @@
 -dim 1
 -K 1
 
--finestNx 33
+-finestNx 17
 -maxNumLevels 2
 -maxCoarseNpes 1
 
