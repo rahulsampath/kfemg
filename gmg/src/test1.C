@@ -10,7 +10,64 @@
 #include "common/include/commonUtils.h"
 #include "gmg/include/gmgUtils.h"
 
-void applyFDapprox(std::vector<double>& in, std::vector<double>& out) {
+void applyFDapproxType2(std::vector<double>& in, std::vector<double>& out) {
+  int nx = in.size();
+
+  std::vector<double> refine1(1 + 2*(nx - 1));
+  std::vector<double> refine2(1 + 4*(nx - 1));
+  std::vector<double> refine3(1 + 8*(nx - 1));
+
+  for(int i = 0; i < nx; ++i) {
+    refine1[2*i] = in[i];
+  }//end i
+  for(int i = 0; i < (nx - 1); ++i) {
+    refine1[(2*i) + 1] = 0.5*(in[i] + in[i + 1]);
+  }//end i
+
+  int sz = refine1.size();
+  for(int i = 0; i < sz; ++i) {
+    refine2[2*i] = refine1[i];
+  }//end i
+  for(int i = 0; i < (sz - 1); ++i) {
+    refine2[(2*i) + 1] = 0.5*(refine1[i] + refine1[i + 1]);
+  }//end i
+
+  sz = refine2.size();
+  for(int i = 0; i < sz; ++i) {
+    refine3[2*i] = refine2[i];
+  }//end i
+  for(int i = 0; i < (sz - 1); ++i) {
+    refine3[(2*i) + 1] = 0.5*(refine2[i] + refine2[i + 1]);
+  }//end i
+
+  int len = refine3.size();
+  std::vector<double> tmp(len);
+
+  /*
+  //First Order
+  for(int i = 0; i < (len - 1); ++i) {
+  tmp[i] = 2.0*(refine2[i + 1] - refine2[i]);
+  }//end i
+  tmp[len - 1] = 2.0*(refine2[len - 1] - refine2[len - 2]);
+  */
+
+  //Fourth Order
+  tmp[0] = -((25.0 * refine2[0]) - (48.0 * refine2[1]) + (36.0 * refine2[2]) - (16.0 * refine2[3]) + (3.0 * refine2[4]))/3.0;
+  tmp[1] = -((25.0 * refine2[1]) - (48.0 * refine2[2]) + (36.0 * refine2[3]) - (16.0 * refine2[4]) + (3.0 * refine2[5]))/3.0;
+  for(int i = 2; i < (len - 2); ++i) {
+    tmp[i] = (-refine2[i + 2] + (8.0 * refine2[i + 1]) - (8.0 * refine2[i - 1]) + refine2[i - 2])/3.0;
+  }//end i
+  tmp[len - 2] = ((25.0 * refine2[len - 2]) - (48.0 * refine2[len - 3]) + (36.0 * refine2[len - 4])
+      - (16.0 * refine2[len - 5]) + (3.0 * refine2[len - 6]))/3.0;
+  tmp[len - 1] = ((25.0 * refine2[len - 1]) - (48.0 * refine2[len - 2]) + (36.0 * refine2[len - 3])
+      - (16.0 * refine2[len - 4]) + (3.0 * refine2[len - 5]))/3.0;
+
+  for(int i = 0; i < nx; ++i) {
+    out[i] = tmp[8*i];
+  }//end i
+}
+
+void applyFDapproxType1(std::vector<double>& in, std::vector<double>& out) {
   int nx = in.size();
 
   /*
@@ -19,9 +76,7 @@ void applyFDapprox(std::vector<double>& in, std::vector<double>& out) {
   out[i] = (in[i + 1] - in[i])/2.0;
   }//end i
   out[nx - 1] = (in[nx - 1] - in[nx - 2])/2.0;
-  */
 
-  /*
   //Second Order
   out[0] = -((3.0 * in[0]) - (4.0 * in[1]) + in[2])/4.0;
   for(int i = 1; i < (nx - 1); ++i) {
@@ -111,8 +166,11 @@ int main(int argc, char *argv[]) {
   PetscInt mode = 1;
   PetscOptionsGetInt(PETSC_NULL, "-mode", &mode, PETSC_NULL);
 
-  PetscInt modeDof = 0;
+  PetscInt modeDof = 2;
   PetscOptionsGetInt(PETSC_NULL, "-modeDof", &modeDof, PETSC_NULL);
+
+  PetscInt type = 1;
+  PetscOptionsGetInt(PETSC_NULL, "-type", &type, PETSC_NULL);
 
   double hx = 1.0/(static_cast<double>(Nx[nlevels - 1] - 1));
 
@@ -180,7 +238,11 @@ int main(int argc, char *argv[]) {
   for(int i = 0; i < Nx[nlevels - 1]; ++i) {
     uVals[i] = solArr[2*i];
   }//end i
-  applyFDapprox(uVals, uPrimeVals);
+  if(type == 1) {
+    applyFDapproxType1(uVals, uPrimeVals);
+  } else {
+    applyFDapproxType2(uVals, uPrimeVals);
+  }
   for(int i = 0; i < Nx[nlevels - 1]; ++i) {
     std::cout<<"Sol["<<i<<"] = "<<(solArr[(2*i)])<<" SolPrime = "<<(solArr[(2*i) + 1])<<" Est = "<<(uPrimeVals[i])<<std::endl;
     std::cout<<"Exact = "<<(sin((static_cast<double>(mode*i))*__PI__*hx))<<" Prime = "<<
