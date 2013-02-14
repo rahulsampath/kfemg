@@ -10,6 +10,27 @@
 #include <cassert>
 #endif
 
+void matMult2x2(double mat[2][2], double in[2], double out[2]) {
+  for(int i = 0; i < 2; ++i) {
+    out[i] = 0;
+    for(int j = 0; j < 2; ++j) {
+      out[i] += (mat[i][j]*in[j]);
+    }//end j
+  }//end i
+}
+
+void matInvert2x2(double mat[2][2], double matInv[2][2]) {
+  double a = mat[0][0];
+  double b = mat[0][1];
+  double c = mat[1][0];
+  double d = mat[1][1];
+  double det = (a*d) - (b*c);
+  matInv[0][0] = d/det;
+  matInv[0][1] = -b/det;
+  matInv[1][0] = -c/det;
+  matInv[1][1] = a/det;
+}
+
 void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorialsList,
     unsigned int K, std::vector<long long int> & coeffs, long double hz, long double hy, long double hx, 
     std::vector<std::vector<long double> >& mat, bool print) {
