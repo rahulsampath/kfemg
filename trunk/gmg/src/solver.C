@@ -1,12 +1,57 @@
 
 #include <vector>
 #include <iostream>
+#include <cmath>
 #include "gmg/include/gmgUtils.h"
 #include "common/include/commonUtils.h"
 
 #ifdef DEBUG
 #include <cassert>
 #endif
+
+void computeLSfit(double aVec[2], double HmatInv[2][2], std::vector<double>& fVec,
+    std::vector<double>& gVec, std::vector<double>& cVec) {
+  aVec[0] = 0;
+  aVec[1] = 0;
+  double rVal = computeRval(aVec, fVec, gVec, cVec); 
+  const int maxNewtonIters = 100;
+  for(int iter = 0; iter < maxNewtonIters; ++iter) {
+    if(rVal < 1.0e-12) {
+      break;
+    }
+    double jVec[2];
+    computeJvec(jVec, aVec, fVec, gVec, cVec);
+    if((fabs(jVec[0]) < 1.0e-12) && (fabs(jVec[1]) < 1.0e-12)) {
+      break;
+    }
+    double step[2];
+    matMult2x2(HmatInv, jVec, step);
+    if((fabs(step[0]) < 1.0e-12) && (fabs(step[1]) < 1.0e-12)) {
+      break;
+    }
+    double alpha = 1.0;
+    double tmpVec[2];
+    tmpVec[0] = aVec[0] - (alpha*step[0]);
+    tmpVec[1] = aVec[1] - (alpha*step[1]);
+    double tmpVal = computeRval(tmpVec, fVec, gVec, cVec);
+    while(alpha > 1.0e-12) {
+      if(tmpVal < rVal) {
+        break;
+      }
+      alpha *= 0.1;
+      tmpVec[0] = aVec[0] - (alpha*step[0]);
+      tmpVec[1] = aVec[1] - (alpha*step[1]);
+      tmpVal = computeRval(tmpVec, fVec, gVec, cVec);
+    }
+    if(tmpVal < rVal) {
+      aVec[0] = tmpVec[0];
+      aVec[1] = tmpVec[1];
+      rVal = tmpVal;
+    } else {
+      break;
+    }
+  }//end iter
+}
 
 double computeRval(double aVec[2], std::vector<double>& fVec, std::vector<double>& gVec, 
     std::vector<double>& cVec) {

@@ -25,6 +25,9 @@ void matInvert2x2(double mat[2][2], double matInv[2][2]) {
   double c = mat[1][0];
   double d = mat[1][1];
   double det = (a*d) - (b*c);
+#ifdef DEBUG
+  assert(fabs(det) > 1.0e-12);
+#endif
   matInv[0][0] = d/det;
   matInv[0][1] = -b/det;
   matInv[1][0] = -c/det;

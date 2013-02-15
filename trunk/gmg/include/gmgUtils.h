@@ -11,8 +11,10 @@
 #include <vector>
 #include "mpi.h"
 #include "common/include/commonUtils.h"
-
 #include "gmg/include/exactSolution.i"
+
+void computeLSfit(double aVec[2], double HmatInv[2][2], std::vector<double>& fVec,
+    std::vector<double>& gVec, std::vector<double>& cVec);
 
 double computeRval(double aVec[2], std::vector<double>& fVec, std::vector<double>& gVec, 
     std::vector<double>& cVec);
