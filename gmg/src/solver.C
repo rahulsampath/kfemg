@@ -8,6 +8,42 @@
 #include <cassert>
 #endif
 
+double computeRval(double aVec[2], std::vector<double>& fVec, std::vector<double>& gVec, 
+    std::vector<double>& cVec) {
+  double res = 0;
+  for(size_t i = 0; i < fVec.size(); ++i) {
+    double val = fVec[i] - (gVec[i]*aVec[0]) - (cVec[i]*aVec[1]);
+    res += (val*val);
+  }//end i
+  return res;
+}
+
+void computeJvec(double jVec[2], double aVec[2], std::vector<double>& fVec,
+    std::vector<double>& gVec, std::vector<double>& cVec) {
+  jVec[0] = 0;
+  jVec[1] = 0;
+  for(size_t i = 0; i < fVec.size(); ++i) {
+    double scaling = 2.0*((gVec[i]*aVec[0]) + (cVec[i]*aVec[1]) - fVec[i]);
+    jVec[0] += (scaling*gVec[i]);
+    jVec[1] += (scaling*cVec[i]);
+  }//end i
+}
+
+void computeHmat(double mat[2][2], std::vector<double>& gVec, std::vector<double>& cVec) {
+  double a = 0;
+  double b = 0;
+  double c = 0;
+  for(size_t i = 0; i < gVec.size(); ++i) {
+    a += (gVec[i] * gVec[i]);
+    c += (cVec[i] * gVec[i]);
+    b += (cVec[i] * cVec[i]);
+  }//end i
+  mat[0][0] = 2.0*a;
+  mat[0][1] = 2.0*c;
+  mat[1][0] = mat[0][1];
+  mat[1][1] = 2.0*b;
+}
+
 void createAll1DhatPc(std::vector<std::vector<PetscInt> >& partX,
     std::vector<std::vector<std::vector<Mat> > >& blkKmats,
     std::vector<std::vector<Mat> >& Khat1Dmats, std::vector<std::vector<PC> >& hatPc) {
@@ -267,7 +303,7 @@ void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
   /*
   //First Order
   for(int i = 0; i < (nx - 1); ++i) {
-    outArr[i] = (inArr[i + 1] - inArr[i])/2.0;
+  outArr[i] = (inArr[i + 1] - inArr[i])/2.0;
   }//end i
   outArr[nx - 1] = (inArr[nx - 1] - inArr[nx - 2])/2.0;
   */
@@ -275,7 +311,7 @@ void applyFD1D(MPI_Comm comm, std::vector<PetscInt>& partX, Vec in, Vec out) {
   //Second Order
   outArr[0] = -((3.0 * inArr[0]) - (4.0 * inArr[1]) + inArr[2])/4.0;
   for(int i = 1; i < (nx - 1); ++i) {
-  outArr[i] = (inArr[i + 1] - inArr[i - 1])/4.0;
+    outArr[i] = (inArr[i + 1] - inArr[i - 1])/4.0;
   }//end i
   outArr[nx - 1] = ((3.0 * inArr[nx - 1]) - (4.0 * inArr[nx - 2]) + inArr[nx - 3])/4.0;
 

@@ -14,6 +14,14 @@
 
 #include "gmg/include/exactSolution.i"
 
+double computeRval(double aVec[2], std::vector<double>& fVec, std::vector<double>& gVec, 
+    std::vector<double>& cVec);
+
+void computeJvec(double jVec[2], double aVec[2], std::vector<double>& fVec,
+    std::vector<double>& gVec, std::vector<double>& cVec);
+
+void computeHmat(double mat[2][2], std::vector<double>& gVec, std::vector<double>& cVec);
+
 inline long double force1D(long double x) {
   long double res = -solutionDerivative1D(x, 2);
   return res;
