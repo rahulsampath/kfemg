@@ -7,6 +7,175 @@
 #include <cassert>
 #endif
 
+void setBoundaries(DM da, Vec vec, const int K) {
+  PetscInt dim;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  long double hy = 0;
+  if(dim > 1) {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+  }
+  long double hz = 0;
+  if(dim > 2) {
+    hz = 1.0L/(static_cast<long double>(Nz - 1));
+  }
+
+  if(dim == 1) {
+    PetscScalar** arr; 
+    DMDAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      arr[0][0] = solution1D(0);
+    }
+    if((xs + nx) == Nx) {
+      arr[Nx - 1][0] = solution1D(1);
+    }
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
+  } else if(dim == 2) {
+    PetscScalar*** arr; 
+    DMDAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        long double y = ((static_cast<long double>(yi)) * hy);
+        for(int d = 0; d <= K; ++d) {
+          arr[yi][0][d*(K + 1)] = myIntPow((0.5L * hy), d) * solutionDerivative2D(0, y, 0, d);
+        }//end d
+      }//end yi
+    }
+    if((xs + nx) == Nx) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        long double y = ((static_cast<long double>(yi)) * hy);
+        for(int d = 0; d <= K; ++d) {
+          arr[yi][Nx - 1][d*(K + 1)] = myIntPow((0.5L * hy), d) * solutionDerivative2D(1, y, 0, d);
+        }//end d
+      }//end yi
+    }
+    if(ys == 0) {
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        long double x = ((static_cast<long double>(xi)) * hx);
+        for(int d = 0; d <= K; ++d) {
+          arr[0][xi][d] = myIntPow((0.5L * hx), d) * solutionDerivative2D(x, 0, d, 0);
+        }//end d
+      }//end xi
+    }
+    if((ys + ny) == Ny) {
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        long double x = ((static_cast<long double>(xi)) * hx);
+        for(int d = 0; d <= K; ++d) {
+          arr[Ny - 1][xi][d] = myIntPow((0.5L * hx), d) * solutionDerivative2D(x, 1, d, 0);
+        }//end d
+      }//end xi
+    }
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
+  } else {
+    PetscScalar**** arr; 
+    DMDAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        long double z = ((static_cast<long double>(zi)) * hz);
+        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+          long double y = ((static_cast<long double>(yi)) * hy);
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dy = 0; dy <= K; ++dy) {
+              int dof = ((dz*(K + 1)) + dy)*(K + 1);
+              arr[zi][yi][0][dof] = myIntPow((0.5L * hz), dz) * myIntPow((0.5L * hy), dy) 
+                * solutionDerivative3D(0, y, z, 0, dy, dz);
+            }//end dy
+          }//end dz
+        }//end yi
+      }//end zi
+    }
+    if((xs + nx) == Nx) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        long double z = ((static_cast<long double>(zi)) * hz);
+        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+          long double y = ((static_cast<long double>(yi)) * hy);
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dy = 0; dy <= K; ++dy) {
+              int dof = ((dz*(K + 1)) + dy)*(K + 1);
+              arr[zi][yi][Nx - 1][dof] = myIntPow((0.5L * hz), dz) * myIntPow((0.5L * hy), dy) 
+                * solutionDerivative3D(1, y, z, 0, dy, dz);
+            }//end dy
+          }//end dz
+        }//end yi
+      }//end zi
+    }
+    if(ys == 0) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        long double z = ((static_cast<long double>(zi)) * hz);
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          long double x = ((static_cast<long double>(xi)) * hx);
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dz*(K + 1)*(K + 1)) + dx;
+              arr[zi][0][xi][dof] = myIntPow((0.5L * hz), dz) * myIntPow((0.5L * hx), dx) 
+                * solutionDerivative3D(x, 0, z, dx, 0, dz);
+            }//end dx
+          }//end dz
+        }//end xi
+      }//end zi
+    }
+    if((ys + ny) == Ny) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        long double z = ((static_cast<long double>(zi)) * hz);
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          long double x = ((static_cast<long double>(xi)) * hx);
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dz*(K + 1)*(K + 1)) + dx;
+              arr[zi][Ny - 1][xi][dof] = myIntPow((0.5L * hz), dz) * myIntPow((0.5L * hx), dx) 
+                * solutionDerivative3D(x, 1, z, dx, 0, dz);
+            }//end dx
+          }//end dz
+        }//end xi
+      }//end zi
+    }
+    if(zs == 0) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        long double y = ((static_cast<long double>(yi)) * hy);
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          long double x = ((static_cast<long double>(xi)) * hx);
+          for(int dy = 0; dy <= K; ++dy) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dy*(K + 1)) + dx;
+              arr[0][yi][xi][dof] = myIntPow((0.5L * hy), dy) * myIntPow((0.5L * hx), dx) 
+                * solutionDerivative3D(x, y, 0, dx, dy, 0);
+            }//end dx
+          }//end dy
+        }//end xi
+      }//end yi
+    }
+    if((zs + nz) == Nz) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        long double y = ((static_cast<long double>(yi)) * hy);
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          long double x = ((static_cast<long double>(xi)) * hx);
+          for(int dy = 0; dy <= K; ++dy) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dy*(K + 1)) + dx;
+              arr[Nz - 1][yi][xi][dof] = myIntPow((0.5L * hy), dy) * myIntPow((0.5L * hx), dx) 
+                * solutionDerivative3D(x, y, 1, dx, dy, 0);
+            }//end dx
+          }//end dy
+        }//end xi
+      }//end yi
+    }
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
+  }
+}
+
 long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, const int K) {
   PetscInt dim;
   PetscInt dofsPerNode;
