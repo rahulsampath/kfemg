@@ -9,6 +9,60 @@
 #include <cassert>
 #endif
 
+void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs,
+    std::vector<double>& res) {
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+
+  PetscInt extraNumGpts = 0;
+  PetscOptionsGetInt(PETSC_NULL, "-extraGptsFxPhi", &extraNumGpts, PETSC_NULL);
+  int numGaussPts = (2*K) + 2 + extraNumGpts;
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(int nd = 0; nd < 2; ++nd) {
+    shFnVals[nd].resize(K + 1);
+    for(int dof = 0; dof <= K; ++dof) {
+      (shFnVals[nd][dof]).resize(numGaussPts);
+      for(int g = 0; g < numGaussPts; ++g) {
+        shFnVals[nd][dof][g] = eval1DshFn(nd, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end nd
+
+  int dofsPerNode = K + 1;
+
+  res.clear();
+  res.resize((dofsPerNode*Nx), 0.0);
+
+  for(PetscInt xi = 0; xi < (Nx - 1); ++xi) {
+    long double xa = (static_cast<long double>(xi))*hx;
+    for(int nd = 0; nd < 2; ++nd) {
+      for(int dof = 0; dof <= K; ++dof) {
+        for(int g = 0; g < numGaussPts; ++g) {
+          long double xg = coordLocalToGlobal(gPt[g], xa, hx);
+          double fn;
+          if(mode == 0) {
+            fn = 1.0;
+          } else {
+            fn = sin((static_cast<double>(mode))*__PI__*xg);
+          }
+          res[((xi + nd)*dofsPerNode) + dof] += ( gWt[g] * shFnVals[nd][dof][g] * fn );
+        }//end g
+      }//end dof
+    }//end nd
+  }//end xi
+
+  long double jac = hx * 0.5L;
+  for(size_t i = 0; i < res.size(); ++i) {
+    res[i] *= jac;
+  }//end i
+
+  res[0] = 0;
+  res[dofsPerNode*(Nx - 1)] = 0;
+}
+
 void computeLSfit(double aVec[2], double HmatInv[2][2], std::vector<double>& fVec,
     std::vector<double>& gVec, std::vector<double>& cVec) {
   aVec[0] = 0;
