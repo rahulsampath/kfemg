@@ -2,6 +2,17 @@
 #ifndef __MG_PC__
 #define __MG_PC__
 
+#include "petsc.h"
+#include "petscvec.h"
+#include "petscmat.h"
+#include "petscdmda.h"
+#include "petscksp.h"
+#include "petscpc.h"
+#include <vector>
+#include "mpi.h"
+#include "common/include/commonUtils.h"
+#include "gmg/include/gmgUtils.h"
+
 struct MGdata {
   PetscInt numVcycles;
   std::vector<Mat> Kmat;

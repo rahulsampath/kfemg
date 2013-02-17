@@ -1,5 +1,5 @@
 
-#include "gmg/include/gmgUtils.h"
+#include "gmg/include/boundary.h"
 #include "common/include/commonUtils.h"
 
 #ifdef DEBUG

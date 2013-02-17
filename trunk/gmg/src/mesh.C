@@ -3,7 +3,9 @@
 #include <cmath>
 #include <algorithm>
 #include "gmg/include/gmgUtils.h"
+#include "gmg/include/mesh.h"
 #include "common/include/commonUtils.h"
+#include <vector>
 
 #ifdef DEBUG
 #include <cassert>
