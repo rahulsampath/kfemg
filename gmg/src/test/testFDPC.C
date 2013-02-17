@@ -8,6 +8,10 @@
 #include "petscksp.h"
 #include "common/include/commonUtils.h"
 #include "gmg/include/gmgUtils.h"
+#include "gmg/include/mesh.h"
+#include "gmg/include/hatPC.h"
+#include "gmg/include/assembly.h"
+#include "gmg/include/boundary.h"
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);

@@ -1,4 +1,7 @@
 
+#include "gmg/include/mgPC.h"
+#include "gmg/include/intergrid.h"
+
 PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   MGdata* data;
   PCShellGetContext(pc, (void**)(&data));

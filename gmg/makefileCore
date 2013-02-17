@@ -16,18 +16,18 @@ all : $(EXEC)
 bin/test1 : ./src/test/test1.o ./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o 
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
-bin/myTest : ./src/test/myTest.o ./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
+bin/myTest : ./src/test/myTest.o ./src/hatPC.o ./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
-bin/testFDPC : ./src/test/testFDPC.o ./src/solver.o ./src/intergrid.o ./src/mms.o \
+bin/testFDPC : ./src/test/testFDPC.o ./src/hatPC.o ./src/intergrid.o ./src/mms.o \
 	./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
-bin/testMMS : ./src/test/testMMS.o ./src/solver.o ./src/intergrid.o ./src/mms.o \
+bin/testMMS : ./src/test/testMMS.o ./src/mgPC.o ./src/hatPC.o ./src/intergrid.o ./src/mms.o \
 	./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
-bin/testBlkKmat : ./src/test/testBlkKmat.o ./src/assembly.o ./src/boundary.o \
+bin/testBlkKmat : ./src/test/testBlkKmat.o ./src/hatPC.o ./src/assembly.o ./src/boundary.o \
 		  ./src/mesh.o ./src/gmgUtils.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 

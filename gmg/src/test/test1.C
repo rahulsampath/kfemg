@@ -9,6 +9,9 @@
 #include "petscksp.h"
 #include "common/include/commonUtils.h"
 #include "gmg/include/gmgUtils.h"
+#include "gmg/include/mesh.h"
+#include "gmg/include/assembly.h"
+#include "gmg/include/boundary.h"
 
 void applyFDapproxType2(std::vector<double>& in, std::vector<double>& out) {
   int nx = in.size();

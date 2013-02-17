@@ -1,4 +1,16 @@
 
+#include "petsc.h"
+#include "petscvec.h"
+#include "petscmat.h"
+#include "petscdmda.h"
+#include "petscksp.h"
+#include "petscpc.h"
+#include <vector>
+#include "mpi.h"
+#include "common/include/commonUtils.h"
+#include "gmg/include/gmgUtils.h"
+#include "gmg/include/hatPC.h"
+
 PetscErrorCode applyPCFD1D(PC pc, Vec in, Vec out) {
   PCFD1Ddata* data;
   PCShellGetContext(pc, (void**)(&data));

@@ -8,6 +8,13 @@
 #include "petscksp.h"
 #include "common/include/commonUtils.h"
 #include "gmg/include/gmgUtils.h"
+#include "gmg/include/mesh.h"
+#include "gmg/include/mms.h"
+#include "gmg/include/assembly.h"
+#include "gmg/include/boundary.h"
+#include "gmg/include/intergrid.h"
+#include "gmg/include/mgPC.h"
+#include "gmg/include/hatPC.h"
 
 PetscClassId gmgCookie;
 PetscLogEvent meshEvent;

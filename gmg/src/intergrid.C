@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "gmg/include/gmgUtils.h"
+#include "gmg/include/intergrid.h"
 #include "common/include/commonUtils.h"
 
 #ifdef DEBUG
