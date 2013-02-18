@@ -37,7 +37,7 @@ void computeJvec(double jVec[2], double aVec[2], int len, double* fVec, double* 
 
 void computeHmat(double mat[2][2], int len, double* g1Vec, double* g2Vec);
 
-void applyLSfitPC1D(LSfitData* data, Vec in, Vec out);
+PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out);
 
 #endif
 
