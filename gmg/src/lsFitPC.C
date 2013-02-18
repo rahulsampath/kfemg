@@ -2,6 +2,13 @@
 #include "gmg/include/lsFitPC.h"
 #include "gmg/include/gmgUtils.h"
 
+PetscErrorCode destroyLSfitPC1D(PC pc) {
+  LSfitData* data;
+  PCShellGetContext(pc, (void**)(&data));
+
+  return 0;
+}
+
 PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
   LSfitData* data;
   PCShellGetContext(pc, (void**)(&data));
@@ -107,6 +114,8 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
       }
     }
   }
+
+  return 0;
 }
 
 void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs, double* res) {
