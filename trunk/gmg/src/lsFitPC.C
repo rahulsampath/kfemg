@@ -2,7 +2,10 @@
 #include "gmg/include/lsFitPC.h"
 #include "gmg/include/gmgUtils.h"
 
-void applyLSfitPC1D(LSfitData* data, Vec in, Vec out) {
+PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
+  LSfitData* data;
+  PCShellGetContext(pc, (void**)(&data));
+
   //This approximately solves: Kmat * out = in
   int dofsPerNode = (data->K) + 1;
 
