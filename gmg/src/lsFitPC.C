@@ -1,7 +1,104 @@
 
+#include "gmg/include/lsFitPC.h"
+#include "gmg/include/gmgUtils.h"
 
-void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs,
-    std::vector<double>& res) {
+void applyLSfitPC1D(LSfitData* data, Vec in, Vec out) {
+  //This approximately solves: Kmat * out = in
+  int dofsPerNode = (data->K) + 1;
+
+  //1. Prepare initial guess that satisfies Dirichlet conditions.  
+  VecZeroEntries(out);
+  double* outArr;
+  double* inArr;
+  VecGetArray(out, &outArr);
+  VecGetArray(in, &inArr);
+  outArr[0] = inArr[0];
+  outArr[((data->Nx) - 1)*dofsPerNode] = inArr[((data->Nx) - 1)*dofsPerNode];
+  VecRestoreArray(in, &inArr);
+  VecRestoreArray(out, &outArr);
+
+  //2.a. Compute initial residual: res = in - (Kmat * out)
+  computeResidual((data->Kmat), out, in, (data->res));
+  //2.b. Initial residual norm.
+  PetscScalar initNormSqr;
+  VecDot((data->res), (data->res), &initNormSqr);
+
+  //3. Compute LS fit
+  double* resArr;
+  double* g1Arr;
+  double* g2Arr;
+  VecGetArray((data->res), &resArr);
+  VecGetArray((data->g1Vec), &g1Arr);
+  VecGetArray((data->g2Vec), &g2Arr);
+  double aVec[2];
+  computeLSfit(aVec, (data->HmatInv), ((data->Nx)*dofsPerNode), resArr, g1Arr, g2Arr);
+  VecRestoreArray((data->res), &resArr);
+  VecRestoreArray((data->g1Vec), &g1Arr);
+  VecRestoreArray((data->g2Vec), &g2Arr);
+
+  //4. Compute RHS for reduced problem rhs = a0*g1 + a1*g2
+  double* rhsArr;
+  VecGetArray((data->reducedG1Vec), &g1Arr);
+  VecGetArray((data->reducedG2Vec), &g2Arr);
+  VecGetArray((data->reducedRhs), &rhsArr);
+  for(int i = 0; i < Nx; ++i) {
+    rhsArr[i] = (aVec[0] * g1Arr[i]) + (aVec[1] * g2Arr[i]); 
+  }//end i
+  VecRestoreArray((data->reducedG1Vec), &g1Arr);
+  VecRestoreArray((data->reducedG2Vec), &g2Arr);
+  VecRestoreArray((data->reducedRhs), &rhsArr);
+
+  //5. Solve (approx.) the reduced problem using zero initial guess.
+  KSPSolve((data->reducedSolver), (data->reducedRhs), (data->reducedSol));
+
+  //6. Set reducedSol as the 0th dof of err
+  double* errArr;
+  double* solArr;
+  VecGetArray((data->reducedSol), &solArr);
+  VecGetArray((data->err), &errArr);
+  for(int i = 0; i < Nx; ++i) {
+    errArr[i*dofsPerNode] = solArr[i];
+  }//end i
+  VecRestoreArray((data->reducedSol), &solArr);
+
+  //7. Use Finite Differencing to estimate the other dofs of err.
+  for(int d = 1; d <= K; ++d) {
+    errArr[(0*dofsPerNode) + d] = -((3.0 * errArr[(0*dofsPerNode) + d - 1]) - (4.0 * errArr[(1*dofsPerNode) + d - 1])
+        + errArr[(2*dofsPerNode) + d - 1])/4.0;
+    for(int i = 1; i < (Nx - 1); ++i) {
+      errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - inArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
+    }//end i
+    errArr[((Nx - 1)*dofsPerNode) + d] = ((3.0 * errArr[((Nx - 1)*dofsPerNode) + d - 1]) -
+        (4.0 * errArr[((Nx - 2)*dofsPerNode) + d - 1]) + errArr[((Nx - 3)*dofsPerNode) + d - 1])/4.0;
+  }//end d
+  VecRestoreArray((data->err), &errArr);
+
+  //8. tmp1 = Kmat * err 
+  MatMult((data->Kmat), (data->err), (data->tmp1));
+
+  //9. Simple line search
+  double alpha = -1.0;
+  VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
+  PetscScalar finalNormSqr;
+  VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
+  while(alpha < -1.0e-12) {
+    if(finalNormSqr < initNormSqr) {
+      break;
+    }
+    alpha *= 0.1;
+    VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
+    VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
+  }
+
+  //10. Accept preconditioner only if it is converging 
+  if(finalNormSqr < initNormSqr) {
+    VecAXPY(out, -alpha, (data->err));
+  } else {
+    VecCopy(in, out);
+  }
+}
+
+void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs, double* res) {
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
 
   PetscInt extraNumGpts = 0;
@@ -23,11 +120,11 @@ void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs,
   }//end nd
 
   int dofsPerNode = K + 1;
+  for(int i = 0; i < (dofsPerNode*Nx); ++i) {
+    res[i] = 0.0;
+  }//end i
 
-  res.clear();
-  res.resize((dofsPerNode*Nx), 0.0);
-
-  for(PetscInt xi = 0; xi < (Nx - 1); ++xi) {
+  for(int xi = 0; xi < (Nx - 1); ++xi) {
     long double xa = (static_cast<long double>(xi))*hx;
     for(int nd = 0; nd < 2; ++nd) {
       for(int dof = 0; dof <= K; ++dof) {
@@ -46,26 +143,26 @@ void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs,
   }//end xi
 
   long double jac = hx * 0.5L;
-  for(size_t i = 0; i < res.size(); ++i) {
+  for(int i = 0; i < (dofsPerNode*Nx); ++i) {
     res[i] *= jac;
   }//end i
 
+  //Dirichlet Correction
   res[0] = 0;
   res[dofsPerNode*(Nx - 1)] = 0;
 }
 
-void computeLSfit(double aVec[2], double HmatInv[2][2], std::vector<double>& fVec,
-    std::vector<double>& gVec, std::vector<double>& cVec) {
+void computeLSfit(double aVec[2], double HmatInv[2][2], int len, double* fVec, double* g1Vec, double* g2Vec) {
   aVec[0] = 0;
   aVec[1] = 0;
-  double rVal = computeRval(aVec, fVec, gVec, cVec); 
+  double rVal = computeRval(aVec, len, fVec, g1Vec, g2Vec); 
   const int maxNewtonIters = 100;
   for(int iter = 0; iter < maxNewtonIters; ++iter) {
     if(rVal < 1.0e-12) {
       break;
     }
     double jVec[2];
-    computeJvec(jVec, aVec, fVec, gVec, cVec);
+    computeJvec(jVec, aVec, len, fVec, g1Vec, g2Vec);
     if((fabs(jVec[0]) < 1.0e-12) && (fabs(jVec[1]) < 1.0e-12)) {
       break;
     }
@@ -78,7 +175,7 @@ void computeLSfit(double aVec[2], double HmatInv[2][2], std::vector<double>& fVe
     double tmpVec[2];
     tmpVec[0] = aVec[0] - (alpha*step[0]);
     tmpVec[1] = aVec[1] - (alpha*step[1]);
-    double tmpVal = computeRval(tmpVec, fVec, gVec, cVec);
+    double tmpVal = computeRval(tmpVec, len, fVec, g1Vec, g2Vec);
     while(alpha > 1.0e-12) {
       if(tmpVal < rVal) {
         break;
@@ -86,7 +183,7 @@ void computeLSfit(double aVec[2], double HmatInv[2][2], std::vector<double>& fVe
       alpha *= 0.1;
       tmpVec[0] = aVec[0] - (alpha*step[0]);
       tmpVec[1] = aVec[1] - (alpha*step[1]);
-      tmpVal = computeRval(tmpVec, fVec, gVec, cVec);
+      tmpVal = computeRval(tmpVec, len, fVec, g1Vec, g2Vec);
     }
     if(tmpVal < rVal) {
       aVec[0] = tmpVec[0];
@@ -98,35 +195,33 @@ void computeLSfit(double aVec[2], double HmatInv[2][2], std::vector<double>& fVe
   }//end iter
 }
 
-double computeRval(double aVec[2], std::vector<double>& fVec, std::vector<double>& gVec, 
-    std::vector<double>& cVec) {
+double computeRval(double aVec[2], int len, double* fVec, double* g1Vec, double* g2Vec) {
   double res = 0;
-  for(size_t i = 0; i < fVec.size(); ++i) {
-    double val = fVec[i] - (gVec[i]*aVec[0]) - (cVec[i]*aVec[1]);
+  for(size_t i = 0; i < len; ++i) {
+    double val = fVec[i] - (g1Vec[i]*aVec[0]) - (g2Vec[i]*aVec[1]);
     res += (val*val);
   }//end i
   return res;
 }
 
-void computeJvec(double jVec[2], double aVec[2], std::vector<double>& fVec,
-    std::vector<double>& gVec, std::vector<double>& cVec) {
+void computeJvec(double jVec[2], double aVec[2], int len, double* fVec, double* g1Vec, double* g2Vec) {
   jVec[0] = 0;
   jVec[1] = 0;
-  for(size_t i = 0; i < fVec.size(); ++i) {
-    double scaling = 2.0*((gVec[i]*aVec[0]) + (cVec[i]*aVec[1]) - fVec[i]);
-    jVec[0] += (scaling*gVec[i]);
-    jVec[1] += (scaling*cVec[i]);
+  for(size_t i = 0; i < len; ++i) {
+    double scaling = 2.0*((g1Vec[i]*aVec[0]) + (g2Vec[i]*aVec[1]) - fVec[i]);
+    jVec[0] += (scaling*g1Vec[i]);
+    jVec[1] += (scaling*g2Vec[i]);
   }//end i
 }
 
-void computeHmat(double mat[2][2], std::vector<double>& gVec, std::vector<double>& cVec) {
+void computeHmat(double mat[2][2], int len, double* g1Vec, double* g2Vec) {
   double a = 0;
   double b = 0;
   double c = 0;
-  for(size_t i = 0; i < gVec.size(); ++i) {
-    a += (gVec[i] * gVec[i]);
-    c += (cVec[i] * gVec[i]);
-    b += (cVec[i] * cVec[i]);
+  for(size_t i = 0; i < len; ++i) {
+    a += (g1Vec[i] * g1Vec[i]);
+    c += (g2Vec[i] * g1Vec[i]);
+    b += (g2Vec[i] * g2Vec[i]);
   }//end i
   mat[0][0] = 2.0*a;
   mat[0][1] = 2.0*c;

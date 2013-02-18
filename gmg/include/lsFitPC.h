@@ -2,21 +2,42 @@
 #ifndef __LS_FIT_PC__
 #define __LS_FIT_PC__
 
+#include "petsc.h"
+#include "petscvec.h"
+#include "petscmat.h"
+#include "petscdmda.h"
+#include "petscksp.h"
 #include <vector>
 
-void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs,
-    std::vector<double>& res);
+struct LSfitData {
+  int K;
+  int Nx;
+  double HmatInv[2][2];
+  Mat Kmat;
+  Vec res;
+  Vec err;
+  Vec tmp1;
+  Vec tmp2;
+  Vec g1Vec;
+  Vec g2Vec;
+  Vec reducedG1Vec;
+  Vec reducedG2Vec;
+  KSP reducedSolver;
+  Vec reducedRhs;
+  Vec reducedSol;
+};
 
-void computeLSfit(double aVec[2], double HmatInv[2][2], std::vector<double>& fVec,
-    std::vector<double>& gVec, std::vector<double>& cVec);
+void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs, double* res);
 
-double computeRval(double aVec[2], std::vector<double>& fVec, std::vector<double>& gVec, 
-    std::vector<double>& cVec);
+void computeLSfit(double aVec[2], double HmatInv[2][2], int len, double* fVec, double* g1Vec, double* g2Vec);
 
-void computeJvec(double jVec[2], double aVec[2], std::vector<double>& fVec,
-    std::vector<double>& gVec, std::vector<double>& cVec);
+double computeRval(double aVec[2], int len, double* fVec, double* g1Vec, double* g2Vec);
 
-void computeHmat(double mat[2][2], std::vector<double>& gVec, std::vector<double>& cVec);
+void computeJvec(double jVec[2], double aVec[2], int len, double* fVec, double* g1Vec, double* g2Vec);
+
+void computeHmat(double mat[2][2], int len, double* g1Vec, double* g2Vec);
+
+void applyLSfitPC1D(LSfitData* data, Vec in, Vec out);
 
 #endif
 
