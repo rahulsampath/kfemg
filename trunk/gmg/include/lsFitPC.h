@@ -39,6 +39,10 @@ void computeHmat(double mat[2][2], int len, double* g1Vec, double* g2Vec);
 
 PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out);
 
+PetscErrorCode destroyLSfitPC1D(PC pc);
+
+void createLSfitPC1D(PC pc);
+
 #endif
 
 
