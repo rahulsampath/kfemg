@@ -23,78 +23,86 @@ void applyLSfitPC1D(LSfitData* data, Vec in, Vec out) {
   PetscScalar initNormSqr;
   VecDot((data->res), (data->res), &initNormSqr);
 
-  //3. Compute LS fit
-  double* resArr;
-  double* g1Arr;
-  double* g2Arr;
-  VecGetArray((data->res), &resArr);
-  VecGetArray((data->g1Vec), &g1Arr);
-  VecGetArray((data->g2Vec), &g2Arr);
-  double aVec[2];
-  computeLSfit(aVec, (data->HmatInv), ((data->Nx)*dofsPerNode), resArr, g1Arr, g2Arr);
-  VecRestoreArray((data->res), &resArr);
-  VecRestoreArray((data->g1Vec), &g1Arr);
-  VecRestoreArray((data->g2Vec), &g2Arr);
+  if(initNormSqr >= 1.0e-24) {
+    //3. Compute LS fit
+    double* resArr;
+    double* g1Arr;
+    double* g2Arr;
+    VecGetArray((data->res), &resArr);
+    VecGetArray((data->g1Vec), &g1Arr);
+    VecGetArray((data->g2Vec), &g2Arr);
+    double aVec[2];
+    computeLSfit(aVec, (data->HmatInv), ((data->Nx)*dofsPerNode), resArr, g1Arr, g2Arr);
+    VecRestoreArray((data->res), &resArr);
+    VecRestoreArray((data->g1Vec), &g1Arr);
+    VecRestoreArray((data->g2Vec), &g2Arr);
 
-  //4. Compute RHS for reduced problem rhs = a0*g1 + a1*g2
-  double* rhsArr;
-  VecGetArray((data->reducedG1Vec), &g1Arr);
-  VecGetArray((data->reducedG2Vec), &g2Arr);
-  VecGetArray((data->reducedRhs), &rhsArr);
-  for(int i = 0; i < Nx; ++i) {
-    rhsArr[i] = (aVec[0] * g1Arr[i]) + (aVec[1] * g2Arr[i]); 
-  }//end i
-  VecRestoreArray((data->reducedG1Vec), &g1Arr);
-  VecRestoreArray((data->reducedG2Vec), &g2Arr);
-  VecRestoreArray((data->reducedRhs), &rhsArr);
-
-  //5. Solve (approx.) the reduced problem using zero initial guess.
-  KSPSolve((data->reducedSolver), (data->reducedRhs), (data->reducedSol));
-
-  //6. Set reducedSol as the 0th dof of err
-  double* errArr;
-  double* solArr;
-  VecGetArray((data->reducedSol), &solArr);
-  VecGetArray((data->err), &errArr);
-  for(int i = 0; i < Nx; ++i) {
-    errArr[i*dofsPerNode] = solArr[i];
-  }//end i
-  VecRestoreArray((data->reducedSol), &solArr);
-
-  //7. Use Finite Differencing to estimate the other dofs of err.
-  for(int d = 1; d <= K; ++d) {
-    errArr[(0*dofsPerNode) + d] = -((3.0 * errArr[(0*dofsPerNode) + d - 1]) - (4.0 * errArr[(1*dofsPerNode) + d - 1])
-        + errArr[(2*dofsPerNode) + d - 1])/4.0;
-    for(int i = 1; i < (Nx - 1); ++i) {
-      errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - inArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
+    //4. Compute RHS for reduced problem rhs = a0*g1 + a1*g2
+    double* rhsArr;
+    VecGetArray((data->reducedG1Vec), &g1Arr);
+    VecGetArray((data->reducedG2Vec), &g2Arr);
+    VecGetArray((data->reducedRhs), &rhsArr);
+    for(int i = 0; i < Nx; ++i) {
+      rhsArr[i] = (aVec[0] * g1Arr[i]) + (aVec[1] * g2Arr[i]); 
     }//end i
-    errArr[((Nx - 1)*dofsPerNode) + d] = ((3.0 * errArr[((Nx - 1)*dofsPerNode) + d - 1]) -
-        (4.0 * errArr[((Nx - 2)*dofsPerNode) + d - 1]) + errArr[((Nx - 3)*dofsPerNode) + d - 1])/4.0;
-  }//end d
-  VecRestoreArray((data->err), &errArr);
+    VecRestoreArray((data->reducedG1Vec), &g1Arr);
+    VecRestoreArray((data->reducedG2Vec), &g2Arr);
+    VecRestoreArray((data->reducedRhs), &rhsArr);
 
-  //8. tmp1 = Kmat * err 
-  MatMult((data->Kmat), (data->err), (data->tmp1));
+    //5. Solve (approx.) the reduced problem using zero initial guess.
+    KSPSolve((data->reducedSolver), (data->reducedRhs), (data->reducedSol));
 
-  //9. Simple line search
-  double alpha = -1.0;
-  VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
-  PetscScalar finalNormSqr;
-  VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
-  while(alpha < -1.0e-12) {
-    if(finalNormSqr < initNormSqr) {
-      break;
+    //6. Set reducedSol as the 0th dof of err
+    double* errArr;
+    double* solArr;
+    VecGetArray((data->reducedSol), &solArr);
+    VecGetArray((data->err), &errArr);
+    for(int i = 0; i < Nx; ++i) {
+      errArr[i*dofsPerNode] = solArr[i];
+    }//end i
+    VecRestoreArray((data->reducedSol), &solArr);
+
+    //7. Use Finite Differencing to estimate the other dofs of err.
+    for(int d = 1; d <= K; ++d) {
+      errArr[(0*dofsPerNode) + d] = -((3.0 * errArr[(0*dofsPerNode) + d - 1]) - (4.0 * errArr[(1*dofsPerNode) + d - 1])
+          + errArr[(2*dofsPerNode) + d - 1])/4.0;
+      for(int i = 1; i < (Nx - 1); ++i) {
+        errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - inArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
+      }//end i
+      errArr[((Nx - 1)*dofsPerNode) + d] = ((3.0 * errArr[((Nx - 1)*dofsPerNode) + d - 1]) -
+          (4.0 * errArr[((Nx - 2)*dofsPerNode) + d - 1]) + errArr[((Nx - 3)*dofsPerNode) + d - 1])/4.0;
+    }//end d
+    VecRestoreArray((data->err), &errArr);
+
+    PetscScalar errNormSqr;
+    VecDot((data->err), (data->err), &errNormSqr);
+    if(errNormSqr < 1.0e-24) {
+      VecCopy(in, out);
+    } else {
+      //8. tmp1 = Kmat * err 
+      MatMult((data->Kmat), (data->err), (data->tmp1));
+
+      //9. Simple line search
+      double alpha = -1.0;
+      VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
+      PetscScalar finalNormSqr;
+      VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
+      while(alpha < -1.0e-12) {
+        if(finalNormSqr < initNormSqr) {
+          break;
+        }
+        alpha *= 0.1;
+        VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
+        VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
+      }
+
+      //10. Accept preconditioner only if it is converging 
+      if(finalNormSqr < initNormSqr) {
+        VecAXPY(out, -alpha, (data->err));
+      } else {
+        VecCopy(in, out);
+      }
     }
-    alpha *= 0.1;
-    VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
-    VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
-  }
-
-  //10. Accept preconditioner only if it is converging 
-  if(finalNormSqr < initNormSqr) {
-    VecAXPY(out, -alpha, (data->err));
-  } else {
-    VecCopy(in, out);
   }
 }
 
