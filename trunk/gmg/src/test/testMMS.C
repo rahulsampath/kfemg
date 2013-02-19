@@ -225,6 +225,8 @@ int main(int argc, char *argv[]) {
   buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
 
   MGdata data;
+  data.K = K;
+  data.daFinest = da[da.size() - 1];
   data.Kmat = Kmat;
   data.Pmat = Pmat;
   data.tmpCvec = tmpCvec; 

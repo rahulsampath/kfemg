@@ -14,6 +14,8 @@
 #include "gmg/include/gmgUtils.h"
 
 struct MGdata {
+  int K;
+  DM daFinest;
   std::vector<Mat> Kmat;
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec; 
