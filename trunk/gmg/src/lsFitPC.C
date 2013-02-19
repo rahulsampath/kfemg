@@ -6,6 +6,19 @@ PetscErrorCode destroyLSfitPC1D(PC pc) {
   LSfitData* data;
   PCShellGetContext(pc, (void**)(&data));
 
+  KSPDestroy(&(data->reducedSolver));
+  VecDestroy(&(data->res));
+  VecDestroy(&(data->err));
+  VecDestroy(&(data->tmp1));
+  VecDestroy(&(data->tmp2));
+  VecDestroy(&(data->g1Vec));
+  VecDestroy(&(data->g2Vec));
+  VecDestroy(&(data->reducedG1Vec));
+  VecDestroy(&(data->reducedG2Vec));
+  VecDestroy(&(data->reducedRhs));
+  VecDestroy(&(data->reducedSol));
+  delete data;
+
   return 0;
 }
 
