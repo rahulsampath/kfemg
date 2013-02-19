@@ -16,10 +16,10 @@
 void applyFDapprox(Vec in, Vec out) {
   PetscInt sz;
   VecGetSize(in, &sz);
-  double* inArr;
-  double* outArr;
-//  VecGetArray(in, &inArr);
-//  VecGetArray(out, &outArr);
+  //double* inArr;
+  //double* outArr;
+  //  VecGetArray(in, &inArr);
+  //  VecGetArray(out, &outArr);
 
   VecZeroEntries(out);
 
@@ -41,19 +41,19 @@ void applyFDapprox(Vec in, Vec out) {
   */
 
   /*
-  int nx = sz;
+     int nx = sz;
   //Fourth Order
   outArr[0] = -((25.0 * inArr[0]) - (48.0 * inArr[1]) + (36.0 * inArr[2]) - (16.0 * inArr[3]) + (3.0 * inArr[4]))/24.0;
   outArr[1] = -((25.0 * inArr[1]) - (48.0 * inArr[2]) + (36.0 * inArr[3]) - (16.0 * inArr[4]) + (3.0 * inArr[5]))/24.0;
   for(int i = 2; i < (nx - 2); ++i) {
-    outArr[i] = (-inArr[i + 2] + (8.0 * inArr[i + 1]) - (8.0 * inArr[i - 1]) + inArr[i - 2])/24.0;
+  outArr[i] = (-inArr[i + 2] + (8.0 * inArr[i + 1]) - (8.0 * inArr[i - 1]) + inArr[i - 2])/24.0;
   }//end i
   outArr[nx - 2] = ((25.0 * inArr[nx - 2]) - (48.0 * inArr[nx - 3]) + (36.0 * inArr[nx - 4]) - (16.0 * inArr[nx - 5]) + (3.0 * inArr[nx - 6]))/24.0;
   outArr[nx - 1] = ((25.0 * inArr[nx - 1]) - (48.0 * inArr[nx - 2]) + (36.0 * inArr[nx - 3]) - (16.0 * inArr[nx - 4]) + (3.0 * inArr[nx - 5]))/24.0;
   */
 
-//  VecRestoreArray(in, &inArr);
-//  VecRestoreArray(out, &outArr);
+  //  VecRestoreArray(in, &inArr);
+  //  VecRestoreArray(out, &outArr);
 }
 
 PetscErrorCode myMatMult(Mat mat, Vec in, Vec out) {

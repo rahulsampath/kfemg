@@ -12,5 +12,7 @@ void correctKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, int K);
 
 void dirichletMatrixCorrection(Mat Kmat, DM da, const int K);
 
+void makeBoundariesConsistent(DM da, Vec in, Vec out, const int K);
+
 #endif
 
