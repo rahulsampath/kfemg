@@ -2,6 +2,61 @@
 #include "gmg/include/lsFitPC.h"
 #include "gmg/include/gmgUtils.h"
 
+void createLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
+    std::vector<long long int>& coeffsK, std::vector<long long int>& coeffs0) {
+  LSfitData* data = new LSfitData;
+  data->K = K;
+  data->Nx = Nx;
+  data->Kmat = Kmat;
+  MatGetVecs(Kmat, &(data->err), &(data->res));
+  VecDuplicate((data->res), &(data->g1Vec));
+  VecDuplicate((data->res), &(data->g2Vec));
+  VecDuplicate((data->res), &(data->tmp1));
+  VecDuplicate((data->res), &(data->tmp2));
+  MatGetVecs(reducedMat, &(data->reducedSol), &(data->reducedRhs));
+  VecDuplicate((data->reducedRhs), &(data->reducedG1Vec));
+  VecDuplicate((data->reducedRhs), &(data->reducedG2Vec));
+  MPI_Comm comm;
+  PetscObjectGetComm(((PetscObject)Kmat), &comm);
+  KSPCreate(comm, &(data->reducedSolver));
+  KSPSetType((data->reducedSolver), KSPCG);
+  KSPSetPCSide((data->reducedSolver), PC_LEFT);
+  PC tmpPC;
+  KSPGetPC((data->reducedSolver), &tmpPC);
+  PCSetType(tmpPC, PCNONE);
+  KSPSetOperators((data->reducedSolver), reducedMat, reducedMat, SAME_PRECONDITIONER);
+  KSPSetInitialGuessNonzero((data->reducedSolver), PETSC_FALSE);
+  KSPSetTolerances((data->reducedSolver), 1.0e-12, 1.0e-12, PETSC_DEFAULT, 2);
+  KSPSetOptionsPrefix((data->reducedSolver), "C0_");
+  KSPSetFromOptions(data->reducedSolver);
+
+  double* g1Arr;
+  double* g2Arr;
+  double* redG1Arr;
+  double* redG2Arr;
+  VecGetArray((data->g1Vec), &g1Arr);
+  VecGetArray((data->reducedG1Vec), &redG1Arr);
+  VecGetArray((data->g2Vec), &g2Arr);
+  VecGetArray((data->reducedG2Vec), &redG2Arr);
+  computeFxPhi1D(0, Nx, K, coeffsK, g1Arr);
+  computeFxPhi1D(0, Nx, 0, coeffs0, redG1Arr);
+  computeFxPhi1D(1, Nx, K, coeffsK, g2Arr);
+  computeFxPhi1D(1, Nx, 0, coeffs0, redG2Arr);
+  double Hmat[2][2];
+  computeHmat(Hmat, (Nx*(K + 1)), g1Arr, g2Arr);
+  VecRestoreArray((data->g1Vec), &g1Arr);
+  VecRestoreArray((data->reducedG1Vec), &redG1Arr);
+  VecRestoreArray((data->g2Vec), &g2Arr);
+  VecRestoreArray((data->reducedG2Vec), &redG2Arr);
+  matInvert2x2(Hmat, (data->HmatInv));
+
+  PCSetType(pc, PCSHELL);
+  PCShellSetContext(pc, data);
+  PCShellSetName(pc, "MyLSPC");
+  PCShellSetApply(pc, &applyLSfitPC1D);
+  PCShellSetDestroy(pc, &destroyLSfitPC1D);
+}
+
 PetscErrorCode destroyLSfitPC1D(PC pc) {
   LSfitData* data;
   PCShellGetContext(pc, (void**)(&data));
