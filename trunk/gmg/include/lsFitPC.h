@@ -41,7 +41,8 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out);
 
 PetscErrorCode destroyLSfitPC1D(PC pc);
 
-void createLSfitPC1D(PC pc);
+void createLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
+    std::vector<long long int>& coeffsK, std::vector<long long int>& coeffs0);
 
 #endif
 
