@@ -14,6 +14,7 @@ struct LSfitData {
   int Nx;
   double HmatInv[2][2];
   Mat Kmat;
+  KSP reducedSolver;
   Vec res;
   Vec err;
   Vec tmp1;
@@ -22,7 +23,6 @@ struct LSfitData {
   Vec g2Vec;
   Vec reducedG1Vec;
   Vec reducedG2Vec;
-  KSP reducedSolver;
   Vec reducedRhs;
   Vec reducedSol;
 };
