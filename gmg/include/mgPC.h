@@ -14,7 +14,6 @@
 #include "gmg/include/gmgUtils.h"
 
 struct MGdata {
-  PetscInt numVcycles;
   std::vector<Mat> Kmat;
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec; 

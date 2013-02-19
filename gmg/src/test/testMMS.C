@@ -225,12 +225,6 @@ int main(int argc, char *argv[]) {
   buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
 
   MGdata data;
-  PetscInt numVcycles = 1;
-  PetscOptionsGetInt(PETSC_NULL, "-numVcycles", &numVcycles, PETSC_NULL);
-  if(print) {
-    std::cout<<"numVcycles = "<<numVcycles<<std::endl;
-  }
-  data.numVcycles = numVcycles;
   data.Kmat = Kmat;
   data.Pmat = Pmat;
   data.tmpCvec = tmpCvec; 
