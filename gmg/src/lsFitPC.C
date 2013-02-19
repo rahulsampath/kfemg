@@ -1,6 +1,7 @@
 
 #include "gmg/include/lsFitPC.h"
 #include "gmg/include/gmgUtils.h"
+#include <iostream>
 
 void setupLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
     std::vector<long long int>& coeffsCK, std::vector<long long int>& coeffsC0) {
@@ -30,6 +31,11 @@ void setupLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
   KSPSetOptionsPrefix((data->reducedSolver), "C0_");
   KSPSetFromOptions(data->reducedSolver);
 
+  PetscInt mode1;
+  PetscInt mode2;
+  PetscOptionsGetInt(PETSC_NULL, "-mode1", &mode1, PETSC_NULL);
+  PetscOptionsGetInt(PETSC_NULL, "-mode2", &mode2, PETSC_NULL);
+
   double* g1Arr;
   double* g2Arr;
   double* redG1Arr;
@@ -38,10 +44,10 @@ void setupLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
   VecGetArray((data->reducedG1Vec), &redG1Arr);
   VecGetArray((data->g2Vec), &g2Arr);
   VecGetArray((data->reducedG2Vec), &redG2Arr);
-  computeFxPhi1D(0, Nx, K, coeffsCK, g1Arr);
-  computeFxPhi1D(0, Nx, 0, coeffsC0, redG1Arr);
-  computeFxPhi1D(1, Nx, K, coeffsCK, g2Arr);
-  computeFxPhi1D(1, Nx, 0, coeffsC0, redG2Arr);
+  computeFxPhi1D(mode1, Nx, K, coeffsCK, g1Arr);
+  computeFxPhi1D(mode1, Nx, 0, coeffsC0, redG1Arr);
+  computeFxPhi1D(mode2, Nx, K, coeffsCK, g2Arr);
+  computeFxPhi1D(mode2, Nx, 0, coeffsC0, redG2Arr);
   double Hmat[2][2];
   computeHmat(Hmat, (Nx*(K + 1)), g1Arr, g2Arr);
   VecRestoreArray((data->g1Vec), &g1Arr);
@@ -144,7 +150,7 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
       errArr[(0*dofsPerNode) + d] = -((3.0 * errArr[(0*dofsPerNode) + d - 1]) - (4.0 * errArr[(1*dofsPerNode) + d - 1])
           + errArr[(2*dofsPerNode) + d - 1])/4.0;
       for(int i = 1; i < ((data->Nx) - 1); ++i) {
-        errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - inArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
+        errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - errArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
       }//end i
       errArr[(((data->Nx) - 1)*dofsPerNode) + d] = ((3.0 * errArr[(((data->Nx) - 1)*dofsPerNode) + d - 1]) -
           (4.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) + errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1])/4.0;
@@ -175,6 +181,7 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
 
       //10. Accept preconditioner only if it is converging 
       if(finalNormSqr < initNormSqr) {
+        std::cout<<"Accepted PC"<<std::endl;
         VecAXPY(out, -alpha, (data->err));
       } else {
         VecCopy(in, out);
