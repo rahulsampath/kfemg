@@ -29,7 +29,7 @@ struct LSfitData {
 
 void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs, double* res);
 
-void computeLSfit(double aVec[2], double HmatInv[2][2], int len, double* fVec, double* g1Vec, double* g2Vec);
+double computeLSfit(double aVec[2], double HmatInv[2][2], int len, double* fVec, double* g1Vec, double* g2Vec);
 
 double computeRval(double aVec[2], int len, double* fVec, double* g1Vec, double* g2Vec);
 
