@@ -10,10 +10,8 @@ PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   VecZeroEntries(out);
   data->mgSol[data->Kmat.size() - 1] = out;
   data->mgRhs[data->Kmat.size() - 1] = in;
-  for(int iter = 0; iter < data->numVcycles; ++iter) {
-    applyVcycle((nlevels - 1), data->Kmat, data->Pmat, data->tmpCvec, data->smoother,
-        data->coarseSolver, data->mgSol, data->mgRhs, data->mgRes);
-  }//end iter
+  applyVcycle((nlevels - 1), data->Kmat, data->Pmat, data->tmpCvec, data->smoother,
+      data->coarseSolver, data->mgSol, data->mgRhs, data->mgRes);
   data->mgSol[data->Kmat.size() - 1] = NULL;
   data->mgRhs[data->Kmat.size() - 1] = NULL;
 

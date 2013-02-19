@@ -16,5 +16,4 @@
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 
--numVcycles 1
 
