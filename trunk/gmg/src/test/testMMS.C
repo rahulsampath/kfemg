@@ -14,34 +14,14 @@
 #include "gmg/include/boundary.h"
 #include "gmg/include/intergrid.h"
 #include "gmg/include/mgPC.h"
-#include "gmg/include/hatPC.h"
-
-PetscClassId gmgCookie;
-PetscLogEvent meshEvent;
-PetscLogEvent buildPmatEvent;
-PetscLogEvent buildKmatEvent;
-PetscLogEvent rhsEvent;
-PetscLogEvent solverSetupEvent;
-PetscLogEvent solverApplyEvent;
-PetscLogEvent errEvent;
-PetscLogEvent cleanupEvent;
+#include "gmg/include/lsFitPC.h"
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
 
   PETSC_COMM_WORLD = MPI_COMM_WORLD;
 
-  PetscInitialize(&argc, &argv, "optionsTestMMSold", PETSC_NULL);
-
-  PetscClassIdRegister("GMG", &gmgCookie);
-  PetscLogEventRegister("Mesh", gmgCookie, &meshEvent);
-  PetscLogEventRegister("BuildPmat", gmgCookie, &buildPmatEvent);
-  PetscLogEventRegister("BuildKmat", gmgCookie, &buildKmatEvent);
-  PetscLogEventRegister("RHS", gmgCookie, &rhsEvent);
-  PetscLogEventRegister("SolverSetup", gmgCookie, &solverSetupEvent);
-  PetscLogEventRegister("SolverApply", gmgCookie, &solverApplyEvent);
-  PetscLogEventRegister("Error", gmgCookie, &errEvent);
-  PetscLogEventRegister("Cleanup", gmgCookie, &cleanupEvent);
+  PetscInitialize(&argc, &argv, "optionsTestMMS", PETSC_NULL);
 
   PetscInt dim = 1; 
   PetscOptionsGetInt(PETSC_NULL, "-dim", &dim, PETSC_NULL);
@@ -66,13 +46,16 @@ int main(int argc, char *argv[]) {
     std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
   }
 
-  std::vector<long long int> coeffs;
-  read1DshapeFnCoeffs(K, coeffs);
+  std::vector<long long int> coeffsCK;
+  read1DshapeFnCoeffs(K, coeffsCK);
+
+  std::vector<long long int> coeffsC0;
+  if(K > 0) {
+    read1DshapeFnCoeffs(0, coeffsC0);
+  }
 
   std::vector<unsigned long long int> factorialsList;
   initFactorials(factorialsList); 
-
-  PetscLogEventBegin(meshEvent, 0, 0, 0, 0);
 
   std::vector<PetscInt> Nx;
   std::vector<PetscInt> Ny;
@@ -94,88 +77,54 @@ int main(int argc, char *argv[]) {
   std::vector<MPI_Comm> activeComms;
   createActiveComms(activeNpes, activeComms);
 
-  std::vector<DM> da;
-  createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, partX, activeNpes, activeComms, da);
+  std::vector<DM> daCK;
+  createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, partX, activeNpes, activeComms, daCK);
 
-  PetscLogEventEnd(meshEvent, 0, 0, 0, 0);
-
-  PetscLogEventBegin(buildPmatEvent, 0, 0, 0, 0);
+  std::vector<DM> daC0;
+  if(K > 0) {
+    createDA(dim, 1, Nz, Ny, Nx, partZ, partY, partX, activeNpes, activeComms, daC0);
+  }
 
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
-  buildPmat(dim, dofsPerNode, Pmat, tmpCvec, da, activeComms, activeNpes); 
+  buildPmat(dim, dofsPerNode, Pmat, tmpCvec, daCK, activeComms, activeNpes); 
 
   computePmat(dim, factorialsList, Pmat, Nz, Ny, Nx, partZ, partY, partX, offsets,
-      scanZ, scanY, scanX, dofsPerNode, coeffs, K);
-
-  PetscLogEventEnd(buildPmatEvent, 0, 0, 0, 0);
-
-  PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
-
-  //Build Kmat
-  std::vector<std::vector<std::vector<Mat> > > blkKmats;
-  if(K > 0) {
-    buildBlkKmats(blkKmats, da, activeComms, activeNpes);
-  }
+      scanZ, scanY, scanX, dofsPerNode, coeffsCK, K);
 
   std::vector<Mat> Kmat;
-  buildKmat(Kmat, da, print);
+  buildKmat(Kmat, daCK, print);
 
-  std::vector<std::vector<Mat> > KhatMats;
+  std::vector<Mat> reducedMat;
   if(K > 0) {
-    if(dim == 1) {
-      createAll1DmatShells(K, activeComms, blkKmats, partX, KhatMats);
-    } else {
-      assert(false);
-    }
+    buildKmat(reducedMat, daC0, false);
   }
 
-  //Matrix Assembly
+  assembleKmat(dim, Nz, Ny, Nx, Kmat, daCK, K, coeffsCK, factorialsList, print);
+
   if(K > 0) {
-    assembleBlkKmats(blkKmats, dim, dofsPerNode, Nz, Ny, Nx, partY, partX,
-        offsets, da, K, coeffs, factorialsList);
+    assembleKmat(dim, Nz, Ny, Nx, reducedMat, daC0, 0, coeffsC0, factorialsList, false);
   }
-
-  assembleKmat(dim, Nz, Ny, Nx, Kmat, da, K, coeffs, factorialsList, print);
-
-  PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
-
-  PetscLogEventBegin(rhsEvent, 0, 0, 0, 0);
 
   Vec rhs;
-  DMCreateGlobalVector(da[da.size() - 1], &rhs);
+  DMCreateGlobalVector(daCK[daCK.size() - 1], &rhs);
 
   Vec sol;
   VecDuplicate(rhs, &sol); 
 
-  //ComputeRHS
-  computeRHS(da[da.size() - 1], coeffs, K, rhs);
+  computeRHS(daCK[daCK.size() - 1], coeffsCK, K, rhs);
 
-  //Boundary corrections to rhs and sol. 
   VecZeroEntries(sol);
-  setBoundaries(da[da.size() - 1], sol, K);
+  setBoundaries(daCK[daCK.size() - 1], sol, K);
   VecScale(sol, -1.0);
   MatMultAdd(Kmat[Kmat.size() - 1], sol, rhs, rhs);
-  setBoundaries(da[da.size() - 1], rhs, K);
   VecScale(sol, -1.0);
+  makeBoundariesConsistent(daCK[daCK.size() - 1], sol, rhs, K);
 
-  PetscLogEventEnd(rhsEvent, 0, 0, 0, 0);
-
-  PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
-
-  correctKmat(Kmat, da, K);
+  correctKmat(Kmat, daCK, K);
 
   if(K > 0) {
-    correctBlkKmats(dim, blkKmats, da, partZ, partY, partX, offsets, K);
-  }
-
-  PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
-
-  PetscLogEventBegin(solverSetupEvent, 0, 0, 0, 0);
-
-  std::vector<std::vector<PC> > hatPc;
-  if(K > 0) {
-    createAll1DhatPc(partX, blkKmats, KhatMats, hatPc);
+    correctKmat(reducedMat, daC0, 0);
   }
 
   std::vector<KSP> smoother(Pmat.size(), NULL);
@@ -185,13 +134,18 @@ int main(int argc, char *argv[]) {
       if(K > 0) {
         KSPSetType(smoother[lev], KSPFGMRES);
         KSPSetPCSide(smoother[lev], PC_RIGHT);
-        KSPSetPC(smoother[lev], hatPc[lev][K - 1]);
       } else {
-        PC smoothPC;
         KSPSetType(smoother[lev], KSPCG);
         KSPSetPCSide(smoother[lev], PC_LEFT);
-        KSPGetPC(smoother[lev], &smoothPC);
+      }
+      PC smoothPC;
+      KSPGetPC(smoother[lev], &smoothPC);
+      if(K == 0) {
         PCSetType(smoothPC, PCNONE);
+      } else {
+        PCSetType(smoothPC, PCSHELL);
+        setupLSfitPC1D(smoothPC, Kmat[lev + 1], reducedMat[lev + 1],
+            K, Nx[lev + 1], coeffsCK, coeffsC0);
       }
       KSPSetInitialGuessNonzero(smoother[lev], PETSC_TRUE);
       KSPSetOperators(smoother[lev], Kmat[lev + 1], Kmat[lev + 1], SAME_PRECONDITIONER);
@@ -226,7 +180,7 @@ int main(int argc, char *argv[]) {
 
   MGdata data;
   data.K = K;
-  data.daFinest = da[da.size() - 1];
+  data.daFinest = daCK[daCK.size() - 1];
   data.Kmat = Kmat;
   data.Pmat = Pmat;
   data.tmpCvec = tmpCvec; 
@@ -249,47 +203,24 @@ int main(int argc, char *argv[]) {
   PCShellSetApply(pc, &applyMG);
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetOperators(ksp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
-  KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 50);
+  KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 10);
   KSPSetOptionsPrefix(ksp, "outer_");
   KSPSetFromOptions(ksp);
-
-  PetscLogEventEnd(solverSetupEvent, 0, 0, 0, 0);
 
   if(print) {
     std::cout<<"Solving..."<<std::endl;
   }
 
-  PetscLogEventBegin(solverApplyEvent, 0, 0, 0, 0);
-
   KSPSolve(ksp, rhs, sol);
 
-  PetscLogEventEnd(solverApplyEvent, 0, 0, 0, 0);
-
-  PetscLogEventBegin(errEvent, 0, 0, 0, 0);
-
-  //Compute Error
-  long double err = computeError(da[da.size() - 1], sol, coeffs, K);
-
-  PetscLogEventEnd(errEvent, 0, 0, 0, 0);
+  long double err = computeError(daCK[daCK.size() - 1], sol, coeffsCK, K);
 
   if(print) {
     std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
   }
 
-  PetscLogEventBegin(cleanupEvent, 0, 0, 0, 0);
-
   VecDestroy(&rhs);
   VecDestroy(&sol);
-
-  for(size_t i = 0; i < hatPc.size(); ++i) {
-    for(size_t j = 0; j < (hatPc[i].size()); ++j) {
-      PCFD1Ddata* data;
-      PCShellGetContext(hatPc[i][j], (void**)(&data));
-      destroyPCFD1Ddata(data);
-      PCDestroy(&(hatPc[i][j]));
-    }//end j
-  }//end i
-  hatPc.clear();
 
   if(coarseSolver != NULL) {
     KSPDestroy(&coarseSolver);
@@ -303,24 +234,9 @@ int main(int argc, char *argv[]) {
   destroyVec(mgRhs);
   destroyVec(mgRes);
   destroyMat(Kmat);
-  destroyDA(da); 
-
-  for(size_t i = 0; i < blkKmats.size(); ++i) {
-    for(size_t j = 0; j < blkKmats[i].size(); ++j) {
-      destroyMat(blkKmats[i][j]);
-    }//end j
-  }//end i
-
-  for(size_t i = 0; i < KhatMats.size(); ++i) {
-    for(size_t j = 0; j < KhatMats[i].size(); ++j) {
-      Khat1Ddata* hatData;
-      MatShellGetContext(KhatMats[i][j], &hatData);
-      destroyKhat1Ddata(hatData);
-      MatDestroy(&(KhatMats[i][j]));
-    }//end j
-  }//end i
-
-  PetscLogEventEnd(cleanupEvent, 0, 0, 0, 0);
+  destroyMat(reducedMat);
+  destroyDA(daCK); 
+  destroyDA(daC0); 
 
   PetscFinalize();
 
@@ -330,6 +246,16 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

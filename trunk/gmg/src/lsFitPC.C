@@ -2,8 +2,8 @@
 #include "gmg/include/lsFitPC.h"
 #include "gmg/include/gmgUtils.h"
 
-void createLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
-    std::vector<long long int>& coeffsK, std::vector<long long int>& coeffs0) {
+void setupLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
+    std::vector<long long int>& coeffsCK, std::vector<long long int>& coeffsC0) {
   LSfitData* data = new LSfitData;
   data->K = K;
   data->Nx = Nx;
@@ -38,10 +38,10 @@ void createLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
   VecGetArray((data->reducedG1Vec), &redG1Arr);
   VecGetArray((data->g2Vec), &g2Arr);
   VecGetArray((data->reducedG2Vec), &redG2Arr);
-  computeFxPhi1D(0, Nx, K, coeffsK, g1Arr);
-  computeFxPhi1D(0, Nx, 0, coeffs0, redG1Arr);
-  computeFxPhi1D(1, Nx, K, coeffsK, g2Arr);
-  computeFxPhi1D(1, Nx, 0, coeffs0, redG2Arr);
+  computeFxPhi1D(0, Nx, K, coeffsCK, g1Arr);
+  computeFxPhi1D(0, Nx, 0, coeffsC0, redG1Arr);
+  computeFxPhi1D(1, Nx, K, coeffsCK, g2Arr);
+  computeFxPhi1D(1, Nx, 0, coeffsC0, redG2Arr);
   double Hmat[2][2];
   computeHmat(Hmat, (Nx*(K + 1)), g1Arr, g2Arr);
   VecRestoreArray((data->g1Vec), &g1Arr);
@@ -50,7 +50,6 @@ void createLSfitPC1D(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
   VecRestoreArray((data->reducedG2Vec), &redG2Arr);
   matInvert2x2(Hmat, (data->HmatInv));
 
-  PCSetType(pc, PCSHELL);
   PCShellSetContext(pc, data);
   PCShellSetName(pc, "MyLSPC");
   PCShellSetApply(pc, &applyLSfitPC1D);
@@ -120,7 +119,7 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
     VecGetArray((data->reducedG1Vec), &g1Arr);
     VecGetArray((data->reducedG2Vec), &g2Arr);
     VecGetArray((data->reducedRhs), &rhsArr);
-    for(int i = 0; i < Nx; ++i) {
+    for(int i = 0; i < (data->Nx); ++i) {
       rhsArr[i] = (aVec[0] * g1Arr[i]) + (aVec[1] * g2Arr[i]); 
     }//end i
     VecRestoreArray((data->reducedG1Vec), &g1Arr);
@@ -135,20 +134,20 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
     double* solArr;
     VecGetArray((data->reducedSol), &solArr);
     VecGetArray((data->err), &errArr);
-    for(int i = 0; i < Nx; ++i) {
+    for(int i = 0; i < (data->Nx); ++i) {
       errArr[i*dofsPerNode] = solArr[i];
     }//end i
     VecRestoreArray((data->reducedSol), &solArr);
 
     //7. Use Finite Differencing to estimate the other dofs of err.
-    for(int d = 1; d <= K; ++d) {
+    for(int d = 1; d <= (data->K); ++d) {
       errArr[(0*dofsPerNode) + d] = -((3.0 * errArr[(0*dofsPerNode) + d - 1]) - (4.0 * errArr[(1*dofsPerNode) + d - 1])
           + errArr[(2*dofsPerNode) + d - 1])/4.0;
-      for(int i = 1; i < (Nx - 1); ++i) {
+      for(int i = 1; i < ((data->Nx) - 1); ++i) {
         errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - inArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
       }//end i
-      errArr[((Nx - 1)*dofsPerNode) + d] = ((3.0 * errArr[((Nx - 1)*dofsPerNode) + d - 1]) -
-          (4.0 * errArr[((Nx - 2)*dofsPerNode) + d - 1]) + errArr[((Nx - 3)*dofsPerNode) + d - 1])/4.0;
+      errArr[(((data->Nx) - 1)*dofsPerNode) + d] = ((3.0 * errArr[(((data->Nx) - 1)*dofsPerNode) + d - 1]) -
+          (4.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) + errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1])/4.0;
     }//end d
     VecRestoreArray((data->err), &errArr);
 
@@ -285,7 +284,7 @@ void computeLSfit(double aVec[2], double HmatInv[2][2], int len, double* fVec, d
 
 double computeRval(double aVec[2], int len, double* fVec, double* g1Vec, double* g2Vec) {
   double res = 0;
-  for(size_t i = 0; i < len; ++i) {
+  for(int i = 0; i < len; ++i) {
     double val = fVec[i] - (g1Vec[i]*aVec[0]) - (g2Vec[i]*aVec[1]);
     res += (val*val);
   }//end i
@@ -295,7 +294,7 @@ double computeRval(double aVec[2], int len, double* fVec, double* g1Vec, double*
 void computeJvec(double jVec[2], double aVec[2], int len, double* fVec, double* g1Vec, double* g2Vec) {
   jVec[0] = 0;
   jVec[1] = 0;
-  for(size_t i = 0; i < len; ++i) {
+  for(int i = 0; i < len; ++i) {
     double scaling = 2.0*((g1Vec[i]*aVec[0]) + (g2Vec[i]*aVec[1]) - fVec[i]);
     jVec[0] += (scaling*g1Vec[i]);
     jVec[1] += (scaling*g2Vec[i]);
@@ -306,7 +305,7 @@ void computeHmat(double mat[2][2], int len, double* g1Vec, double* g2Vec) {
   double a = 0;
   double b = 0;
   double c = 0;
-  for(size_t i = 0; i < len; ++i) {
+  for(int i = 0; i < len; ++i) {
     a += (g1Vec[i] * g1Vec[i]);
     c += (g2Vec[i] * g1Vec[i]);
     b += (g2Vec[i] * g2Vec[i]);
