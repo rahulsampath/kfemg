@@ -6,8 +6,8 @@
 -extraGptsFxPhi 0
 
 -finestNx 9
--finestNy 5
--finestNz 5
+%-finestNy 5
+%-finestNz 5
 
 -maxNumLevels 100
 -maxCoarseNpes 100
@@ -17,4 +17,8 @@
 -outer_ksp_converged_reason
 
 -C0_ksp_max_it 2
+-C0_ksp_monitor
+
+-smooth_ksp_max_it 2
+-smooth_ksp_monitor
 
