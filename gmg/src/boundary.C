@@ -6,6 +6,152 @@
 #include <cassert>
 #endif
 
+void makeBoundariesConsistent(DM da, Vec in, Vec out, const int K) {
+  PetscInt dim;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  if(dim == 1) {
+    PetscScalar** inArr; 
+    PetscScalar** outArr; 
+    DMDAVecGetArrayDOF(da, in, &inArr);
+    DMDAVecGetArrayDOF(da, out, &outArr);
+    if(xs == 0) {
+      outArr[0][0] = inArr[0][0];
+    }
+    if((xs + nx) == Nx) {
+      outArr[Nx - 1][0] = inArr[Nx - 1][0];
+    }
+    DMDAVecRestoreArrayDOF(da, in, &inArr);
+    DMDAVecRestoreArrayDOF(da, out, &outArr);
+  } else if(dim == 2) {
+    PetscScalar*** inArr; 
+    PetscScalar*** outArr; 
+    DMDAVecGetArrayDOF(da, in, &inArr);
+    DMDAVecGetArrayDOF(da, out, &outArr);
+    if(xs == 0) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        for(int d = 0; d <= K; ++d) {
+          outArr[yi][0][d*(K + 1)] = inArr[yi][0][d*(K + 1)];
+        }//end d
+      }//end yi
+    }
+    if((xs + nx) == Nx) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        for(int d = 0; d <= K; ++d) {
+          outArr[yi][Nx - 1][d*(K + 1)] = inArr[yi][Nx - 1][d*(K + 1)];
+        }//end d
+      }//end yi
+    }
+    if(ys == 0) {
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        for(int d = 0; d <= K; ++d) {
+          outArr[0][xi][d] = inArr[0][xi][d];
+        }//end d
+      }//end xi
+    }
+    if((ys + ny) == Ny) {
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        for(int d = 0; d <= K; ++d) {
+          outArr[Ny - 1][xi][d] = inArr[Ny - 1][xi][d];
+        }//end d
+      }//end xi
+    }
+    DMDAVecRestoreArrayDOF(da, in, &inArr);
+    DMDAVecRestoreArrayDOF(da, out, &outArr);
+  } else {
+    PetscScalar**** inArr; 
+    PetscScalar**** outArr; 
+    DMDAVecGetArrayDOF(da, in, &inArr);
+    DMDAVecGetArrayDOF(da, out, &outArr);
+    if(xs == 0) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dy = 0; dy <= K; ++dy) {
+              int dof = ((dz*(K + 1)) + dy)*(K + 1);
+              outArr[zi][yi][0][dof] = inArr[zi][yi][0][dof];
+            }//end dy
+          }//end dz
+        }//end yi
+      }//end zi
+    }
+    if((xs + nx) == Nx) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dy = 0; dy <= K; ++dy) {
+              int dof = ((dz*(K + 1)) + dy)*(K + 1);
+              outArr[zi][yi][Nx - 1][dof] = inArr[zi][yi][Nx - 1][dof];
+            }//end dy
+          }//end dz
+        }//end yi
+      }//end zi
+    }
+    if(ys == 0) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dz*(K + 1)*(K + 1)) + dx;
+              outArr[zi][0][xi][dof] = inArr[zi][0][xi][dof];
+            }//end dx
+          }//end dz
+        }//end xi
+      }//end zi
+    }
+    if((ys + ny) == Ny) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dz*(K + 1)*(K + 1)) + dx;
+              outArr[zi][Ny - 1][xi][dof] = inArr[zi][Ny - 1][xi][dof];
+            }//end dx
+          }//end dz
+        }//end xi
+      }//end zi
+    }
+    if(zs == 0) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          for(int dy = 0; dy <= K; ++dy) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dy*(K + 1)) + dx;
+              outArr[0][yi][xi][dof] = inArr[0][yi][xi][dof];
+            }//end dx
+          }//end dy
+        }//end xi
+      }//end yi
+    }
+    if((zs + nz) == Nz) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          for(int dy = 0; dy <= K; ++dy) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dy*(K + 1)) + dx;
+              outArr[Nz - 1][yi][xi][dof] = inArr[Nz - 1][yi][xi][dof];
+            }//end dx
+          }//end dy
+        }//end xi
+      }//end yi
+    }
+    DMDAVecRestoreArrayDOF(da, in, &inArr);
+    DMDAVecRestoreArrayDOF(da, out, &outArr);
+  }
+}
+
 void correctKmat(std::vector<Mat>& Kmat, std::vector<DM>& da, int K) {
   int nlevels = da.size();
   for(int lev = 0; lev < nlevels; ++lev) {
