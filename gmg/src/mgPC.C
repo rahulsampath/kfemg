@@ -1,6 +1,7 @@
 
 #include "gmg/include/mgPC.h"
 #include "gmg/include/intergrid.h"
+#include "gmg/include/boundary.h"
 
 PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   MGdata* data;
