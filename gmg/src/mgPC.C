@@ -8,6 +8,7 @@ PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
 
   int nlevels = (data->Kmat).size();
   VecZeroEntries(out);
+  makeBoundariesConsistent((data->daFinest), in, out, (data->K));
   data->mgSol[data->Kmat.size() - 1] = out;
   data->mgRhs[data->Kmat.size() - 1] = in;
   applyVcycle((nlevels - 1), data->Kmat, data->Pmat, data->tmpCvec, data->smoother,
