@@ -181,7 +181,6 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
 
       //10. Accept preconditioner only if it is converging 
       if(finalNormSqr < initNormSqr) {
-        std::cout<<"Accepted PC"<<std::endl;
         VecAXPY(out, -alpha, (data->err));
       } else {
         VecCopy(in, out);
