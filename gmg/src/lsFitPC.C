@@ -115,10 +115,11 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
     VecGetArray((data->g1Vec), &g1Arr);
     VecGetArray((data->g2Vec), &g2Arr);
     double aVec[2];
-    computeLSfit(aVec, (data->HmatInv), ((data->Nx)*dofsPerNode), resArr, g1Arr, g2Arr);
+    double fit = computeLSfit(aVec, (data->HmatInv), ((data->Nx)*dofsPerNode), resArr, g1Arr, g2Arr);
     VecRestoreArray((data->res), &resArr);
     VecRestoreArray((data->g1Vec), &g1Arr);
     VecRestoreArray((data->g2Vec), &g2Arr);
+    std::cout<<"a0 = "<<(aVec[0])<<", a1 = "<<(aVec[1])<<", fit = "<<fit<<", base = "<<initNormSqr<<std::endl;
 
     //4. Compute RHS for reduced problem rhs = a0*g1 + a1*g2
     double* rhsArr;
@@ -160,6 +161,7 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
     PetscScalar errNormSqr;
     VecDot((data->err), (data->err), &errNormSqr);
     if(errNormSqr < 1.0e-24) {
+      std::cout<<"Rejected PC"<<std::endl;
       VecCopy(in, out);
     } else {
       //8. tmp1 = Kmat * err 
@@ -178,11 +180,14 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
         VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
         VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
       }
+      std::cout<<"alpha = "<<alpha<<std::endl;
 
       //10. Accept preconditioner only if it is converging 
       if(finalNormSqr < initNormSqr) {
+        std::cout<<"Accepted PC: init = "<<initNormSqr<<", final = "<<finalNormSqr<<std::endl;
         VecAXPY(out, -alpha, (data->err));
       } else {
+        std::cout<<"Rejected PC"<<std::endl;
         VecCopy(in, out);
       }
     }
@@ -245,7 +250,7 @@ void computeFxPhi1D(int mode, int Nx, int K, std::vector<long long int>& coeffs,
   res[dofsPerNode*(Nx - 1)] = 0;
 }
 
-void computeLSfit(double aVec[2], double HmatInv[2][2], int len, double* fVec, double* g1Vec, double* g2Vec) {
+double computeLSfit(double aVec[2], double HmatInv[2][2], int len, double* fVec, double* g1Vec, double* g2Vec) {
   aVec[0] = 0;
   aVec[1] = 0;
   double rVal = computeRval(aVec, len, fVec, g1Vec, g2Vec); 
@@ -286,6 +291,7 @@ void computeLSfit(double aVec[2], double HmatInv[2][2], int len, double* fVec, d
       break;
     }
   }//end iter
+  return rVal;
 }
 
 double computeRval(double aVec[2], int len, double* fVec, double* g1Vec, double* g2Vec) {
