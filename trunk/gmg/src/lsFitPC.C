@@ -139,54 +139,55 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
     //6. Set reducedSol as the 0th dof of err
     double* errArr;
     double* solArr;
-    VecGetArray((data->reducedSol), &solArr);
     VecGetArray((data->err), &errArr);
+    VecGetArray((data->reducedSol), &solArr);
     for(int i = 0; i < (data->Nx); ++i) {
       errArr[i*dofsPerNode] = solArr[i];
     }//end i
     VecRestoreArray((data->reducedSol), &solArr);
 
     //7. Use Finite Differencing to estimate the other dofs of err.
-    /*
-    //Second Order
-    for(int d = 1; d <= (data->K); ++d) {
-    errArr[(0*dofsPerNode) + d] = -((3.0 * errArr[(0*dofsPerNode) + d - 1]) - (4.0 * errArr[(1*dofsPerNode) + d - 1])
-    + errArr[(2*dofsPerNode) + d - 1])/4.0;
-    for(int i = 1; i < ((data->Nx) - 1); ++i) {
-    errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - errArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
-    }//end i
-    errArr[(((data->Nx) - 1)*dofsPerNode) + d] = ((3.0 * errArr[(((data->Nx) - 1)*dofsPerNode) + d - 1]) -
-    (4.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) + errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1])/4.0;
-    }//end d
-    */
-
-    //Fourth Order
-    for(int d = 1; d <= (data->K); ++d) {
-      errArr[(0*dofsPerNode) + d] = -((25.0 * errArr[(0*dofsPerNode) + d - 1]) -
-          (48.0 * errArr[(1*dofsPerNode) + d - 1]) + (36.0 * errArr[(2*dofsPerNode) + d - 1])
-          - (16.0 * errArr[(3*dofsPerNode) + d - 1]) +
-          (3.0 * errArr[(4*dofsPerNode) + d - 1]))/24.0;
-      errArr[(1*dofsPerNode) + d] = -((25.0 * errArr[(1*dofsPerNode) + d - 1]) -
-          (48.0 * errArr[(2*dofsPerNode) + d - 1]) + (36.0 * errArr[(3*dofsPerNode) + d - 1])
-          - (16.0 * errArr[(4*dofsPerNode) + d - 1]) +
-          (3.0 * errArr[(5*dofsPerNode) + d - 1]))/24.0;
-      for(int i = 2; i < ((data->Nx) - 2); ++i) {
-        errArr[(i*dofsPerNode) + d] = (-errArr[((i + 2)*dofsPerNode) + d - 1] +
-            (8.0 * errArr[((i + 1)*dofsPerNode) + d - 1]) - (8.0 * errArr[((i - 1)*dofsPerNode) + d - 1])
-            + errArr[((i - 2)*dofsPerNode) + d - 1])/24.0;
-      }//end i
-      errArr[(((data->Nx) - 2)*dofsPerNode) + d] = ((25.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) -
-          (48.0 * errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1]) +
-          (36.0 * errArr[(((data->Nx) - 4)*dofsPerNode) + d - 1]) -
-          (16.0 * errArr[(((data->Nx) - 5)*dofsPerNode) + d - 1]) +
-          (3.0 * errArr[(((data->Nx) - 6)*dofsPerNode) + d - 1]))/24.0;
-      errArr[(((data->Nx) - 1)*dofsPerNode) + d] = ((25.0 * errArr[(((data->Nx) - 1)*dofsPerNode) + d - 1]) -
-          (48.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) + 
-          (36.0 * errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1]) -
-          (16.0 * errArr[(((data->Nx) - 4)*dofsPerNode) + d - 1]) +
-          (3.0 * errArr[(((data->Nx) - 5)*dofsPerNode) + d - 1]))/24.0;
-    }//end d
-
+    PetscInt fdType = 1;
+    PetscOptionsGetInt(PETSC_NULL, "-fdType", &fdType, PETSC_NULL);
+    if(fdType == 1) {
+      //Second Order
+      for(int d = 1; d <= (data->K); ++d) {
+        errArr[(0*dofsPerNode) + d] = -((3.0 * errArr[(0*dofsPerNode) + d - 1]) - (4.0 * errArr[(1*dofsPerNode) + d - 1])
+            + errArr[(2*dofsPerNode) + d - 1])/4.0;
+        for(int i = 1; i < ((data->Nx) - 1); ++i) {
+          errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - errArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
+        }//end i
+        errArr[(((data->Nx) - 1)*dofsPerNode) + d] = ((3.0 * errArr[(((data->Nx) - 1)*dofsPerNode) + d - 1]) -
+            (4.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) + errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1])/4.0;
+      }//end d
+    } else {
+      //Fourth Order
+      for(int d = 1; d <= (data->K); ++d) {
+        errArr[(0*dofsPerNode) + d] = -((25.0 * errArr[(0*dofsPerNode) + d - 1]) -
+            (48.0 * errArr[(1*dofsPerNode) + d - 1]) + (36.0 * errArr[(2*dofsPerNode) + d - 1])
+            - (16.0 * errArr[(3*dofsPerNode) + d - 1]) +
+            (3.0 * errArr[(4*dofsPerNode) + d - 1]))/24.0;
+        errArr[(1*dofsPerNode) + d] = -((25.0 * errArr[(1*dofsPerNode) + d - 1]) -
+            (48.0 * errArr[(2*dofsPerNode) + d - 1]) + (36.0 * errArr[(3*dofsPerNode) + d - 1])
+            - (16.0 * errArr[(4*dofsPerNode) + d - 1]) +
+            (3.0 * errArr[(5*dofsPerNode) + d - 1]))/24.0;
+        for(int i = 2; i < ((data->Nx) - 2); ++i) {
+          errArr[(i*dofsPerNode) + d] = (-errArr[((i + 2)*dofsPerNode) + d - 1] +
+              (8.0 * errArr[((i + 1)*dofsPerNode) + d - 1]) - (8.0 * errArr[((i - 1)*dofsPerNode) + d - 1])
+              + errArr[((i - 2)*dofsPerNode) + d - 1])/24.0;
+        }//end i
+        errArr[(((data->Nx) - 2)*dofsPerNode) + d] = ((25.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) -
+            (48.0 * errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1]) +
+            (36.0 * errArr[(((data->Nx) - 4)*dofsPerNode) + d - 1]) -
+            (16.0 * errArr[(((data->Nx) - 5)*dofsPerNode) + d - 1]) +
+            (3.0 * errArr[(((data->Nx) - 6)*dofsPerNode) + d - 1]))/24.0;
+        errArr[(((data->Nx) - 1)*dofsPerNode) + d] = ((25.0 * errArr[(((data->Nx) - 1)*dofsPerNode) + d - 1]) -
+            (48.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) + 
+            (36.0 * errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1]) -
+            (16.0 * errArr[(((data->Nx) - 4)*dofsPerNode) + d - 1]) +
+            (3.0 * errArr[(((data->Nx) - 5)*dofsPerNode) + d - 1]))/24.0;
+      }//end d
+    }
     VecRestoreArray((data->err), &errArr);
 
     PetscScalar errNormSqr;
@@ -221,6 +222,26 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
         std::cout<<"Rejected PC"<<std::endl;
         VecCopy(in, out);
       }
+
+      /*
+         PetscReal alpha1 = 1.0;
+         PetscReal alpha2 = 1.0;
+         PetscOptionsGetReal(PETSC_NULL, "-alpha1", &alpha1, PETSC_NULL);
+         PetscOptionsGetReal(PETSC_NULL, "-alpha2", &alpha2, PETSC_NULL);
+         VecGetArray((data->err), &errArr);
+         VecGetArray(out, &outArr);
+         for(int i = 0; i < (data->Nx); ++i) {
+         outArr[2*i] = outArr[2*i] + (alpha1*errArr[2*i]);
+         outArr[(2*i) + 1] = outArr[(2*i) + 1] + (alpha2*errArr[(2*i) + 1]);
+         }//end i
+         VecRestoreArray(out, &outArr);
+         VecRestoreArray((data->err), &errArr);
+
+         computeResidual((data->Kmat), out, in, (data->tmp1));
+         PetscScalar finalNormSqr;
+         VecDot((data->tmp1), (data->tmp1), &finalNormSqr);
+         std::cout<<"Final = "<<finalNormSqr<<std::endl;
+         */
     }
   }
 
