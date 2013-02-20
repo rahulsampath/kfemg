@@ -6,9 +6,17 @@
 
 #define __PI__ 3.1415926535897932L
 
+double det2x2(double mat[2][2]);
+
+double det3x3(double mat[3][3]);
+
+void matMult3x3(double mat[3][3], double in[3], double out[3]);
+
 void matMult2x2(double mat[2][2], double in[2], double out[2]);
 
 void matInvert2x2(double mat[2][2], double matInv[2][2]);
+
+void matInvert3x3(double mat[3][3], double matInv[3][3]);
 
 long double legendrePolyPrime(int n, long double x); 
 

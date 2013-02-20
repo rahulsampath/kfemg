@@ -10,6 +10,15 @@
 #include <cassert>
 #endif
 
+void matMult3x3(double mat[3][3], double in[3], double out[3]) {
+  for(int i = 0; i < 3; ++i) {
+    out[i] = 0;
+    for(int j = 0; j < 3; ++j) {
+      out[i] += (mat[i][j]*in[j]);
+    }//end j
+  }//end i
+}
+
 void matMult2x2(double mat[2][2], double in[2], double out[2]) {
   for(int i = 0; i < 2; ++i) {
     out[i] = 0;
@@ -19,12 +28,83 @@ void matMult2x2(double mat[2][2], double in[2], double out[2]) {
   }//end i
 }
 
+void matInvert3x3(double mat[3][3], double matInv[3][3]) {
+  double a1 = mat[0][0];
+  double a2 = mat[0][1];
+  double a3 = mat[0][2];
+  double b1 = mat[1][0];
+  double b2 = mat[1][1];
+  double b3 = mat[1][2];
+  double c1 = mat[2][0];
+  double c2 = mat[2][1];
+  double c3 = mat[2][2];
+  double det = det3x3(mat);
+#ifdef DEBUG
+  assert(fabs(det) > 1.0e-12);
+#endif
+  double tmp[2][2];
+
+  tmp[0][0] = b2;
+  tmp[0][1] = b3;
+  tmp[1][0] = c2;
+  tmp[1][1] = c3;
+  matInv[0][0] = (det2x2(tmp))/det;
+
+  tmp[0][0] = a3;
+  tmp[0][1] = a2;
+  tmp[1][0] = c3;
+  tmp[1][1] = c2;
+  matInv[0][1] = (det2x2(tmp))/det;
+
+  tmp[0][0] = a2;
+  tmp[0][1] = a3;
+  tmp[1][0] = b2;
+  tmp[1][1] = b3;
+  matInv[0][2] = (det2x2(tmp))/det;
+
+  tmp[0][0] = b3;
+  tmp[0][1] = b1;
+  tmp[1][0] = c3;
+  tmp[1][1] = c1;
+  matInv[1][0] = (det2x2(tmp))/det;
+
+  tmp[0][0] = a1;
+  tmp[0][1] = a3;
+  tmp[1][0] = c1;
+  tmp[1][1] = c3;
+  matInv[1][1] = (det2x2(tmp))/det;
+
+  tmp[0][0] = a3;
+  tmp[0][1] = a1;
+  tmp[1][0] = b3;
+  tmp[1][1] = b1;
+  matInv[1][2] = (det2x2(tmp))/det;
+
+  tmp[0][0] = b1;
+  tmp[0][1] = b2;
+  tmp[1][0] = c1;
+  tmp[1][1] = c2;
+  matInv[2][0] = (det2x2(tmp))/det;
+
+  tmp[0][0] = a2;
+  tmp[0][1] = a1;
+  tmp[1][0] = c2;
+  tmp[1][1] = c1;
+  matInv[2][1] = (det2x2(tmp))/det;
+
+  tmp[0][0] = a1;
+  tmp[0][1] = a2;
+  tmp[1][0] = b1;
+  tmp[1][1] = b2;
+  matInv[2][2] = (det2x2(tmp))/det;
+}
+
 void matInvert2x2(double mat[2][2], double matInv[2][2]) {
   double a = mat[0][0];
   double b = mat[0][1];
   double c = mat[1][0];
   double d = mat[1][1];
-  double det = (a*d) - (b*c);
+  double det = det2x2(mat) ;
 #ifdef DEBUG
   assert(fabs(det) > 1.0e-12);
 #endif
@@ -32,6 +112,31 @@ void matInvert2x2(double mat[2][2], double matInv[2][2]) {
   matInv[0][1] = -b/det;
   matInv[1][0] = -c/det;
   matInv[1][1] = a/det;
+}
+
+double det2x2(double mat[2][2]) {
+  double a = mat[0][0];
+  double b = mat[0][1];
+  double c = mat[1][0];
+  double d = mat[1][1];
+  double det = (a*d) - (b*c);
+  return det;
+}
+
+double det3x3(double mat[3][3]) {
+  double a1 = mat[0][0];
+  double a2 = mat[0][1];
+  double a3 = mat[0][2];
+  double b1 = mat[1][0];
+  double b2 = mat[1][1];
+  double b3 = mat[1][2];
+  double c1 = mat[2][0];
+  double c2 = mat[2][1];
+  double c3 = mat[2][2];
+  double det = (a1 * b2 * c3) - (a1 * b3 * c2) 
+    - (a2 * b1 * c3) + (a2 * b3 * c1)
+    + (a3 * b1 * c2) - (a3 * b2 * c1);
+  return det;
 }
 
 void createPoisson3DelementMatrix(std::vector<unsigned long long int>& factorialsList,
