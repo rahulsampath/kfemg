@@ -20,7 +20,7 @@ void setupLSfitType2PC(PC pc, Mat Kmat, Mat reducedMat, int K, int Nx,
   VecCreate(comm, &(data->gradFhat));
   PetscInt gSz;
   PetscInt lSz;
-  VecType type;
+  const VecType type;
   VecGetType((data->res), &type);
   VecSetType((data->gradFhat), type);
   VecGetSize((data->res), &gSz);
@@ -93,8 +93,7 @@ PetscErrorCode applyLSfitType2PC(PC pc, Vec in, Vec out) {
     VecGetArray((data->fHat), &buf1);
     VecGetArray((data->gradFhat), &buf2);
     double yVec[3];
-    double fit = computeLSfit(yVec[3], (data->Nx), (data->K), *(data->coeffsCK),
-        resArr, buf1, buf2);
+    double fit = computeLSfit(yVec, (data->Nx), (data->K), *(data->coeffsCK), resArr, buf1, buf2);
     VecRestoreArray((data->fHat), &buf1);
     VecRestoreArray((data->gradFhat), &buf2);
     VecRestoreArray((data->res), &resArr);
@@ -104,7 +103,7 @@ PetscErrorCode applyLSfitType2PC(PC pc, Vec in, Vec out) {
     //4. Compute RHS for reduced problem 
     double* rhsArr;
     VecGetArray((data->reducedRhs), &rhsArr);
-    computeFhat(yVec[0], yVec[1], yVec[2], (data->Nx), 0, *(data->coeffsC0), rhs);
+    computeFhat(yVec[0], yVec[1], yVec[2], (data->Nx), 0, *(data->coeffsC0), rhsArr);
     VecRestoreArray((data->reducedRhs), &rhsArr);
 
     //5. Solve (approx.) the reduced problem using zero initial guess.
