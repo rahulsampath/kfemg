@@ -16,6 +16,7 @@
 -C0_pc_type cholesky
 -C0_ksp_monitor
 
+%-fdType 1
 %-testMode 0
 %-mode1 0
 %-mode2 1
