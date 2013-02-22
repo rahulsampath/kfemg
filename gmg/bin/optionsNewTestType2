@@ -17,4 +17,6 @@
 -C0_pc_type cholesky
 -C0_ksp_monitor
 
+-fdType 2
+%-acceptPCtol 1.0
 

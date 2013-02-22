@@ -211,7 +211,7 @@ PetscErrorCode applyLSfitPC1D(PC pc, Vec in, Vec out) {
         alpha *= 0.1;
         VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
         VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
-      }
+      }//end while
       std::cout<<"alpha = "<<alpha<<std::endl;
 
       //10. Accept preconditioner only if it is converging 
