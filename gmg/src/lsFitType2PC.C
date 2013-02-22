@@ -60,6 +60,12 @@ PetscErrorCode destroyLSfitType2PC(PC pc) {
   return 0;
 }
 
+PetscErrorCode applyLSfitType2PC(PC pc, Vec in, Vec out) {
+  LSfitType2Data* data;
+  PCShellGetContext(pc, (void**)(&data));
+  return 0;
+}
+
 double computeLSfit(double yVec[3], int Nx, int K, std::vector<long long int>& coeffs,
     double* fVec, double* fHatVec, double* gradFhatVec) {
   const int len = Nx*(K + 1);
@@ -109,6 +115,14 @@ double computeLSfit(double yVec[3], int Nx, int K, std::vector<long long int>& c
     }
   }//end iter
   return rVal;
+}
+
+void computeFhat(double xStar, double sigma, double A, int Nx, int K, 
+    std::vector<long long int>& coeffs, double* res) {
+}
+
+void computeGradFhat(double xStar, double sigma, double A, int Nx, int K,
+    std::vector<long long int>& coeffs, double* res) {
 }
 
 void computeGradRvec(double gradRvec[3], int len, double* fVec, double* fHatVec, double* gradFhatVec) {
