@@ -32,7 +32,8 @@ void computeFhat(double xStar, double sigma, double A, int Nx, int K,
 void computeGradFhat(double xStar, double sigma, double A, int Nx, int K,
     std::vector<long long int>& coeffs, double* res);
 
-double computeLSfit(double yVec[3], int len, double* fVec);
+double computeLSfit(double yVec[3], int Nx, int K, std::vector<long long int>& coeffs,
+    double* fVec, double* fHatVec, double* gradFhatVec);
 
 double computeRval(int len, double* fVec, double* fHatVec);
 
