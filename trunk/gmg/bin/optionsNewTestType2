@@ -18,5 +18,6 @@
 -C0_ksp_monitor
 
 -fdType 2
+-maxOptIters 100
 %-acceptPCtol 1.0
 
