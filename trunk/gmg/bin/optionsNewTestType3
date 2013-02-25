@@ -1,0 +1,21 @@
+-dim 1
+-K 1
+
+-extraGptsFhat 0
+
+-finestNx 9
+
+-maxNumLevels 1
+-maxCoarseNpes 1
+
+-outer_ksp_max_it 1
+-outer_ksp_monitor
+-outer_ksp_converged_reason
+
+-C0_ksp_max_it 2
+-C0_pc_type cholesky
+-C0_ksp_monitor
+
+-fdType 2
+-maxOptIters 100
+
