@@ -120,7 +120,7 @@ PetscErrorCode applyLSfitType2PC(PC pc, Vec in, Vec out) {
     VecRestoreArray((data->reducedSol), &solArr);
 
     //7. Use Finite Differencing to estimate the other dofs of err.
-    PetscInt fdType = 1;
+    PetscInt fdType = 2;
     PetscOptionsGetInt(PETSC_NULL, "-fdType", &fdType, PETSC_NULL);
     if(fdType == 1) {
       //Second Order
@@ -208,8 +208,9 @@ double computeLSfit(double yVec[3], int Nx, int K, std::vector<long long int>& c
   yVec[2] = 0.0;
   computeFhat(yVec[0], yVec[1], yVec[2], Nx, K, coeffs, fHatVec);
   double rVal = computeRval(len, fVec, fHatVec);
-  const int maxIters = 100;
-  for(int iter = 0; iter < maxIters; ++iter) {
+  const int maxIters = 10000;
+  int iter;
+  for(iter = 0; iter < maxIters; ++iter) {
     if(rVal < 1.0e-12) {
       break;
     }
@@ -245,9 +246,11 @@ double computeLSfit(double yVec[3], int Nx, int K, std::vector<long long int>& c
       }//end j
       rVal = tmpVal;
     } else {
+      std::cout<<"Line Search Failed!"<<std::endl;
       break;
     }
   }//end iter
+  std::cout<<"Num Optimization Iters = "<<iter<<std::endl;
   return rVal;
 }
 
