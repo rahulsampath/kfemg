@@ -208,7 +208,8 @@ double computeLSfit(double yVec[3], int Nx, int K, std::vector<long long int>& c
   yVec[2] = 0.0;
   computeFhat(yVec[0], yVec[1], yVec[2], Nx, K, coeffs, fHatVec);
   double rVal = computeRval(len, fVec, fHatVec);
-  const int maxIters = 10000;
+  PetscInt maxIters = 100000;
+  PetscOptionsGetInt(PETSC_NULL, "-maxOptIters", &maxIters, PETSC_NULL);
   int iter;
   for(iter = 0; iter < maxIters; ++iter) {
     if(rVal < 1.0e-12) {
