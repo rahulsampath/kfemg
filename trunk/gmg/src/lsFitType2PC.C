@@ -97,7 +97,7 @@ PetscErrorCode applyLSfitType2PC(PC pc, Vec in, Vec out) {
     VecRestoreArray((data->fHat), &buf1);
     VecRestoreArray((data->gradFhat), &buf2);
     VecRestoreArray((data->res), &resArr);
-    std::cout<<"y0 = "<<(yVec[0])<<", y1 = "<<(yVec[1])<<", y2 = "<<(yVec[2])
+    std::cout<<"xStar = "<<(yVec[0])<<", sigma = "<<(yVec[1])<<", A = "<<(yVec[2])
       <<", fit = "<<fit<<", base = "<<initNormSqr<<std::endl;
 
     //4. Compute RHS for reduced problem 
