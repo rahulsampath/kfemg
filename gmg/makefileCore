@@ -3,7 +3,8 @@ INCLUDE = -I.. ${PETSC_CC_INCLUDES}
 
 LIBS = -L../common/lib -lcommon ${PETSC_LIB}
 
-EXEC = bin/newTestType2
+EXEC = bin/newTestType3
+#bin/newTestType2
 #bin/newTest 
 #bin/testMMS
 #bin/testMMSold bin/test1 bin/myTest bin/testBlkKmat bin/testFDPC
@@ -26,11 +27,15 @@ bin/testFDPC : ./src/test/testFDPC.o ./src/hatPC.o ./src/intergrid.o ./src/mms.o
 	./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
-bin/newTestType2 : ./src/test/newTestType2.o ./src/lsFitType2PC.o ./src/intergrid.o \
+bin/newTestType3 : ./src/test/newTestType3.o ./src/lsFitType3PC.o \
 	./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
-bin/newTest : ./src/test/newTest.o ./src/lsFitPC.o ./src/intergrid.o \
+bin/newTestType2 : ./src/test/newTestType2.o ./src/lsFitType2PC.o \
+	./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
+	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
+
+bin/newTest : ./src/test/newTest.o ./src/lsFitPC.o  \
 	./src/assembly.o ./src/boundary.o ./src/mesh.o ./src/gmgUtils.o
 	$(PCC) $(CFLAGS) $^ -o $@ $(LIBS) 
 
