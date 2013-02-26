@@ -50,6 +50,212 @@ PetscErrorCode destroyLSfitType3PC(PC pc) {
   return 0;
 }
 
+PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
+  LSfitType3Data* data;
+  PCShellGetContext(pc, (void**)(&data));
+
+  //This approximately solves: Kmat * out = in
+  int dofsPerNode = (data->K) + 1;
+
+  //1. Prepare initial guess that satisfies Dirichlet conditions.  
+  VecZeroEntries(out);
+  double* outArr;
+  double* inArr;
+  VecGetArray(out, &outArr);
+  VecGetArray(in, &inArr);
+  outArr[0] = inArr[0];
+  outArr[((data->Nx) - 1)*dofsPerNode] = inArr[((data->Nx) - 1)*dofsPerNode];
+  VecRestoreArray(in, &inArr);
+  VecRestoreArray(out, &outArr);
+
+  //2.a. Compute initial residual: res = in - (Kmat * out)
+  computeResidual((data->Kmat), out, in, (data->res));
+  //2.b. Initial residual norm.
+  PetscScalar initNormSqr;
+  VecDot((data->res), (data->res), &initNormSqr);
+
+  if(initNormSqr >= 1.0e-24) {
+    //3. Compute LS fit
+    double* resArr;
+    double* buf;
+    VecGetArray((data->res), &resArr);
+    VecGetArray((data->fTilde), &buf);
+    long double hx = 1.0L/(static_cast<long double>((data->Nx) - 1));
+    int iStar = 0;
+    double maxVal = fabs(resArr[0]);
+    for(int i = 0; i < (data->Nx); ++i) {
+      for(int d = 0; d < dofsPerNode; ++d) {
+        double val = fabs(resArr[(i*dofsPerNode) + d]);
+        if(val > maxVal) {
+          maxVal = val;
+          iStar = i;
+        }
+      }//end d
+    }//end i
+    double xStar = (static_cast<double>(iStar))*hx;
+    double A;
+    double fit = computeLSfit(A, xStar, (data->Nx), (data->K), *(data->coeffsCK), resArr, buf);
+    std::cout<<"iStar = "<<iStar<<" xStar = "<<xStar<<" A = "<<A
+      <<" fit = "<<fit<<" base = "<<initNormSqr<<std::endl;
+    for(int i = iStar - 1; i <= iStar + 1; ++i) {
+      if(i < 0) {
+        continue;
+      }
+      if(i >= (data->Nx)) {
+        continue;
+      }
+      for(int d = 0; d < dofsPerNode; ++d) {
+        double err = fabs(resArr[(i*dofsPerNode) + d] - buf[(i*dofsPerNode) + d]);
+        std::cout<<"Err @ i = "<<i<<" d = "<<d<<": "<<err<<std::endl; 
+      }//end d
+    }//end i
+    VecRestoreArray((data->fTilde), &buf);
+    VecRestoreArray((data->res), &resArr);
+
+    //4. Compute RHS for reduced problem 
+    double* rhsArr;
+    VecGetArray((data->reducedRhs), &rhsArr);
+    computeFtilde(xStar, (data->Nx), 0, *(data->coeffsC0), rhsArr);
+    VecRestoreArray((data->reducedRhs), &rhsArr);
+    VecScale((data->reducedRhs), A);
+
+    //5. Solve (approx.) the reduced problem using zero initial guess.
+    KSPSolve((data->reducedSolver), (data->reducedRhs), (data->reducedSol));
+
+    //6. Set reducedSol as the 0th dof of err
+    double* errArr;
+    double* solArr;
+    VecGetArray((data->err), &errArr);
+    VecGetArray((data->reducedSol), &solArr);
+    for(int i = 0; i < (data->Nx); ++i) {
+      errArr[i*dofsPerNode] = solArr[i];
+    }//end i
+    VecRestoreArray((data->reducedSol), &solArr);
+
+    //7. Use Finite Differencing to estimate the other dofs of err.
+    PetscInt fdType = 2;
+    PetscOptionsGetInt(PETSC_NULL, "-fdType", &fdType, PETSC_NULL);
+    if(fdType == 1) {
+      //Second Order
+      for(int d = 1; d <= (data->K); ++d) {
+        errArr[(0*dofsPerNode) + d] = -((3.0 * errArr[(0*dofsPerNode) + d - 1]) - (4.0 * errArr[(1*dofsPerNode) + d - 1])
+            + errArr[(2*dofsPerNode) + d - 1])/4.0;
+        for(int i = 1; i < ((data->Nx) - 1); ++i) {
+          errArr[(i*dofsPerNode) + d] = (errArr[((i + 1)*dofsPerNode) + d - 1] - errArr[((i - 1)*dofsPerNode) + d - 1])/4.0;
+        }//end i
+        errArr[(((data->Nx) - 1)*dofsPerNode) + d] = ((3.0 * errArr[(((data->Nx) - 1)*dofsPerNode) + d - 1]) -
+            (4.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) + errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1])/4.0;
+      }//end d
+    } else {
+      //Fourth Order
+      for(int d = 1; d <= (data->K); ++d) {
+        errArr[(0*dofsPerNode) + d] = -((25.0 * errArr[(0*dofsPerNode) + d - 1]) -
+            (48.0 * errArr[(1*dofsPerNode) + d - 1]) + (36.0 * errArr[(2*dofsPerNode) + d - 1])
+            - (16.0 * errArr[(3*dofsPerNode) + d - 1]) +
+            (3.0 * errArr[(4*dofsPerNode) + d - 1]))/24.0;
+        errArr[(1*dofsPerNode) + d] = -((25.0 * errArr[(1*dofsPerNode) + d - 1]) -
+            (48.0 * errArr[(2*dofsPerNode) + d - 1]) + (36.0 * errArr[(3*dofsPerNode) + d - 1])
+            - (16.0 * errArr[(4*dofsPerNode) + d - 1]) +
+            (3.0 * errArr[(5*dofsPerNode) + d - 1]))/24.0;
+        for(int i = 2; i < ((data->Nx) - 2); ++i) {
+          errArr[(i*dofsPerNode) + d] = (-errArr[((i + 2)*dofsPerNode) + d - 1] +
+              (8.0 * errArr[((i + 1)*dofsPerNode) + d - 1]) - (8.0 * errArr[((i - 1)*dofsPerNode) + d - 1])
+              + errArr[((i - 2)*dofsPerNode) + d - 1])/24.0;
+        }//end i
+        errArr[(((data->Nx) - 2)*dofsPerNode) + d] = ((25.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) -
+            (48.0 * errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1]) +
+            (36.0 * errArr[(((data->Nx) - 4)*dofsPerNode) + d - 1]) -
+            (16.0 * errArr[(((data->Nx) - 5)*dofsPerNode) + d - 1]) +
+            (3.0 * errArr[(((data->Nx) - 6)*dofsPerNode) + d - 1]))/24.0;
+        errArr[(((data->Nx) - 1)*dofsPerNode) + d] = ((25.0 * errArr[(((data->Nx) - 1)*dofsPerNode) + d - 1]) -
+            (48.0 * errArr[(((data->Nx) - 2)*dofsPerNode) + d - 1]) + 
+            (36.0 * errArr[(((data->Nx) - 3)*dofsPerNode) + d - 1]) -
+            (16.0 * errArr[(((data->Nx) - 4)*dofsPerNode) + d - 1]) +
+            (3.0 * errArr[(((data->Nx) - 5)*dofsPerNode) + d - 1]))/24.0;
+      }//end d
+    }
+    VecRestoreArray((data->err), &errArr);
+
+    PetscScalar errNormSqr;
+    VecDot((data->err), (data->err), &errNormSqr);
+    if(errNormSqr < 1.0e-24) {
+      std::cout<<"Rejected PC"<<std::endl;
+      VecCopy(in, out);
+    } else {
+      //8. tmp1 = Kmat * err 
+      MatMult((data->Kmat), (data->err), (data->tmp1));
+      //    PetscReal acceptTol = 1.0;
+      //   PetscOptionsGetReal(PETSC_NULL, "-acceptPCtol", &acceptTol, PETSC_NULL);
+      //9. Simple line search
+      double alpha = -1.0;
+      VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
+      PetscScalar finalNormSqr;
+      VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
+      while(alpha < -1.0e-12) {
+        if(finalNormSqr < initNormSqr) {
+          break;
+        }
+        alpha *= 0.1;
+        VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
+        VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
+      }//end while
+      std::cout<<"alpha = "<<alpha<<std::endl;
+      //10. Accept preconditioner only if it is converging 
+      if(finalNormSqr < initNormSqr) {
+        std::cout<<"Accepted PC: init = "<<initNormSqr<<", final = "<<finalNormSqr<<std::endl;
+        VecAXPY(out, -alpha, (data->err));
+      } else {
+        std::cout<<"Rejected PC"<<std::endl;
+        VecCopy(in, out);
+      }
+    }
+  }
+  return 0;
+}
+
+double computeLSfit(double& A, double xStar, int Nx, int K, std::vector<long long int>& coeffs,
+    double* fVec, double* fTildeVec) {
+  int len = Nx*(K + 1);
+  computeFtilde(xStar, Nx, K, coeffs, fTildeVec);
+  double hessR = computeHessR(len, fTildeVec);
+  A = 0.0;
+  double rVal = computeRval(len, A, fVec, fTildeVec);
+  PetscInt maxIters = 100;
+  PetscOptionsGetInt(PETSC_NULL, "-maxOptIters", &maxIters, PETSC_NULL);
+  int iter;
+  for(iter = 0; iter < maxIters; ++iter) {
+    if(rVal < 1.0e-12) {
+      std::cout<<"R is zero!"<<std::endl;
+      break;
+    }
+    double gradR = computeGradR(len, A, fVec, fTildeVec);
+    if((fabs(gradR)) < 1.0e-12) {
+      std::cout<<"gradR is zero!"<<std::endl;
+      break;
+    }
+    double alpha = 1.0;
+    double tmpA = A - (alpha * (gradR/hessR));
+    double tmpVal = computeRval(len, tmpA, fVec, fTildeVec);
+    while(alpha > 1.0e-12) {
+      if(tmpVal < rVal) {
+        break;
+      }
+      alpha *= 0.1;
+      tmpA = A - (alpha * (gradR/hessR));
+      tmpVal = computeRval(len, tmpA, fVec, fTildeVec);
+    }//end while
+    if(tmpVal < rVal) {
+      A = tmpA;
+      rVal = tmpVal;
+    } else {
+      std::cout<<"Line Search Failed!"<<std::endl;
+      break;
+    }
+  }//end iter
+  std::cout<<"Num Optimization Iters = "<<iter<<std::endl;
+  return rVal;
+}
+
 void computeFtilde(double xStar, int Nx, int K, std::vector<long long int>& coeffs, double* res) {
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
 
