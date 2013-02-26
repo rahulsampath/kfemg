@@ -29,6 +29,10 @@ void computeFtilde(double xStar, int Nx, int K, std::vector<long long int>& coef
 
 double computeRval(int len, double A, double* fVec, double* fTildeVec);
 
+double computeGradR(int len, double A, double* fVec, double* fTildeVec);
+
+double computeHessR(int len, double* fTildeVec);
+
 double computeLSfit(double& A, double xStar, int Nx, int K, std::vector<long long int>& coeffs,
     double* fVec, double* fTildeVec);
 
