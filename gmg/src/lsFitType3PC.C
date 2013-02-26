@@ -191,31 +191,26 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
       //   PetscOptionsGetReal(PETSC_NULL, "-acceptPCtol", &acceptTol, PETSC_NULL);
       //9. Simple line search
       double alpha = -1.0;
-      /*
-      VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
-      PetscScalar finalNormSqr;
-      VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
-      while(alpha < -1.0e-12) {
-        if(finalNormSqr < initNormSqr) {
-          break;
-        }
-        alpha *= 0.1;
-        VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
-        VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
-      }//end while
-      */
-      // std::cout<<"alpha = "<<alpha<<std::endl;
-      //10. Accept preconditioner only if it is converging a
-      /*
-      if(finalNormSqr < initNormSqr) {
-        //   std::cout<<"Accepted PC: init = "<<initNormSqr<<", final = "<<finalNormSqr<<std::endl;
-        VecAXPY(out, -alpha, (data->err));
+         VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
+         PetscScalar finalNormSqr;
+         VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
+         while(alpha < -1.0e-12) {
+         if(finalNormSqr < initNormSqr) {
+         break;
+         }
+         alpha *= 0.1;
+         VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
+         VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
+         }//end while
+       std::cout<<"alpha = "<<alpha<<std::endl;
+      //10. Accept preconditioner only if it is converging 
+         if(finalNormSqr < initNormSqr) {
+         std::cout<<"Accepted PC: init = "<<initNormSqr<<", final = "<<finalNormSqr<<std::endl;
+      VecAXPY(out, -alpha, (data->err));
       } else {
-        std::cout<<"Rejected PC"<<std::endl;
-        VecCopy(in, out);
+      std::cout<<"Rejected PC"<<std::endl;
+      VecCopy(in, out);
       }
-      */
-        VecAXPY(out, -alpha, (data->err));
     }
   }
   return 0;
@@ -226,43 +221,49 @@ double computeLSfit(double& A, int iStar, int Nx, int K, std::vector<long long i
   int dofsPerNode = (K + 1);
   computeFtilde(iStar, Nx, K, coeffs, fTildeVec);
   double hessR = computeHessR(iStar, Nx, dofsPerNode, fTildeVec);
+  std::cout<<"HessR = "<<hessR<<std::endl;
   A = 0.0;
   double rVal = computeRval(iStar, Nx, dofsPerNode, A, fVec, fTildeVec);
   PetscInt maxIters = 100;
   PetscOptionsGetInt(PETSC_NULL, "-maxOptIters", &maxIters, PETSC_NULL);
   int iter;
   for(iter = 0; iter < maxIters; ++iter) {
-    //std::cout<<"R = "<<rVal<<std::endl;
+    std::cout<<"R = "<<rVal<<std::endl;
     if(rVal < 1.0e-12) {
-      //std::cout<<"R is zero!"<<std::endl;
+      std::cout<<"R is zero!"<<std::endl;
       break;
     }
     double gradR = computeGradR(iStar, Nx, dofsPerNode, A, fVec, fTildeVec);
-    //std::cout<<"GradR = "<<gradR<<std::endl;
+    std::cout<<"GradR = "<<gradR<<std::endl;
     if((fabs(gradR)) < 1.0e-12) {
-      //std::cout<<"gradR is zero!"<<std::endl;
+      std::cout<<"gradR is zero!"<<std::endl;
+      break;
+    }
+    double step = (gradR/hessR);
+    if((fabs(step)) < 1.0e-12) {
+      std::cout<<"Step is too small!"<<std::endl;
       break;
     }
     double alpha = 1.0;
-    double tmpA = A - (alpha * (gradR/hessR));
+    double tmpA = A - (alpha * step);
     double tmpVal = computeRval(iStar, Nx, dofsPerNode, tmpA, fVec, fTildeVec);
     while(alpha > 1.0e-12) {
       if(tmpVal < rVal) {
         break;
       }
       alpha *= 0.1;
-      tmpA = A - (alpha * (gradR/hessR));
+      tmpA = A - (alpha * step);
       tmpVal = computeRval(iStar, Nx, dofsPerNode, tmpA, fVec, fTildeVec);
     }//end while
     if(tmpVal < rVal) {
       A = tmpA;
       rVal = tmpVal;
     } else {
-      //std::cout<<"Line Search Failed!"<<std::endl;
+      std::cout<<"Line Search Failed!"<<std::endl;
       break;
     }
   }//end iter
-  //std::cout<<"Num Optimization Iters = "<<iter<<std::endl;
+  std::cout<<"Num Optimization Iters = "<<iter<<std::endl;
   return rVal;
 }
 
@@ -293,6 +294,9 @@ void computeFtilde(int iStar, int Nx, int K, std::vector<long long int>& coeffs,
     res[i] = 0.0;
   }//end i
 
+  PetscReal fac = 1;
+  PetscOptionsGetReal(PETSC_NULL, "-fac", &fac, PETSC_NULL);
+
   for(int xi = 0; xi < (Nx - 1); ++xi) {
     long double xa = (static_cast<long double>(xi))*hx;
     for(int nd = 0; nd < 2; ++nd) {
@@ -301,7 +305,7 @@ void computeFtilde(int iStar, int Nx, int K, std::vector<long long int>& coeffs,
           long double xg = coordLocalToGlobal(gPt[g], xa, hx);
           double fn = 0.0;
           if((fabs(xg - xStar)) < hx) {
-            double numer = -(hx*hx)*log(1.0);
+            double numer = -(fac*hx*hx);
             double denom = ((xg - xStar)*(xg - xStar)) - (hx*hx);
             fn = exp(numer/denom);
           }

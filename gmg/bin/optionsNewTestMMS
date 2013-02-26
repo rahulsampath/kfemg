@@ -11,7 +11,7 @@
 -maxCoarseNpes 100
 
 -outer_ksp_max_it 2
--outer_ksp_monitor
+%-outer_ksp_monitor
 -outer_ksp_converged_reason
 
 -C0_ksp_max_it 2
