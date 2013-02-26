@@ -95,7 +95,7 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
     double xStar = (static_cast<double>(iStar))*hx;
     double A;
     double fit = computeLSfit(A, iStar, (data->Nx), (data->K), *(data->coeffsCK), resArr, buf);
-    std::cout<<"iStar = "<<iStar<<" xStar = "<<xStar<<" A = "<<A<<std::endl;
+    //std::cout<<"iStar = "<<iStar<<" xStar = "<<xStar<<" A = "<<A<<std::endl;
     /*
        for(int i = iStar - 1; i <= iStar + 1; ++i) {
        if(i < 0) {
@@ -191,6 +191,7 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
       //   PetscOptionsGetReal(PETSC_NULL, "-acceptPCtol", &acceptTol, PETSC_NULL);
       //9. Simple line search
       double alpha = -1.0;
+      /*
       VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
       PetscScalar finalNormSqr;
       VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
@@ -202,15 +203,19 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
         VecWAXPY((data->tmp2), alpha, (data->tmp1), (data->res));
         VecDot((data->tmp2), (data->tmp2), &finalNormSqr);
       }//end while
-      std::cout<<"alpha = "<<alpha<<std::endl;
-      //10. Accept preconditioner only if it is converging 
+      */
+      // std::cout<<"alpha = "<<alpha<<std::endl;
+      //10. Accept preconditioner only if it is converging a
+      /*
       if(finalNormSqr < initNormSqr) {
-        std::cout<<"Accepted PC: init = "<<initNormSqr<<", final = "<<finalNormSqr<<std::endl;
+        //   std::cout<<"Accepted PC: init = "<<initNormSqr<<", final = "<<finalNormSqr<<std::endl;
         VecAXPY(out, -alpha, (data->err));
       } else {
         std::cout<<"Rejected PC"<<std::endl;
         VecCopy(in, out);
       }
+      */
+        VecAXPY(out, -alpha, (data->err));
     }
   }
   return 0;
@@ -227,15 +232,15 @@ double computeLSfit(double& A, int iStar, int Nx, int K, std::vector<long long i
   PetscOptionsGetInt(PETSC_NULL, "-maxOptIters", &maxIters, PETSC_NULL);
   int iter;
   for(iter = 0; iter < maxIters; ++iter) {
-    std::cout<<"R = "<<rVal<<std::endl;
+    //std::cout<<"R = "<<rVal<<std::endl;
     if(rVal < 1.0e-12) {
-      std::cout<<"R is zero!"<<std::endl;
+      //std::cout<<"R is zero!"<<std::endl;
       break;
     }
     double gradR = computeGradR(iStar, Nx, dofsPerNode, A, fVec, fTildeVec);
-    std::cout<<"GradR = "<<gradR<<std::endl;
+    //std::cout<<"GradR = "<<gradR<<std::endl;
     if((fabs(gradR)) < 1.0e-12) {
-      std::cout<<"gradR is zero!"<<std::endl;
+      //std::cout<<"gradR is zero!"<<std::endl;
       break;
     }
     double alpha = 1.0;
@@ -253,11 +258,11 @@ double computeLSfit(double& A, int iStar, int Nx, int K, std::vector<long long i
       A = tmpA;
       rVal = tmpVal;
     } else {
-      std::cout<<"Line Search Failed!"<<std::endl;
+      //std::cout<<"Line Search Failed!"<<std::endl;
       break;
     }
   }//end iter
-  std::cout<<"Num Optimization Iters = "<<iter<<std::endl;
+  //std::cout<<"Num Optimization Iters = "<<iter<<std::endl;
   return rVal;
 }
 
