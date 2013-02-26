@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
   PC pc;
   KSPCreate(activeComms[0], &ksp);
   KSPSetType(ksp, KSPFGMRES);
-  KSPSetPCSide(ksp, PC_RIGHT);
+  //KSPSetPCSide(ksp, PC_RIGHT);
   KSPGetPC(ksp, &pc);
   PCSetType(pc, PCSHELL);
   setupLSfitType3PC(pc, Kmat[0], reducedMat[0], K, Nx[0], coeffsCK, coeffsC0);

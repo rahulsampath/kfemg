@@ -25,15 +25,15 @@ struct LSfitType3Data {
   Vec reducedSol;
 };
 
-void computeFtilde(double xStar, int Nx, int K, std::vector<long long int>& coeffs, double* res);
+void computeFtilde(int iStar, int Nx, int K, std::vector<long long int>& coeffs, double* res);
 
-double computeRval(int len, double A, double* fVec, double* fTildeVec);
+double computeRval(int iStar, int Nx, int dofsPerNode, double A, double* fVec, double* fTildeVec);
 
-double computeGradR(int len, double A, double* fVec, double* fTildeVec);
+double computeGradR(int iStar, int Nx, int dofsPerNode, double A, double* fVec, double* fTildeVec);
 
-double computeHessR(int len, double* fTildeVec);
+double computeHessR(int iStar, int Nx, int dofsPerNode, double* fTildeVec);
 
-double computeLSfit(double& A, double xStar, int Nx, int K, std::vector<long long int>& coeffs,
+double computeLSfit(double& A, int iStar, int Nx, int K, std::vector<long long int>& coeffs,
     double* fVec, double* fTildeVec);
 
 PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out);

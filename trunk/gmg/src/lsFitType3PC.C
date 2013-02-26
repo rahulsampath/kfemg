@@ -94,9 +94,8 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
     }//end i
     double xStar = (static_cast<double>(iStar))*hx;
     double A;
-    double fit = computeLSfit(A, xStar, (data->Nx), (data->K), *(data->coeffsCK), resArr, buf);
-    std::cout<<"iStar = "<<iStar<<" xStar = "<<xStar<<" A = "<<A
-      <<" fit = "<<fit<<" base = "<<initNormSqr<<std::endl;
+    double fit = computeLSfit(A, iStar, (data->Nx), (data->K), *(data->coeffsCK), resArr, buf);
+    std::cout<<"iStar = "<<iStar<<" xStar = "<<xStar<<" A = "<<A<<std::endl;
     for(int i = iStar - 1; i <= iStar + 1; ++i) {
       if(i < 0) {
         continue;
@@ -105,8 +104,10 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
         continue;
       }
       for(int d = 0; d < dofsPerNode; ++d) {
-        double err = fabs(resArr[(i*dofsPerNode) + d] - buf[(i*dofsPerNode) + d]);
-        std::cout<<"Err @ i = "<<i<<" d = "<<d<<": "<<err<<std::endl; 
+        int j = (i*dofsPerNode) + d;
+        double err = fabs(resArr[j] - (A * buf[j]));
+        std::cout<<"@ i = "<<i<<" d = "<<d<<" err = "<<err
+          <<" f = "<<(resArr[j])<<" fTilde = "<<(buf[j])<<std::endl; 
       }//end d
     }//end i
     VecRestoreArray((data->fTilde), &buf);
@@ -115,7 +116,7 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
     //4. Compute RHS for reduced problem 
     double* rhsArr;
     VecGetArray((data->reducedRhs), &rhsArr);
-    computeFtilde(xStar, (data->Nx), 0, *(data->coeffsC0), rhsArr);
+    computeFtilde(iStar, (data->Nx), 0, *(data->coeffsC0), rhsArr);
     VecRestoreArray((data->reducedRhs), &rhsArr);
     VecScale((data->reducedRhs), A);
 
@@ -129,6 +130,7 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
     VecGetArray((data->reducedSol), &solArr);
     for(int i = 0; i < (data->Nx); ++i) {
       errArr[i*dofsPerNode] = solArr[i];
+      //  std::cout<<"sol["<<i<<"] = "<<(solArr[i])<<std::endl;
     }//end i
     VecRestoreArray((data->reducedSol), &solArr);
 
@@ -213,36 +215,38 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
   return 0;
 }
 
-double computeLSfit(double& A, double xStar, int Nx, int K, std::vector<long long int>& coeffs,
+double computeLSfit(double& A, int iStar, int Nx, int K, std::vector<long long int>& coeffs,
     double* fVec, double* fTildeVec) {
-  int len = Nx*(K + 1);
-  computeFtilde(xStar, Nx, K, coeffs, fTildeVec);
-  double hessR = computeHessR(len, fTildeVec);
+  int dofsPerNode = (K + 1);
+  computeFtilde(iStar, Nx, K, coeffs, fTildeVec);
+  double hessR = computeHessR(iStar, Nx, dofsPerNode, fTildeVec);
   A = 0.0;
-  double rVal = computeRval(len, A, fVec, fTildeVec);
+  double rVal = computeRval(iStar, Nx, dofsPerNode, A, fVec, fTildeVec);
   PetscInt maxIters = 100;
   PetscOptionsGetInt(PETSC_NULL, "-maxOptIters", &maxIters, PETSC_NULL);
   int iter;
   for(iter = 0; iter < maxIters; ++iter) {
+    std::cout<<"R = "<<rVal<<std::endl;
     if(rVal < 1.0e-12) {
       std::cout<<"R is zero!"<<std::endl;
       break;
     }
-    double gradR = computeGradR(len, A, fVec, fTildeVec);
+    double gradR = computeGradR(iStar, Nx, dofsPerNode, A, fVec, fTildeVec);
+    std::cout<<"GradR = "<<gradR<<std::endl;
     if((fabs(gradR)) < 1.0e-12) {
       std::cout<<"gradR is zero!"<<std::endl;
       break;
     }
     double alpha = 1.0;
     double tmpA = A - (alpha * (gradR/hessR));
-    double tmpVal = computeRval(len, tmpA, fVec, fTildeVec);
+    double tmpVal = computeRval(iStar, Nx, dofsPerNode, tmpA, fVec, fTildeVec);
     while(alpha > 1.0e-12) {
       if(tmpVal < rVal) {
         break;
       }
       alpha *= 0.1;
       tmpA = A - (alpha * (gradR/hessR));
-      tmpVal = computeRval(len, tmpA, fVec, fTildeVec);
+      tmpVal = computeRval(iStar, Nx, dofsPerNode, tmpA, fVec, fTildeVec);
     }//end while
     if(tmpVal < rVal) {
       A = tmpA;
@@ -256,8 +260,9 @@ double computeLSfit(double& A, double xStar, int Nx, int K, std::vector<long lon
   return rVal;
 }
 
-void computeFtilde(double xStar, int Nx, int K, std::vector<long long int>& coeffs, double* res) {
+void computeFtilde(int iStar, int Nx, int K, std::vector<long long int>& coeffs, double* res) {
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  double xStar = (static_cast<double>(iStar)) * hx;
 
   PetscInt extraNumGpts = 0;
   PetscOptionsGetInt(PETSC_NULL, "-extraGptsFhat", &extraNumGpts, PETSC_NULL);
@@ -290,8 +295,9 @@ void computeFtilde(double xStar, int Nx, int K, std::vector<long long int>& coef
           long double xg = coordLocalToGlobal(gPt[g], xa, hx);
           double fn = 0.0;
           if((fabs(xg - xStar)) < hx) {
+            double numer = -(hx*hx)*log(1.0);
             double denom = ((xg - xStar)*(xg - xStar)) - (hx*hx);
-            fn = exp(-1.0/denom);
+            fn = exp(numer/denom);
           }
           res[((xi + nd)*dofsPerNode) + dof] += ( gWt[g] * shFnVals[nd][dof][g] * fn );
         }//end g
@@ -309,28 +315,57 @@ void computeFtilde(double xStar, int Nx, int K, std::vector<long long int>& coef
   res[dofsPerNode*(Nx - 1)] = 0;
 }
 
-double computeRval(int len, double A, double* fVec, double* fTildeVec) {
+double computeRval(int iStar, int Nx, int dofsPerNode,
+    double A, double* fVec, double* fTildeVec) {
   double res = 0.0;
-  for(int i = 0; i < len; ++i) {
-    double val = (A*fTildeVec[i]) - fVec[i];
-    res += (val * val);
+  for(int i = (iStar - 1); i <= (iStar + 1); ++i) {
+    if(i < 0) {
+      continue;
+    }
+    if(i >= Nx) {
+      continue;
+    }
+    for(int d = 0; d < dofsPerNode; ++d) {
+      int j = (i*dofsPerNode) + d;
+      double val = (A*fTildeVec[j]) - fVec[j];
+      res += (val * val);
+    }//end d
   }//end i
   return res;
 }
 
-double computeGradR(int len, double A, double* fVec, double* fTildeVec) {
+double computeGradR(int iStar, int Nx, int dofsPerNode,
+    double A, double* fVec, double* fTildeVec) {
   double res = 0.0;
-  for(int i = 0; i < len; ++i) {
-    res += (((A*fTildeVec[i]) - fVec[i])*fTildeVec[i]);
+  for(int i = (iStar - 1); i <= (iStar + 1); ++i) {
+    if(i < 0) {
+      continue;
+    }
+    if(i >= Nx) {
+      continue;
+    }
+    for(int d = 0; d < dofsPerNode; ++d) {
+      int j = (i*dofsPerNode) + d;
+      res += (((A*fTildeVec[j]) - fVec[j])*fTildeVec[j]);
+    }//end d
   }//end i
   res *= 2.0;
   return res;
 }
 
-double computeHessR(int len, double* fTildeVec) {
+double computeHessR(int iStar, int Nx, int dofsPerNode, double* fTildeVec) {
   double res = 0.0;
-  for(int i = 0; i < len; ++i) {
-    res += (fTildeVec[i]*fTildeVec[i]);
+  for(int i = (iStar - 1); i <= (iStar + 1); ++i) {
+    if(i < 0) {
+      continue;
+    }
+    if(i >= Nx) {
+      continue;
+    }
+    for(int d = 0; d < dofsPerNode; ++d) {
+      int j = (i*dofsPerNode) + d;
+      res += (fTildeVec[j]*fTildeVec[j]);
+    }//end d
   }//end i
   res *= 2.0;
   return res;
