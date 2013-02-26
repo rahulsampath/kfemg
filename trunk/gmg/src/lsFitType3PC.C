@@ -96,20 +96,22 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
     double A;
     double fit = computeLSfit(A, iStar, (data->Nx), (data->K), *(data->coeffsCK), resArr, buf);
     std::cout<<"iStar = "<<iStar<<" xStar = "<<xStar<<" A = "<<A<<std::endl;
-    for(int i = iStar - 1; i <= iStar + 1; ++i) {
-      if(i < 0) {
-        continue;
-      }
-      if(i >= (data->Nx)) {
-        continue;
-      }
-      for(int d = 0; d < dofsPerNode; ++d) {
-        int j = (i*dofsPerNode) + d;
-        double err = fabs(resArr[j] - (A * buf[j]));
-        std::cout<<"@ i = "<<i<<" d = "<<d<<" err = "<<err
-          <<" f = "<<(resArr[j])<<" fTilde = "<<(buf[j])<<std::endl; 
-      }//end d
-    }//end i
+    /*
+       for(int i = iStar - 1; i <= iStar + 1; ++i) {
+       if(i < 0) {
+       continue;
+       }
+       if(i >= (data->Nx)) {
+       continue;
+       }
+       for(int d = 0; d < dofsPerNode; ++d) {
+       int j = (i*dofsPerNode) + d;
+       double err = fabs(resArr[j] - (A * buf[j]));
+       std::cout<<"@ i = "<<i<<" d = "<<d<<" err = "<<err
+       <<" f = "<<(resArr[j])<<" fTilde = "<<(buf[j])<<std::endl; 
+       }//end d
+       }//end i
+       */
     VecRestoreArray((data->fTilde), &buf);
     VecRestoreArray((data->res), &resArr);
 
@@ -130,7 +132,6 @@ PetscErrorCode applyLSfitType3PC(PC pc, Vec in, Vec out) {
     VecGetArray((data->reducedSol), &solArr);
     for(int i = 0; i < (data->Nx); ++i) {
       errArr[i*dofsPerNode] = solArr[i];
-      //  std::cout<<"sol["<<i<<"] = "<<(solArr[i])<<std::endl;
     }//end i
     VecRestoreArray((data->reducedSol), &solArr);
 
