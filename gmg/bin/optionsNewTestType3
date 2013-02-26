@@ -1,7 +1,7 @@
 -dim 1
 -K 1
 
--extraGptsFhat 0
+-extraGptsFhat 4
 
 -finestNx 9
 
