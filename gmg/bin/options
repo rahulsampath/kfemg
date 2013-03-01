@@ -19,10 +19,12 @@
 %-smootherTol 0.01
 -smootherMaxIts 1000
 -smooth1_ksp_type cg
+-smooth1_pc_type sor
 -smooth1_ksp_max_it 1000
 %-smooth1_ksp_monitor
 %-smooth1_ksp_converged_reason
 -smooth2_ksp_type gmres
+-smooth2_pc_type sor
 -smooth2_ksp_max_it 1000
 %-smooth2_ksp_monitor
 %-smooth2_ksp_converged_reason
