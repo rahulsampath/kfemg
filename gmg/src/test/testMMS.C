@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
     PCFactorSetMatSolverPackage(coarsePC, MATSOLVERMUMPS);
     KSPSetInitialGuessNonzero(coarseSolver, PETSC_TRUE);
     KSPSetOperators(coarseSolver, Kmat[0], Kmat[0], SAME_PRECONDITIONER);
-    KSPSetTolerances(coarseSolver, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 10);
+    KSPSetTolerances(coarseSolver, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 20);
     KSPSetOptionsPrefix(coarseSolver, "coarse_");
     KSPSetFromOptions(coarseSolver);
   }

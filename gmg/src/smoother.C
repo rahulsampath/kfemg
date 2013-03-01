@@ -1,7 +1,7 @@
 
 #include "gmg/include/smoother.h"
 #include "gmg/include/gmgUtils.h"
-//#include <iostream>
+#include <iostream>
 //#include <iomanip>
 
 void setupSmootherData(SmootherData* data, Mat Kmat) {
@@ -74,10 +74,18 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
       VecNorm(data->res, NORM_2, &resNorm);
     }//end subIt
     if(done) {
+      std::cout<<"Num Smooth Iter = "<<(iter + 1)<<std::endl;
       break;
     }
   }//end iter
   //std::cout<<"Out of Smoother!"<<std::endl;
+  if(resNorm < 1.0e-12) {
+    std::cout<<"Smoother Converged: ATOL!"<<std::endl;
+  } else if(resNorm < (initNorm*(data->tol))) {
+    std::cout<<"Smoother Converged: RTOL!"<<std::endl;
+  } else {
+    std::cout<<"Smoother Diverged!"<<std::endl;
+  }
 }
 
 void destroySmootherData(SmootherData* data) {
