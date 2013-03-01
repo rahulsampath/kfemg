@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
   for(int lev = 0; lev < (sData.size()); ++lev) {
     if(rank < activeNpes[lev + 1]) {
       sData[lev] = new SmootherData;
-      setupSmootherData(sData[lev]);
+      setupSmootherData(sData[lev], Kmat[lev + 1]);
     }
   }//end lev
 

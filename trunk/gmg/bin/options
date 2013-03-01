@@ -17,7 +17,7 @@
 -outer_ksp_converged_reason
 
 -smootherTol 0.5
--smootherMaxIt 4
+-smootherMaxIts 4
 -smooth1_ksp_type cg
 -smooth1_ksp_max_it 4
 -smooth2_ksp_type gmres
