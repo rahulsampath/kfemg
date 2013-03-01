@@ -1,8 +1,8 @@
 
 #include "gmg/include/smoother.h"
 #include "gmg/include/gmgUtils.h"
-#include <iostream>
-#include <iomanip>
+//#include <iostream>
+//#include <iomanip>
 
 void setupSmootherData(SmootherData* data, Mat Kmat) {
   MPI_Comm comm;
@@ -40,20 +40,20 @@ void setupSmootherData(SmootherData* data, Mat Kmat) {
 void applySmoother(SmootherData* data, Vec in, Vec out) {
   PetscReal rhsNorm;
   VecNorm(in, NORM_2, &rhsNorm);
-  std::cout<<"RHS norm in smoother = "<<std::setprecision(13)<<rhsNorm<<std::endl;
+  //std::cout<<"RHS norm in smoother = "<<std::setprecision(13)<<rhsNorm<<std::endl;
   computeResidual(data->Kmat, out, in, data->res);
   PetscReal resNorm;
   VecNorm(data->res, NORM_2, &resNorm);
   PetscReal initNorm = resNorm;
-  std::cout<<"InitNorm in smoother = "<<std::setprecision(13)<<initNorm<<std::endl;
+  //std::cout<<"InitNorm in smoother = "<<std::setprecision(13)<<initNorm<<std::endl;
   PetscReal newTol = initNorm*(data->tol)/rhsNorm;
-  std::cout<<"New tol = "<<std::setprecision(13)<<newTol<<std::endl;
+  //std::cout<<"New tol = "<<std::setprecision(13)<<newTol<<std::endl;
   KSPSetTolerances(data->ksp1, newTol, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
   KSPSetTolerances(data->ksp2, newTol, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
   bool done = false;
   for(int iter = 0; iter < (data->maxIts); ++iter) {
     for(int subIt = 0; subIt < 2; ++subIt) {
-      std::cout<<"Smooth iter = "<<iter<<" sub = "<<subIt<<" res = "<<std::setprecision(13)<<resNorm<<std::endl;
+      //std::cout<<"Smooth iter = "<<iter<<" sub = "<<subIt<<" res = "<<std::setprecision(13)<<resNorm<<std::endl;
       if(resNorm < 1.0e-12) {
         done = true;
         break;
@@ -74,7 +74,7 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
       break;
     }
   }//end iter
-  std::cout<<"Out of Smoother!"<<std::endl;
+  //std::cout<<"Out of Smoother!"<<std::endl;
 }
 
 void destroySmootherData(SmootherData* data) {
