@@ -70,6 +70,7 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
       break;
     }
   }//end iter
+  std::cout<<"Out of Smoother!"<<std::endl;
 }
 
 void destroySmootherData(SmootherData* data) {
