@@ -42,13 +42,16 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
   PetscReal resNorm;
   VecNorm(data->res, NORM_2, &resNorm);
   PetscReal initNorm = resNorm;
+  bool done = false;
   for(int iter = 0; iter < (data->maxIts); ++iter) {
     for(int subIt = 0; subIt < 2; ++subIt) {
       std::cout<<"Smooth iter = "<<iter<<" sub = "<<subIt<<" res = "<<std::setprecision(13)<<resNorm<<std::endl;
       if(resNorm < 1.0e-12) {
+        done = true;
         break;
       }
       if(resNorm < (initNorm*(data->tol))) {
+        done = true;
         break;
       }
       if(subIt == 0) {
@@ -63,6 +66,9 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
       computeResidual(data->Kmat, out, in, data->res);
       VecNorm(data->res, NORM_2, &resNorm);
     }//end subIt
+    if(done) {
+      break;
+    }
   }//end iter
 }
 
