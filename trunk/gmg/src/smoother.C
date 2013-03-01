@@ -38,6 +38,9 @@ void setupSmootherData(SmootherData* data, Mat Kmat) {
 }
 
 void applySmoother(SmootherData* data, Vec in, Vec out) {
+  PetscReal rhsNorm;
+  VecNorm(in, NORM_2, &rhsNorm);
+  std::cout<<"RHS norm in smoother = "<<std::setprecision(13)<<rhsNorm<<std::endl;
   computeResidual(data->Kmat, out, in, data->res);
   PetscReal resNorm;
   VecNorm(data->res, NORM_2, &resNorm);
@@ -54,6 +57,7 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
         done = true;
         break;
       }
+      std::cout<<"New Rtol = "<<std::setprecision(13)<<(initNorm*(data->tol)/resNorm)<<std::endl;
       if(subIt == 0) {
         KSPSetTolerances(data->ksp1, (initNorm*(data->tol)/resNorm), 
             PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
