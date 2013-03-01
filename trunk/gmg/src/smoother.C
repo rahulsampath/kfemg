@@ -35,14 +35,39 @@ void setupSmootherData(SmootherData* data, Mat Kmat) {
   MatGetVecs(Kmat, PETSC_NULL, &(data->res));
 }
 
+void applySmoother(SmootherData* data, Vec in, Vec out) {
+  computeResidual(data->Kmat, out, in, data->res);
+  PetscReal resNorm;
+  VecNorm(data->res, NORM_2, &resNorm);
+  PetscReal initNorm = resNorm;
+  for(int iter = 0; iter < (data->maxIts); ++iter) {
+    for(int subIt = 0; subIt < 2; ++subIt) {
+      if(resNorm < 1.0e-12) {
+        break;
+      }
+      if(resNorm < (initNorm*(data->tol))) {
+        break;
+      }
+      if(subIt == 0) {
+        KSPSetTolerances(data->ksp1, (initNorm*(data->tol)/resNorm), 
+            PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
+        KSPSolve(data->ksp1, in, out);
+      } else {
+        KSPSetTolerances(data->ksp2, (initNorm*(data->tol)/resNorm), 
+            PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
+        KSPSolve(data->ksp2, in, out);
+      }
+      computeResidual(data->Kmat, out, in, data->res);
+      VecNorm(data->res, NORM_2, &resNorm);
+    }//end subIt
+  }//end iter
+}
+
 void destroySmootherData(SmootherData* data) {
   KSPDestroy(&(data->ksp1));
   KSPDestroy(&(data->ksp2));
   VecDestroy(&(data->res));
   delete data;
-}
-
-void applySmoother(SmootherData* data, Vec in, Vec out) {
 }
 
 
