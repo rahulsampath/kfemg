@@ -45,6 +45,11 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
   PetscReal resNorm;
   VecNorm(data->res, NORM_2, &resNorm);
   PetscReal initNorm = resNorm;
+  std::cout<<"InitNorm in smoother = "<<std::setprecision(13)<<initNorm<<std::endl;
+  PetscReal newTol = initNorm*(data->tol)/rhsNorm;
+  std::cout<<"New tol = "<<std::setprecision(13)<<newTol<<std::endl;
+  KSPSetTolerances(data->ksp1, newTol, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
+  KSPSetTolerances(data->ksp2, newTol, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
   bool done = false;
   for(int iter = 0; iter < (data->maxIts); ++iter) {
     for(int subIt = 0; subIt < 2; ++subIt) {
@@ -57,14 +62,9 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
         done = true;
         break;
       }
-      std::cout<<"New Rtol = "<<std::setprecision(13)<<(initNorm*(data->tol)/resNorm)<<std::endl;
       if(subIt == 0) {
-        KSPSetTolerances(data->ksp1, (initNorm*(data->tol)/resNorm), 
-            PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
         KSPSolve(data->ksp1, in, out);
       } else {
-        KSPSetTolerances(data->ksp2, (initNorm*(data->tol)/resNorm), 
-            PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
         KSPSolve(data->ksp2, in, out);
       }
       computeResidual(data->Kmat, out, in, data->res);
