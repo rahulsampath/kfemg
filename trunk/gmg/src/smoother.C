@@ -33,6 +33,8 @@ void setupSmootherData(SmootherData* data, Mat Kmat) {
   KSPSetTolerances(data->ksp2, 1.0e-12, 1.0e-12, 2.0, 2);
   KSPDefaultConvergedSetUIRNorm(data->ksp1);
   KSPDefaultConvergedSetUIRNorm(data->ksp2);
+  KSPSetNormType(data->ksp1, KSP_NORM_UNPRECONDITIONED);
+  KSPSetNormType(data->ksp2, KSP_NORM_UNPRECONDITIONED);
   KSPSetOptionsPrefix(data->ksp1, "smooth1_");
   KSPSetOptionsPrefix(data->ksp2, "smooth2_");
   KSPSetFromOptions(data->ksp1);
