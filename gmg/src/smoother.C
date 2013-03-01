@@ -74,7 +74,7 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
       VecNorm(data->res, NORM_2, &resNorm);
     }//end subIt
     if(done) {
-      std::cout<<"Num Smooth Iter = "<<(iter + 1)<<std::endl;
+      std::cout<<"Num Smooth Iter = "<<iter<<std::endl;
       break;
     }
   }//end iter
