@@ -17,10 +17,12 @@
 -outer_ksp_converged_reason
 
 -smootherTol 0.5
--smootherMaxIts 2
+-smootherMaxIts 20
 -smooth1_ksp_type cg
--smooth1_ksp_max_it 2
+-smooth1_ksp_max_it 20
+-smooth1_ksp_monitor
 -smooth2_ksp_type gmres
--smooth2_ksp_max_it 2
+-smooth2_ksp_max_it 20
+-smooth2_ksp_monitor
 
 

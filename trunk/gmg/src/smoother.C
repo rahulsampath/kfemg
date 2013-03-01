@@ -42,6 +42,7 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
   PetscReal initNorm = resNorm;
   for(int iter = 0; iter < (data->maxIts); ++iter) {
     for(int subIt = 0; subIt < 2; ++subIt) {
+      std::cout<<"Smooth iter = "<<iter<<" sub = "<<subIt<<" res = "<<resNorm<<std::endl;
       if(resNorm < 1.0e-12) {
         break;
       }
