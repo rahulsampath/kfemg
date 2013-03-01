@@ -16,7 +16,7 @@
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 
--smootherTol 0.1
+%-smootherTol 0.01
 -smootherMaxIts 1000
 -smooth1_ksp_type cg
 -smooth1_ksp_max_it 1000
