@@ -1,5 +1,6 @@
 
 #include "gmg/include/mms.h"
+#include "common/include/commonUtils.h"
 
 #ifdef DEBUG
 #include <cassert>

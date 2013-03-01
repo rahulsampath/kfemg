@@ -1,0 +1,26 @@
+
+-dim 1
+-K 1
+
+-extraGptsError 0
+-extraGptsRHS 0
+
+-finestNx 9
+%-finestNy 9
+%-finestNz 9
+
+-maxNumLevels 100
+-maxCoarseNpes 100
+
+-outer_ksp_max_it 20
+-outer_ksp_monitor
+-outer_ksp_converged_reason
+
+-smootherTol 0.5
+-smootherMaxIt 4
+-smooth1_ksp_type cg
+-smooth1_ksp_max_it 4
+-smooth2_ksp_type gmres
+-smooth2_ksp_max_it 4
+
+

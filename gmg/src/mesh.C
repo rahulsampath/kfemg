@@ -1,5 +1,7 @@
 
 #include "gmg/include/mesh.h"
+#include <iostream>
+#include <cmath>
 
 #ifdef DEBUG
 #include <cassert>

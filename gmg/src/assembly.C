@@ -1,5 +1,7 @@
 
 #include "gmg/include/assembly.h"
+#include "common/include/commonUtils.h"
+#include <iostream>
 
 #ifdef DEBUG
 #include <cassert>

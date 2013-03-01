@@ -1,5 +1,6 @@
 
 #include "gmg/include/intergrid.h"
+#include "common/include/commonUtils.h"
 
 #ifdef DEBUG
 #include <cassert>
