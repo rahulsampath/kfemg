@@ -47,6 +47,9 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
   PetscReal initNorm = resNorm;
   //std::cout<<"InitNorm in smoother = "<<std::setprecision(13)<<initNorm<<std::endl;
   PetscReal newTol = initNorm*(data->tol)/rhsNorm;
+  if(newTol >= 1.0) {
+    newTol = 0.999999;
+  }
   //std::cout<<"New tol = "<<std::setprecision(13)<<newTol<<std::endl;
   KSPSetTolerances(data->ksp1, newTol, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
   KSPSetTolerances(data->ksp2, newTol, PETSC_DEFAULT, PETSC_DEFAULT, PETSC_DEFAULT);
