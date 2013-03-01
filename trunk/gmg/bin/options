@@ -20,11 +20,11 @@
 -smootherMaxIts 20
 -smooth1_ksp_type cg
 -smooth1_ksp_max_it 20
-%-smooth1_ksp_monitor
+-smooth1_ksp_monitor
 %-smooth1_ksp_converged_reason
 -smooth2_ksp_type gmres
 -smooth2_ksp_max_it 20
-%-smooth2_ksp_monitor
+-smooth2_ksp_monitor
 %-smooth2_ksp_converged_reason
 
 
