@@ -1,6 +1,6 @@
 
--dim 1
--K 1
+-dim 3
+%-K 1
 
 -extraGptsError 0
 -extraGptsRHS 0
@@ -17,15 +17,15 @@
 -outer_ksp_converged_reason
 
 %-smootherTol 0.01
--smootherMaxIts 1000
+-smootherMaxIts 2000
 -smooth1_ksp_type cg
 -smooth1_pc_type sor
--smooth1_ksp_max_it 1000
+-smooth1_ksp_max_it 2000
 %-smooth1_ksp_monitor
 %-smooth1_ksp_converged_reason
 -smooth2_ksp_type gmres
 -smooth2_pc_type sor
--smooth2_ksp_max_it 1000
+-smooth2_ksp_max_it 2000
 %-smooth2_ksp_monitor
 %-smooth2_ksp_converged_reason
 
