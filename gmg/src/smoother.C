@@ -9,9 +9,9 @@
 void setupSmootherData(SmootherData* data, Mat Kmat) {
   MPI_Comm comm;
   PetscObjectGetComm(((PetscObject)Kmat), &comm);
-  data->maxIts = 4;
+  data->maxIts = 100;
   PetscOptionsGetInt(PETSC_NULL, "-smootherMaxIts", &(data->maxIts), PETSC_NULL);
-  data->tol = 0.5;
+  data->tol = 0.1;
   PetscOptionsGetReal(PETSC_NULL, "-smootherTol", &(data->tol), PETSC_NULL);
   data->Kmat = Kmat;
   KSPCreate(comm, &(data->ksp1));

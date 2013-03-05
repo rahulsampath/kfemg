@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   assert(dim > 0);
   assert(dim <= 3);
 #endif
-  PetscInt K;
+  PetscInt K = 0;
   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
 
   int npes;
