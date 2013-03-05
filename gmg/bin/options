@@ -12,7 +12,7 @@
 -maxNumLevels 100
 -maxCoarseNpes 100
 
--outer_ksp_max_it 50
+-outer_ksp_max_it 200
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 
