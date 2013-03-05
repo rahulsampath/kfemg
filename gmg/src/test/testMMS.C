@@ -17,12 +17,32 @@
 #include <cassert>
 #endif
 
+PetscClassId gmgCookie;
+PetscLogEvent meshEvent;
+PetscLogEvent buildPmatEvent;
+PetscLogEvent buildKmatEvent;
+PetscLogEvent rhsEvent;
+PetscLogEvent solverSetupEvent;
+PetscLogEvent solverApplyEvent;
+PetscLogEvent errEvent;
+PetscLogEvent cleanupEvent;
+
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
 
   PETSC_COMM_WORLD = MPI_COMM_WORLD;
 
   PetscInitialize(&argc, &argv, "options", PETSC_NULL);
+
+  PetscClassIdRegister("GMG", &gmgCookie);
+  PetscLogEventRegister("Mesh", gmgCookie, &meshEvent);
+  PetscLogEventRegister("BuildPmat", gmgCookie, &buildPmatEvent);
+  PetscLogEventRegister("BuildKmat", gmgCookie, &buildKmatEvent);
+  PetscLogEventRegister("RHS", gmgCookie, &rhsEvent);
+  PetscLogEventRegister("SolverSetup", gmgCookie, &solverSetupEvent);
+  PetscLogEventRegister("SolverApply", gmgCookie, &solverApplyEvent);
+  PetscLogEventRegister("Error", gmgCookie, &errEvent);
+  PetscLogEventRegister("Cleanup", gmgCookie, &cleanupEvent);
 
   PetscInt dim = 1; 
   PetscOptionsGetInt(PETSC_NULL, "-dim", &dim, PETSC_NULL);
@@ -53,6 +73,8 @@ int main(int argc, char *argv[]) {
   std::vector<unsigned long long int> factorialsList;
   initFactorials(factorialsList); 
 
+  PetscLogEventBegin(meshEvent, 0, 0, 0, 0);
+
   std::vector<PetscInt> Nx;
   std::vector<PetscInt> Ny;
   std::vector<PetscInt> Nz;
@@ -76,6 +98,10 @@ int main(int argc, char *argv[]) {
   std::vector<DM> daCK;
   createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, partX, activeNpes, activeComms, daCK);
 
+  PetscLogEventEnd(meshEvent, 0, 0, 0, 0);
+
+  PetscLogEventBegin(buildPmatEvent, 0, 0, 0, 0);
+
   std::vector<Mat> Pmat;
   std::vector<Vec> tmpCvec;
   buildPmat(dim, dofsPerNode, Pmat, tmpCvec, daCK, activeComms, activeNpes); 
@@ -83,10 +109,18 @@ int main(int argc, char *argv[]) {
   computePmat(dim, factorialsList, Pmat, Nz, Ny, Nx, partZ, partY, partX, offsets,
       scanZ, scanY, scanX, dofsPerNode, coeffsCK, K);
 
+  PetscLogEventEnd(buildPmatEvent, 0, 0, 0, 0);
+
+  PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
+
   std::vector<Mat> Kmat;
   buildKmat(Kmat, daCK, print);
 
   assembleKmat(dim, Nz, Ny, Nx, Kmat, daCK, K, coeffsCK, factorialsList, print);
+
+  PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
+
+  PetscLogEventBegin(rhsEvent, 0, 0, 0, 0);
 
   Vec rhs;
   DMCreateGlobalVector(daCK[daCK.size() - 1], &rhs);
@@ -103,7 +137,15 @@ int main(int argc, char *argv[]) {
   VecScale(sol, -1.0);
   makeBoundariesConsistent(daCK[daCK.size() - 1], sol, rhs, K);
 
+  PetscLogEventEnd(rhsEvent, 0, 0, 0, 0);
+
+  PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
+
   correctKmat(Kmat, daCK, K);
+
+  PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
+
+  PetscLogEventBegin(solverSetupEvent, 0, 0, 0, 0);
 
   std::vector<SmootherData*> sData(Pmat.size(), NULL);
   for(int lev = 0; lev < (sData.size()); ++lev) {
@@ -165,17 +207,29 @@ int main(int argc, char *argv[]) {
   KSPSetOptionsPrefix(ksp, "outer_");
   KSPSetFromOptions(ksp);
 
+  PetscLogEventEnd(solverSetupEvent, 0, 0, 0, 0);
+
   if(print) {
     std::cout<<"Solving..."<<std::endl;
   }
 
+  PetscLogEventBegin(solverApplyEvent, 0, 0, 0, 0);
+
   KSPSolve(ksp, rhs, sol);
 
+  PetscLogEventEnd(solverApplyEvent, 0, 0, 0, 0);
+
+  PetscLogEventBegin(errEvent, 0, 0, 0, 0);
+
   long double err = computeError(daCK[daCK.size() - 1], sol, coeffsCK, K);
+
+  PetscLogEventEnd(errEvent, 0, 0, 0, 0);
 
   if(print) {
     std::cout<<"Error = "<<std::setprecision(13)<<err<<std::endl;
   }
+
+  PetscLogEventBegin(cleanupEvent, 0, 0, 0, 0);
 
   VecDestroy(&rhs);
   VecDestroy(&sol);
@@ -194,6 +248,8 @@ int main(int argc, char *argv[]) {
   destroyVec(mgRes);
   destroyMat(Kmat);
   destroyDA(daCK); 
+
+  PetscLogEventEnd(cleanupEvent, 0, 0, 0, 0);
 
   PetscFinalize();
 
