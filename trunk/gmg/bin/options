@@ -31,3 +31,5 @@
 
 %-coarse_ksp_converged_reason
 
+-log_summary
+

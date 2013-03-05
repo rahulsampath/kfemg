@@ -2,6 +2,7 @@
 #include "gmg/include/smoother.h"
 #include "gmg/include/gmgUtils.h"
 #include <iostream>
+
 #include <cassert>
 //#include <iomanip>
 
@@ -79,13 +80,8 @@ void applySmoother(SmootherData* data, Vec in, Vec out) {
       break;
     }
   }//end iter
-  if(resNorm < 1.0e-12) {
-    //std::cout<<"Smoother Converged: ATOL!"<<std::endl;
-  } else if(resNorm < (initNorm*(data->tol))) {
-    //std::cout<<"Smoother Converged: RTOL!"<<std::endl;
-  } else {
+  if((resNorm >= 1.0e-12) && (resNorm >= (initNorm*(data->tol)))) {
     assert(false);
-    //std::cout<<"Smoother Diverged!"<<std::endl;
   }
 }
 
