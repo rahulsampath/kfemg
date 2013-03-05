@@ -6,7 +6,7 @@
 
 inline long double solution1D(long double x) {
   long double xStar = 0.5;
-  long double sigma = 1.0;
+  long double sigma = 0.3;
   long double val = (x - xStar)/sigma;
   long double res = exp(val*val);
   return res;
@@ -14,7 +14,7 @@ inline long double solution1D(long double x) {
 
 inline long double solutionDerivative1D(long double x, int dofX) {
   long double xStar = 0.5;
-  long double sigma = 1.0;
+  long double sigma = 0.3;
   long double res;
   if(dofX == 0) {
     res = solution1D(x);

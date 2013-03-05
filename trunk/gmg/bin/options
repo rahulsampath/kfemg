@@ -5,18 +5,18 @@
 -extraGptsError 0
 -extraGptsRHS 0
 
--finestNx 9
--finestNy 9
--finestNz 9
+%-finestNx 9
+%-finestNy 9
+%-finestNz 9
 
 -maxNumLevels 100
 -maxCoarseNpes 100
 
--outer_ksp_max_it 200
+-outer_ksp_max_it 500
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 
-%-smootherTol 0.01
+-smootherTol 0.75
 -smootherMaxIts 2000
 -smooth1_ksp_type cg
 -smooth1_pc_type sor
