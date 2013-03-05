@@ -46,8 +46,10 @@ int main(int argc, char *argv[]) {
 
   PetscInt dim = 1; 
   PetscOptionsGetInt(PETSC_NULL, "-dim", &dim, PETSC_NULL);
+#ifdef DEBUG
   assert(dim > 0);
   assert(dim <= 3);
+#endif
   PetscInt K;
   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
 
@@ -90,7 +92,9 @@ int main(int argc, char *argv[]) {
   std::vector<int> activeNpes;
   computePartition(dim, Nz, Ny, Nx, partZ, partY, partX, offsets, 
       scanZ, scanY, scanX, activeNpes, print);
+#ifdef DEBUG
   assert(activeNpes[activeNpes.size() - 1] == npes);
+#endif
 
   std::vector<MPI_Comm> activeComms;
   createActiveComms(activeNpes, activeComms);
