@@ -2,10 +2,13 @@
 #ifndef __SMOOTHER__
 #define __SMOOTHER__
 
-/*
-
 #include "petsc.h"
 #include "petscvec.h"
+
+struct SmootherData {
+};
+
+/*
 
 struct SmootherData {
   PetscInt maxIts;

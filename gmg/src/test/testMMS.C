@@ -3,7 +3,6 @@
 #include "mpi.h"
 #include "gmg/include/gmgUtils.h"
 #include "gmg/include/mesh.h"
-#include "gmg/include/smoother.h"
 #include "gmg/include/mms.h"
 #include "gmg/include/mgPC.h"
 #include "gmg/include/boundary.h"
@@ -151,67 +150,28 @@ int main(int argc, char *argv[]) {
 
   PetscLogEventBegin(solverSetupEvent, 0, 0, 0, 0);
 
-  /*
-     std::vector<SmootherData*> sData(Pmat.size(), NULL);
-     for(int lev = 0; lev < (sData.size()); ++lev) {
-     if(rank < activeNpes[lev + 1]) {
-     sData[lev] = new SmootherData;
-     setupSmootherData(sData[lev], Kmat[lev + 1]);
-     }
-     }//end lev
-
-     KSP coarseSolver = NULL;
-     if(rank < activeNpes[0]) {
-     PC coarsePC;
-     KSPCreate(activeComms[0], &coarseSolver);
-     KSPSetType(coarseSolver, KSPCG);
-     KSPSetPCSide(coarseSolver, PC_LEFT);
-     KSPGetPC(coarseSolver, &coarsePC);
-     PCSetType(coarsePC, PCCHOLESKY);
-     PCFactorSetShiftAmount(coarsePC, 1.0e-12);
-     PCFactorSetShiftType(coarsePC, MAT_SHIFT_POSITIVE_DEFINITE);
-     PCFactorSetMatSolverPackage(coarsePC, MATSOLVERMUMPS);
-     KSPSetInitialGuessNonzero(coarseSolver, PETSC_TRUE);
-     KSPSetOperators(coarseSolver, Kmat[0], Kmat[0], SAME_PRECONDITIONER);
-     KSPSetTolerances(coarseSolver, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 20);
-     KSPSetOptionsPrefix(coarseSolver, "coarse_");
-     KSPSetFromOptions(coarseSolver);
-     }
-
-     std::vector<Vec> mgSol;
-     std::vector<Vec> mgRhs;
-     std::vector<Vec> mgRes;
-     buildMGworkVecs(Kmat, mgSol, mgRhs, mgRes);
-
-     MGdata data;
-     data.K = K;
-     data.daFinest = daCK[daCK.size() - 1];
-     data.Kmat = Kmat;
-     data.Pmat = Pmat;
-     data.tmpCvec = tmpCvec; 
-     data.sData = sData;
-     data.coarseSolver = coarseSolver;
-     data.mgSol = mgSol;
-     data.mgRhs = mgRhs;
-     data.mgRes = mgRes;
-
-  //Build KSP
+  int nlevels = activeComms.size();
   KSP ksp;
   PC pc;
-  KSPCreate(activeComms[activeComms.size() - 1], &ksp);
-  KSPSetType(ksp, KSPFGMRES);
-  KSPSetPCSide(ksp, PC_RIGHT);
+  KSPCreate(activeComms[nlevels - 1], &ksp);
   KSPGetPC(ksp, &pc);
-  PCSetType(pc, PCSHELL);
-  PCShellSetContext(pc, &data);
-  PCShellSetName(pc, "MyVcycle");
-  PCShellSetApply(pc, &applyMG);
+  if(nlevels == 1) {
+    KSPSetType(ksp, KSPCG);
+    KSPSetPCSide(ksp, PC_LEFT);
+    PCSetType(pc, PCCHOLESKY);
+    PCFactorSetShiftAmount(pc, 1.0e-12);
+    PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
+    PCFactorSetMatSolverPackage(pc, MATSOLVERMUMPS);
+  } else {
+    KSPSetType(ksp, KSPFGMRES);
+    KSPSetPCSide(ksp, PC_RIGHT);
+    setupMG(pc, K, (nlevels - 1), daCK, Kmat, Pmat, tmpCvec);
+  }
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
-  KSPSetOperators(ksp, Kmat[Kmat.size() - 1], Kmat[Kmat.size() - 1], SAME_PRECONDITIONER);
+  KSPSetOperators(ksp, Kmat[nlevels - 1], Kmat[nlevels - 1], SAME_PRECONDITIONER);
   KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 20);
   KSPSetOptionsPrefix(ksp, "outer_");
   KSPSetFromOptions(ksp);
-  */
 
   PetscLogEventEnd(solverSetupEvent, 0, 0, 0, 0);
 
@@ -239,7 +199,6 @@ int main(int argc, char *argv[]) {
 
   VecDestroy(&rhs);
   VecDestroy(&sol);
-
   KSPDestroy(&ksp);
   destroyMat(Kmat);
   destroyMat(Pmat);
