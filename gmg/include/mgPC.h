@@ -17,7 +17,7 @@ struct MGdata {
   Mat Kmat;
   Mat Pmat;
   Vec tmpCvec;
-  KSP coarseSolver;
+  KSP cKsp;
   Vec res;
   Vec cRhs;
   Vec cSol;
