@@ -20,8 +20,10 @@ void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& K
   data->Pmat = Pmat[currLev - 1];
   data->tmpCvec = tmpCvec[currLev - 1];
   data->sData = new SmootherData;
+  setupSmoother(data->sData, data->Kmat);
   MatGetVecs(Kmat[currLev], PETSC_NULL, &(data->res));
-  if(Kmat[currLev - 1] != PETSC_NULL) {
+  data->cKsp = NULL;
+  if(Kmat[currLev - 1] != NULL) {
     MPI_Comm comm;
     PetscObjectGetComm(((PetscObject)(Kmat[currLev - 1])), &comm);
     PC cPc;
@@ -42,7 +44,7 @@ void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& K
     }
     KSPSetInitialGuessNonzero((data->cKsp), PETSC_TRUE);
     KSPSetOperators((data->cKsp), Kmat[currLev - 1], Kmat[currLev - 1], SAME_PRECONDITIONER);
-    KSPSetTolerances((data->cKsp), PETSC_DEFAULT, 1.0e-12, 2.0, PETSC_DEFAULT);
+    KSPSetTolerances((data->cKsp), 0.1, 1.0e-12, 2.0, 1000);
     KSPDefaultConvergedSetUIRNorm(data->cKsp);
     KSPSetNormType(data->cKsp, KSP_NORM_UNPRECONDITIONED);
   }
@@ -53,16 +55,23 @@ void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& K
   PCShellSetDestroy(pc, &destroyMG);
 }
 
+PetscErrorCode destroyMG(PC pc) {
+  MGdata* data;
+  PCShellGetContext(pc, (void**)(&data));
+  destroySmoother(data->sData); 
+  VecDestroy(data->res);
+  if(data->cKsp != NULL) {
+    KSPDestroy(&(data->cKsp));
+    VecDestroy(&(data->cRhs));
+    VecDestroy(&(data->cSol));
+  }
+  delete data;
+}
+
 PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   MGdata* data;
   PCShellGetContext(pc, (void**)(&data));
 
-}
-
-PetscErrorCode destroyMG(PC pc) {
-  MGdata* data;
-  PCShellGetContext(pc, (void**)(&data));
-  delete data;
 }
 
 
