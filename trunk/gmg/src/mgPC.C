@@ -42,9 +42,9 @@ void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& K
       PCFactorSetShiftType(cPc, MAT_SHIFT_POSITIVE_DEFINITE);
       PCFactorSetMatSolverPackage(cPc, MATSOLVERMUMPS);
     }
-    KSPSetInitialGuessNonzero((data->cKsp), PETSC_TRUE);
-    KSPSetOperators((data->cKsp), Kmat[currLev - 1], Kmat[currLev - 1], SAME_PRECONDITIONER);
-    KSPSetTolerances((data->cKsp), 0.1, 1.0e-12, 2.0, 1000);
+    KSPSetInitialGuessNonzero(data->cKsp, PETSC_TRUE);
+    KSPSetOperators(data->cKsp, Kmat[currLev - 1], Kmat[currLev - 1], SAME_PRECONDITIONER);
+    KSPSetTolerances(data->cKsp, 0.1, 1.0e-12, 2.0, 1000);
     KSPDefaultConvergedSetUIRNorm(data->cKsp);
     KSPSetNormType(data->cKsp, KSP_NORM_UNPRECONDITIONED);
   }
@@ -71,6 +71,11 @@ PetscErrorCode destroyMG(PC pc) {
 PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   MGdata* data;
   PCShellGetContext(pc, (void**)(&data));
+  VecZeroEntries(out);
+  makeBoundariesConsistent(data->da, in, out, data->K);
+  computeResidual(data->Kmat, out, in, data->res);
+  PetscReal initNorm;
+  VecNorm(data->res, NORM_2, &initNorm);
 
 }
 
