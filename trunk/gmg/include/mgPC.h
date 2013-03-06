@@ -2,8 +2,6 @@
 #ifndef __MG_PC__
 #define __MG_PC__
 
-/*
-
 #include "petsc.h"
 #include "petscvec.h"
 #include "petscmat.h"
@@ -14,25 +12,23 @@
 
 struct MGdata {
   int K;
-  DM daFinest;
-  std::vector<Mat> Kmat;
-  std::vector<Mat> Pmat;
-  std::vector<Vec> tmpCvec; 
-  std::vector<SmootherData*> sData;
+  DM da;
+  SmootherData* sData;
+  Mat Kmat;
+  Mat Pmat;
+  Vec tmpCvec;
   KSP coarseSolver;
-  std::vector<Vec> mgSol;
-  std::vector<Vec> mgRhs;
-  std::vector<Vec> mgRes;
+  Vec res;
+  Vec cRhs;
+  Vec cSol;
 };
+
+void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& Kmat,
+    std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec);
 
 PetscErrorCode applyMG(PC pc, Vec in, Vec out);
 
-void applyVcycle(int currLev, MGdata* data);
-
-void buildMGworkVecs(std::vector<Mat>& Kmat, std::vector<Vec>& mgSol, 
-    std::vector<Vec>& mgRhs, std::vector<Vec>& mgRes);
-
-*/
+PetscErrorCode destroyMG(PC pc);
 
 #endif
 
