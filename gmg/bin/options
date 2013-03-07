@@ -1,6 +1,6 @@
 
--dim 1
--K 0
+-dim 3
+-K 1
 
 -extraGptsError 0
 -extraGptsRHS 0
