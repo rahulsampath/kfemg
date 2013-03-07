@@ -42,14 +42,24 @@ void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& K
       PCFactorSetShiftType(cPc, MAT_SHIFT_POSITIVE_DEFINITE);
       PCFactorSetMatSolverPackage(cPc, MATSOLVERMUMPS);
     }
+    double rTol;
+    if(K == 0) {
+      rTol = 0.3;
+    } else if(K == 1) {
+      rTol = 0.4;
+    } else if(K == 2) {
+      rTol = 0.5;
+    } else {
+      rTol = 0.6;
+    }
     KSPSetInitialGuessNonzero(data->cKsp, PETSC_TRUE);
     KSPSetOperators(data->cKsp, Kmat[currLev - 1], Kmat[currLev - 1], SAME_PRECONDITIONER);
-    KSPSetTolerances(data->cKsp, 0.1, 1.0e-12, 2.0, 1000);
+    KSPSetTolerances(data->cKsp, rTol, 1.0e-12, 2.0, 1000);
     KSPDefaultConvergedSetUIRNorm(data->cKsp);
     KSPSetNormType(data->cKsp, KSP_NORM_UNPRECONDITIONED);
   }
   PCSetType(pc, PCSHELL);
-  PCShellSetContext(pc, &data);
+  PCShellSetContext(pc, data);
   PCShellSetName(pc, "MyVcycle");
   PCShellSetApply(pc, &applyMG);
   PCShellSetDestroy(pc, &destroyMG);
@@ -78,20 +88,31 @@ PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   PetscReal currNorm;
   VecNorm(data->res, NORM_2, &currNorm);
   PetscReal initNorm = currNorm;
+  double rTol;
+  if(data->K == 0) {
+    rTol = 0.3;
+  } else if(data->K == 1) {
+    rTol = 0.4;
+  } else if(data->K == 2) {
+    rTol = 0.5;
+  } else {
+    rTol = 0.6;
+  }
+  double tgtNorm = rTol*initNorm;
   for(int iter = 0; iter < 1000; ++iter) {
     if(currNorm <= 1.0e-12) {
       break;
     }
-    if(currNorm <= (0.5*initNorm)) {
+    if(currNorm <= tgtNorm) {
       break;
     }
-    applySmoother((iter + 1), (0.5*initNorm), currNorm, data->sData, in, out);
+    applySmoother((iter + 1), tgtNorm, currNorm, data->sData, in, out);
     computeResidual(data->Kmat, out, in, data->res);
     VecNorm(data->res, NORM_2, &currNorm);
     if(currNorm <= 1.0e-12) {
       break;
     }
-    if(currNorm <= (0.5*initNorm)) {
+    if(currNorm <= tgtNorm) {
       break;
     }
     applyRestriction(data->Pmat, data->tmpCvec, data->res, data->cRhs);
@@ -106,10 +127,10 @@ PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
     if(currNorm <= 1.0e-12) {
       break;
     }
-    if(currNorm <= (0.5*initNorm)) {
+    if(currNorm <= tgtNorm) {
       break;
     }
-    applySmoother((iter + 1), (0.5*initNorm), currNorm, data->sData, in, out);
+    applySmoother((iter + 1), tgtNorm, currNorm, data->sData, in, out);
     computeResidual(data->Kmat, out, in, data->res);
     VecNorm(data->res, NORM_2, &currNorm);
   }//end iter
