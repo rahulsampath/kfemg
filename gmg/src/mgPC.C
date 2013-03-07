@@ -33,7 +33,7 @@ void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& K
     if(currLev > 1) {
       KSPSetType((data->cKsp), KSPFGMRES);
       KSPSetPCSide((data->cKsp), PC_RIGHT);
-      setupMG(cPc, K, (currLev - 1), daCK, Kmat, Pmat, tmpCvec);
+      setupMG(cPc, K, (currLev - 1), da, Kmat, Pmat, tmpCvec);
     } else {
       KSPSetType((data->cKsp), KSPCG);
       KSPSetPCSide((data->cKsp), PC_LEFT);
@@ -59,13 +59,14 @@ PetscErrorCode destroyMG(PC pc) {
   MGdata* data;
   PCShellGetContext(pc, (void**)(&data));
   destroySmoother(data->sData); 
-  VecDestroy(data->res);
+  VecDestroy(&(data->res));
   if(data->cKsp != NULL) {
     KSPDestroy(&(data->cKsp));
     VecDestroy(&(data->cRhs));
     VecDestroy(&(data->cSol));
   }
   delete data;
+  return 0;
 }
 
 PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
@@ -112,6 +113,7 @@ PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
     computeResidual(data->Kmat, out, in, data->res);
     VecNorm(data->res, NORM_2, &currNorm);
   }//end iter
+  return 0;
 }
 
 
