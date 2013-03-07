@@ -40,6 +40,28 @@ void destroySmoother(SmootherData* data) {
 }
 
 void applySmoother(int maxIters, double tgtNorm, double currNorm, SmootherData* data, Vec in, Vec out) {
+  for(int iter = 0; iter < maxIters; ++iter) {
+    if(currNorm <= 1.0e-12) {
+      break;
+    }
+    if(currNorm <= tgtNorm) {
+      break;
+    }
+    KSPSetTolerances(data->ksp1, (tgtNorm/currNorm), PETSC_DEFAULT, PETSC_DEFAULT, (iter + 1));
+    KSPSolve(data->ksp1, in, out);
+    computeResidual(data->Kmat, out, in, data->res);
+    VecNorm(data->res, NORM_2, &currNorm);
+    if(currNorm <= 1.0e-12) {
+      break;
+    }
+    if(currNorm <= tgtNorm) {
+      break;
+    }
+    KSPSetTolerances(data->ksp2, (tgtNorm/currNorm), PETSC_DEFAULT, PETSC_DEFAULT, (iter + 1));
+    KSPSolve(data->ksp2, in, out);
+    computeResidual(data->Kmat, out, in, data->res);
+    VecNorm(data->res, NORM_2, &currNorm);
+  }//end iter
 }
 
 
