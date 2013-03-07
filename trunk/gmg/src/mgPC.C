@@ -74,9 +74,44 @@ PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
   VecZeroEntries(out);
   makeBoundariesConsistent(data->da, in, out, data->K);
   computeResidual(data->Kmat, out, in, data->res);
-  PetscReal initNorm;
-  VecNorm(data->res, NORM_2, &initNorm);
-
+  PetscReal currNorm;
+  VecNorm(data->res, NORM_2, &currNorm);
+  PetscReal initNorm = currNorm;
+  for(int iter = 0; iter < 1000; ++iter) {
+    if(currNorm <= 1.0e-12) {
+      break;
+    }
+    if(currNorm <= (0.5*initNorm)) {
+      break;
+    }
+    applySmoother((iter + 1), (0.5*initNorm), currNorm, data->sData, in, out);
+    computeResidual(data->Kmat, out, in, data->res);
+    VecNorm(data->res, NORM_2, &currNorm);
+    if(currNorm <= 1.0e-12) {
+      break;
+    }
+    if(currNorm <= (0.5*initNorm)) {
+      break;
+    }
+    applyRestriction(data->Pmat, data->tmpCvec, data->res, data->cRhs);
+    if(data->cKsp != NULL) {
+      VecZeroEntries(data->cSol);
+      KSPSolve(data->cKsp, data->cRhs, data->cSol);
+    }
+    applyProlongation(data->Pmat, data->tmpCvec, data->cSol, data->res);
+    VecAXPY(out, 1.0, data->res);
+    computeResidual(data->Kmat, out, in, data->res);
+    VecNorm(data->res, NORM_2, &currNorm);
+    if(currNorm <= 1.0e-12) {
+      break;
+    }
+    if(currNorm <= (0.5*initNorm)) {
+      break;
+    }
+    applySmoother((iter + 1), (0.5*initNorm), currNorm, data->sData, in, out);
+    computeResidual(data->Kmat, out, in, data->res);
+    VecNorm(data->res, NORM_2, &currNorm);
+  }//end iter
 }
 
 

@@ -39,7 +39,7 @@ void destroySmoother(SmootherData* data) {
   delete data;
 }
 
-void applySmoother(SmootherData* data, Vec in, Vec out) {
+void applySmoother(int maxIters, double tgtNorm, double currNorm, SmootherData* data, Vec in, Vec out) {
 }
 
 
