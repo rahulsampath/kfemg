@@ -25,6 +25,23 @@ PetscLogEvent solverApplyEvent;
 PetscLogEvent errEvent;
 PetscLogEvent cleanupEvent;
 
+void applyVcycle(int currLev, std::vector<KSP>& ksp, std::vector<Mat>& Kmat,
+    std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec, std::vector<Vec>& rhs,
+    std::vector<Vec>& sol, std::vector<Vec>& res) {
+  KSPSolve(ksp[currLev], rhs[currLev], sol[currLev]);
+  if(currLev > 0) {
+    computeResidual(Kmat[currLev], sol[currLev], rhs[currLev], res[currLev]);
+    applyRestriction(Pmat[currLev - 1], tmpCvec[currLev - 1], res[currLev], rhs[currLev - 1]);
+    if(sol[currLev - 1] != NULL) {
+      VecZeroEntries(sol[currLev - 1]);
+      applyVcycle((currLev - 1), ksp, Kmat, Pmat, tmpCvec, rhs, sol, res);
+    }
+    applyProlongation(Pmat[currLev - 1], tmpCvec[currLev - 1], sol[currLev - 1], res[currLev]);
+    VecAXPY(sol[currLev], 1.0, res[currLev]);
+    KSPSolve(ksp[currLev], rhs[currLev], sol[currLev]);
+  }
+}
+
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
 
@@ -158,7 +175,7 @@ int main(int argc, char *argv[]) {
     KSPSetPCSide(ksp[0], PC_LEFT);
     PCSetType(pc, PCCHOLESKY);
     PCFactorSetMatSolverPackage(pc, MATSOLVERMUMPS);
-    KSPSetInitialGuessNonzero(ksp[0], PETSC_TRUE);
+    KSPSetInitialGuessNonzero(ksp[0], PETSC_FALSE);
     KSPSetOperators(ksp[0], Kmat[0], Kmat[0], SAME_PRECONDITIONER);
     KSPSetTolerances(ksp[0], 1.0e-12, 1.0e-12, 2.0, 1);
   }
@@ -183,6 +200,23 @@ int main(int argc, char *argv[]) {
     }
   }//end i
 
+  std::vector<Vec> res(nlevels, NULL);
+  for(int i = 1; i < nlevels; ++i) {
+    if(Kmat[i] != NULL) {
+      MatGetVecs(Kmat[i], PETSC_NULL, &(res[i]));
+    }
+  }//end i
+
+  std::vector<Vec> tmpRhs(nlevels, NULL);
+  std::vector<Vec> tmpSol(nlevels, NULL);
+  for(int i = 0; i < (nlevels - 1); ++i) {
+    if(Kmat[i] != NULL) {
+      MatGetVecs(Kmat[i], &(tmpSol[i]), &(tmpRhs[i]));
+    }
+  }//end i
+  tmpRhs[nlevels - 1] = rhs;
+  tmpSol[nlevels - 1] = sol;
+
   PetscLogEventEnd(solverSetupEvent, 0, 0, 0, 0);
 
   if(print) {
@@ -190,6 +224,25 @@ int main(int argc, char *argv[]) {
   }
 
   PetscLogEventBegin(solverApplyEvent, 0, 0, 0, 0);
+
+  computeResidual(Kmat[nlevels - 1], sol, rhs, res[nlevels - 1]);
+  PetscReal currNorm;
+  VecNorm(res[nlevels - 1], NORM_2, &currNorm);
+  PetscReal initNorm = currNorm;
+  for(int iter = 0; iter < 50; ++iter) {
+    if(print) {
+      std::cout<<"Iter = "<<iter<<" Res = "<<currNorm<<std::endl;
+    }
+    if(currNorm <= 1.0e-12) {
+      break;
+    }
+    if(currNorm <= (1.0e-12*initNorm)) {
+      break;
+    }
+    applyVcycle((nlevels - 1), ksp, Kmat, Pmat, tmpCvec, tmpRhs, tmpSol, res);
+    computeResidual(Kmat[nlevels - 1], sol, rhs, res[nlevels - 1]);
+    VecNorm(res[nlevels - 1], NORM_2, &currNorm);
+  }//end iter
 
   PetscLogEventEnd(solverApplyEvent, 0, 0, 0, 0);
 
@@ -205,12 +258,13 @@ int main(int argc, char *argv[]) {
 
   PetscLogEventBegin(cleanupEvent, 0, 0, 0, 0);
 
-  VecDestroy(&rhs);
-  VecDestroy(&sol);
   destroyMat(Kmat);
   destroyMat(Pmat);
   destroyKSP(ksp);
   destroyVec(tmpCvec);
+  destroyVec(res);
+  destroyVec(tmpRhs);
+  destroyVec(tmpSol);
   destroyDA(da); 
 
   PetscLogEventEnd(cleanupEvent, 0, 0, 0, 0);
