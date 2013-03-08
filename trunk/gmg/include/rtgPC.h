@@ -1,6 +1,6 @@
 
-#ifndef __MG_PC__
-#define __MG_PC__
+#ifndef __RTG_PC__
+#define __RTG_PC__
 
 #include "petsc.h"
 #include "petscvec.h"
@@ -10,7 +10,7 @@
 #include "gmg/include/smoother.h"
 #include <vector>
 
-struct MGdata {
+struct RTGdata {
   int K;
   DM da;
   SmootherData* sData;
@@ -23,12 +23,12 @@ struct MGdata {
   Vec cSol;
 };
 
-void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& Kmat,
+void setupRTG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& Kmat,
     std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec);
 
-PetscErrorCode applyMG(PC pc, Vec in, Vec out);
+PetscErrorCode applyRTG(PC pc, Vec in, Vec out);
 
-PetscErrorCode destroyMG(PC pc);
+PetscErrorCode destroyRTG(PC pc);
 
 #endif
 

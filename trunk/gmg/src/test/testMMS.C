@@ -4,7 +4,7 @@
 #include "gmg/include/gmgUtils.h"
 #include "gmg/include/mesh.h"
 #include "gmg/include/mms.h"
-#include "gmg/include/mgPC.h"
+#include "gmg/include/rtgPC.h"
 #include "gmg/include/boundary.h"
 #include "gmg/include/assembly.h"
 #include "gmg/include/intergrid.h"
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 
   PETSC_COMM_WORLD = MPI_COMM_WORLD;
 
-  PetscInitialize(&argc, &argv, "options", PETSC_NULL);
+  PetscInitialize(&argc, &argv, "optionsMMS", PETSC_NULL);
 
   PetscClassIdRegister("GMG", &gmgCookie);
   PetscLogEventRegister("Mesh", gmgCookie, &meshEvent);
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
   } else {
     KSPSetType(ksp, KSPFGMRES);
     KSPSetPCSide(ksp, PC_RIGHT);
-    setupMG(pc, K, (nlevels - 1), daCK, Kmat, Pmat, tmpCvec);
+    setupRTG(pc, K, (nlevels - 1), daCK, Kmat, Pmat, tmpCvec);
   }
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetOperators(ksp, Kmat[nlevels - 1], Kmat[nlevels - 1], SAME_PRECONDITIONER);
