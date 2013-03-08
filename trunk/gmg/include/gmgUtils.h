@@ -5,9 +5,12 @@
 #include "petsc.h"
 #include "petscvec.h"
 #include "petscmat.h"
+#include "petscksp.h"
 #include <vector>
 
 void computeResidual(Mat mat, Vec sol, Vec rhs, Vec res);
+
+void destroyKSP(std::vector<KSP>& ksp);
 
 void destroyMat(std::vector<Mat>& mat);
 
