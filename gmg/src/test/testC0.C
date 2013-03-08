@@ -171,13 +171,15 @@ int main(int argc, char *argv[]) {
     PC pc;
     KSPCreate(activeComms[0], &(ksp[0]));
     KSPGetPC(ksp[0], &pc);
-    KSPSetType(ksp[0], KSPPREONLY);
+    KSPSetType(ksp[0], KSPCG);
     KSPSetPCSide(ksp[0], PC_LEFT);
     PCSetType(pc, PCCHOLESKY);
+    PCFactorSetShiftAmount(pc, 1.0e-12);
+    PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
     PCFactorSetMatSolverPackage(pc, MATSOLVERMUMPS);
-    KSPSetInitialGuessNonzero(ksp[0], PETSC_FALSE);
+    KSPSetInitialGuessNonzero(ksp[0], PETSC_TRUE);
     KSPSetOperators(ksp[0], Kmat[0], Kmat[0], SAME_PRECONDITIONER);
-    KSPSetTolerances(ksp[0], 1.0e-12, 1.0e-12, 2.0, 1);
+    KSPSetTolerances(ksp[0], 1.0e-12, 1.0e-12, 2.0, 10);
   }
   for(int i = 1; i < nlevels; ++i) {
     if(activeComms[i] != MPI_COMM_NULL) {
@@ -233,10 +235,10 @@ int main(int argc, char *argv[]) {
     if(print) {
       std::cout<<"Iter = "<<iter<<" Res = "<<currNorm<<std::endl;
     }
-    if(currNorm <= 1.0e-12) {
+    if(currNorm <= 1.0e-10) {
       break;
     }
-    if(currNorm <= (1.0e-12*initNorm)) {
+    if(currNorm <= (1.0e-10*initNorm)) {
       break;
     }
     applyVcycle((nlevels - 1), ksp, Kmat, Pmat, tmpCvec, tmpRhs, tmpSol, res);
