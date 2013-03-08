@@ -11,5 +11,5 @@
 -maxNumLevels 100
 -maxCoarseNpes 100
 
-%-log_summary
+-log_summary
 

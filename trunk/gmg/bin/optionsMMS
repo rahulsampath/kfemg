@@ -16,5 +16,5 @@
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 
-%-log_summary
+-log_summary
 
