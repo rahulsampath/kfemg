@@ -1,5 +1,5 @@
 
-#include "gmg/include/mgPC.h"
+#include "gmg/include/rtgPC.h"
 #include "gmg/include/boundary.h"
 #include "gmg/include/gmgUtils.h"
 #include "gmg/include/intergrid.h"
@@ -8,12 +8,12 @@
 #include <cassert>
 #endif
 
-void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& Kmat,
+void setupRTG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& Kmat,
     std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec) {
 #ifdef DEBUG
   assert(currLev > 0);
 #endif
-  MGdata* data = new MGdata; 
+  RTGdata* data = new RTGdata; 
   data->K = K;
   data->da = da[currLev];
   data->Kmat = Kmat[currLev];
@@ -33,7 +33,7 @@ void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& K
     if(currLev > 1) {
       KSPSetType((data->cKsp), KSPFGMRES);
       KSPSetPCSide((data->cKsp), PC_RIGHT);
-      setupMG(cPc, K, (currLev - 1), da, Kmat, Pmat, tmpCvec);
+      setupRTG(cPc, K, (currLev - 1), da, Kmat, Pmat, tmpCvec);
     } else {
       KSPSetType((data->cKsp), KSPCG);
       KSPSetPCSide((data->cKsp), PC_LEFT);
@@ -61,12 +61,12 @@ void setupMG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& K
   PCSetType(pc, PCSHELL);
   PCShellSetContext(pc, data);
   PCShellSetName(pc, "MyVcycle");
-  PCShellSetApply(pc, &applyMG);
-  PCShellSetDestroy(pc, &destroyMG);
+  PCShellSetApply(pc, &applyRTG);
+  PCShellSetDestroy(pc, &destroyRTG);
 }
 
-PetscErrorCode destroyMG(PC pc) {
-  MGdata* data;
+PetscErrorCode destroyRTG(PC pc) {
+  RTGdata* data;
   PCShellGetContext(pc, (void**)(&data));
   destroySmoother(data->sData); 
   VecDestroy(&(data->res));
@@ -79,8 +79,8 @@ PetscErrorCode destroyMG(PC pc) {
   return 0;
 }
 
-PetscErrorCode applyMG(PC pc, Vec in, Vec out) {
-  MGdata* data;
+PetscErrorCode applyRTG(PC pc, Vec in, Vec out) {
+  RTGdata* data;
   PCShellGetContext(pc, (void**)(&data));
   VecZeroEntries(out);
   makeBoundariesConsistent(data->da, in, out, data->K);
