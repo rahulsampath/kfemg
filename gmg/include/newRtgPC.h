@@ -10,7 +10,7 @@
 #include "gmg/include/newSmoother.h"
 #include <vector>
 
-void setupNewRTG(PC pc, int currK, int currLev, std::vector<std::vector<DM> >& da,
+void setupNewRTG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
     std::vector<std::vector<Mat> >& Kmat, std::vector<std::vector<Mat> >& Pmat, 
     std::vector<std::vector<Vec> >& tmpCvec);
 
