@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
   } else {
     KSPSetType(ksp, KSPFGMRES);
     KSPSetPCSide(ksp, PC_RIGHT);
-    //setupRTG(pc, K, (nlevels - 1), da, Kmat, Pmat, tmpCvec);
+    setupNewRTG(pc, K, (nlevels - 1), da, Kmat, Pmat, tmpCvec);
   }
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetOperators(ksp, Kmat[K][nlevels - 1], Kmat[K][nlevels - 1], SAME_PRECONDITIONER);
