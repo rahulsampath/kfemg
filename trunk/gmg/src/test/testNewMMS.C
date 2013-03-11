@@ -95,12 +95,12 @@ int main(int argc, char *argv[]) {
   initFactorials(factorialsList); 
 
   std::vector<std::vector<long long int> > coeffs(K + 1);
-    read1DshapeFnCoeffs(K, coeffs[K]);
-    if(nlevels > 1) {
-  for(int k = 0; k < K; ++k) {
-    read1DshapeFnCoeffs(k, coeffs[k]);
-  }//end k
-    }
+  read1DshapeFnCoeffs(K, coeffs[K]);
+  if(nlevels > 1) {
+    for(int k = 0; k < K; ++k) {
+      read1DshapeFnCoeffs(k, coeffs[k]);
+    }//end k
+  }
 
   std::vector<std::vector<DM> > da(K + 1);
   {
@@ -108,13 +108,13 @@ int main(int argc, char *argv[]) {
     createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, 
         partX, activeNpes, activeComms, da[K]);
   }
-    if(nlevels > 1) {
-  for(int k = 0; k < K; ++k) {
-    int dofsPerNode = getDofsPerNode(dim, k);
-    createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, 
-        partX, activeNpes, activeComms, da[k]);
-  }//end k
-    }
+  if(nlevels > 1) {
+    for(int k = 0; k < K; ++k) {
+      int dofsPerNode = getDofsPerNode(dim, k);
+      createDA(dim, dofsPerNode, Nz, Ny, Nx, partZ, partY, 
+          partX, activeNpes, activeComms, da[k]);
+    }//end k
+  }
 
   PetscLogEventEnd(meshEvent, 0, 0, 0, 0);
 
@@ -122,7 +122,13 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::vector<Mat> > Pmat(K + 1);
   std::vector<std::vector<Vec> > tmpCvec(K + 1);
-  for(int k = 0; k <= K; ++k) {
+  {
+    int dofsPerNode = getDofsPerNode(dim, K);
+    buildPmat(dim, dofsPerNode, Pmat[K], tmpCvec[K], da[K], activeComms, activeNpes); 
+    computePmat(dim, factorialsList, Pmat[K], Nz, Ny, Nx, partZ, partY, partX, offsets,
+        scanZ, scanY, scanX, dofsPerNode, coeffs[K], K);
+  }
+  for(int k = 0; k < K; ++k) {
     int dofsPerNode = getDofsPerNode(dim, k);
     buildPmat(dim, dofsPerNode, Pmat[k], tmpCvec[k], da[k], activeComms, activeNpes); 
     computePmat(dim, factorialsList, Pmat[k], Nz, Ny, Nx, partZ, partY, partX, offsets,
@@ -134,10 +140,14 @@ int main(int argc, char *argv[]) {
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
   std::vector<std::vector<Mat> > Kmat(K + 1);
-  for(int k = 0; k <= K; ++k) {
-    buildKmat(Kmat[k], da[k], print);
-    assembleKmat(dim, Nz, Ny, Nx, Kmat[k], da[k], k, coeffs[k], factorialsList, print);
-  }//end k
+  buildKmat(Kmat[K], da[K], print);
+  assembleKmat(dim, Nz, Ny, Nx, Kmat[K], da[K], K, coeffs[K], factorialsList, print);
+  if(nlevels > 1) {
+    for(int k = 0; k < K; ++k) {
+      buildKmat(Kmat[k], da[k], print);
+      assembleKmat(dim, Nz, Ny, Nx, Kmat[k], da[k], k, coeffs[k], factorialsList, print);
+    }//end k
+  }
 
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 
@@ -159,9 +169,12 @@ int main(int argc, char *argv[]) {
 
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
-  for(int k = 0; k <= K; ++k) {
-    correctKmat(Kmat[k], da[k], k);
-  }//end k
+  correctKmat(Kmat[K], da[K], K);
+  if(nlevels > 1) {
+    for(int k = 0; k < K; ++k) {
+      correctKmat(Kmat[k], da[k], k);
+    }//end k
+  }
 
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 
@@ -181,7 +194,7 @@ int main(int argc, char *argv[]) {
   } else {
     KSPSetType(ksp, KSPFGMRES);
     KSPSetPCSide(ksp, PC_RIGHT);
-    setupRTG(pc, K, (nlevels - 1), da, Kmat, Pmat, tmpCvec);
+    //setupRTG(pc, K, (nlevels - 1), da, Kmat, Pmat, tmpCvec);
   }
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetOperators(ksp, Kmat[K][nlevels - 1], Kmat[K][nlevels - 1], SAME_PRECONDITIONER);
