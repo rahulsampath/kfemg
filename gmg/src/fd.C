@@ -526,8 +526,49 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
       if((xs + nx) == (Nx - 1)) {
         MPI_Wait(&sReq4, &status);
       }
+      for(int yi = ys; yi < (ys + ny); ++yi) {
+        int outDof = (K*(K + 1)) + K;
+        int inDof = (K*(K + 1)) + K - 1;
+        int gDof = yi - ys;
+        if(ri == 0) {
+          if(nx == 1) {
+            outArr[yi][xs][outDof] = -((3.0*outArr[yi][xs][inDof]) - (4.0*R1[gDof]) + R2[gDof])/4.0;
+          } else if(nx == 2) {
+            outArr[yi][xs][outDof] = -((3.0*outArr[yi][xs][inDof]) -
+                (4.0*outArr[yi][xs + 1][inDof]) + R1[gDof])/4.0;
+            outArr[yi][xs + 1][outDof] = (R1[gDof] - outArr[yi][xs][inDof])/4.0;
+          } else {
+            outArr[yi][xs][outDof] = -((3.0*outArr[yi][xs][inDof]) - (4.0*outArr[yi][xs + 1][inDof])
+                + outArr[yi][xs + 2][inDof])/4.0;
+            if(px == 1) {
+              outArr[yi][xs + nx - 1][outDof] = ((3.0*outArr[yi][xs + nx - 1][inDof]) -
+                  (4.0*outArr[yi][xs + nx - 2][inDof]) + outArr[yi][xs + nx - 3][inDof])/4.0;
+            } else {
+              outArr[yi][xs + nx - 1][outDof] = (R1[gDof] - outArr[yi][xs + nx - 2][inDof])/4.0;
+            }
+          }
+        } else if(ri == (px - 1)) {
+          if(nx == 1) {
+            outArr[yi][xs][outDof] = ((3.0*outArr[yi][xs][inDof]) - (4.0*L1[gDof]) + L2[gDof])/4.0;
+          } else if(nx == 2) {
+            outArr[yi][xs][outDof] = (outArr[yi][xs + 1][inDof] - L1[gDof])/4.0;
+            outArr[yi][xs + 1][outDof] = ((3.0*outArr[yi][xs + 1][inDof]) -
+                (4.0*outArr[yi][xs][inDof]) + L1[gDof])/4.0;
+          } else {
+            outArr[yi][xs][outDof] = (outArr[yi][xs + 1][inDof] - L1[gDof])/4.0;
+            outArr[yi][xs + nx - 1][outDof] = ((3.0*outArr[yi][xs + nx - 1][inDof]) -
+                (4.0*outArr[yi][xs + nx - 2][inDof]) + outArr[yi][xs + nx - 3][inDof])/4.0;
+          }
+        } else {
+          if(nx == 1) {
+            outArr[yi][xs][outDof] = (R1[gDof] - L1[gDof])/4.0;
+          } else {
+            outArr[yi][xs][outDof] = (outArr[yi][xs + 1][inDof] - L1[gDof])/4.0;
+            outArr[yi][xs + nx - 1][outDof] = (R1[gDof] - outArr[yi][xs + nx - 2][inDof])/4.0;
+          }
+        }
+      }//end yi
     }
-
     DMDAVecRestoreArrayDOF(da, in, &inArr);
     DMDAVecRestoreArrayDOF(da, out, &outArr);
   } else {
