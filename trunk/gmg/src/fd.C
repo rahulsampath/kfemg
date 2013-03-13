@@ -255,11 +255,10 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
       if((xs + nx) == (Nx - 1)) {
         MPI_Wait(&sReq4, &status);
       }
-      for(int yi = ys; yi < (ys + ny); ++yi) {
-        for(int d = 0; d < K; ++d) {
+      for(int yi = ys, gDof = 0; yi < (ys + ny); ++yi) {
+        for(int d = 0; d < K; ++d, ++gDof) {
           int outDof = (d*(K + 1)) + K;
           int inDof = (d*(K + 1)) + K - 1;
-          int gDof = ((yi - ys)*K) + d;
           if(ri == 0) {
             if(nx == 1) {
               outArr[yi][xs][outDof] = -((3.0*inArr[yi][xs][inDof]) - (4.0*R1[gDof]) + R2[gDof])/4.0;
@@ -310,11 +309,11 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
       std::vector<double> R2(len);
       std::vector<double> first(len);
       std::vector<double> last(len);
-      for(int xi = xs; xi < (xs + nx); ++xi) {
-        for(int d = 0; d < K; ++d) {
+      for(int xi = xs, cnt = 0; xi < (xs + nx); ++xi) {
+        for(int d = 0; d < K; ++d, ++cnt) {
           int dof = ((K - 1)*(K + 1)) + d;
-          first[((xi - xs)*K) + d] = inArr[ys][xi][dof];
-          last[((xi - xs)*K) + d] = inArr[ys + ny - 1][xi][dof];
+          first[cnt] = inArr[ys][xi][dof];
+          last[cnt] = inArr[ys + ny - 1][xi][dof];
         }//end d
       }//end xi
       MPI_Request sReq1;
@@ -361,10 +360,10 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
         if(ny == 1) {
           MPI_Isend(&(R1[0]), len, MPI_DOUBLE, prevY, 3, comm, &sReq3);
         } else {
-          for(int xi = xs; xi < (xs + nx); ++xi) {
-            for(int d = 0; d < K; ++d) {
+          for(int xi = xs, cnt = 0; xi < (xs + nx); ++xi) {
+            for(int d = 0; d < K; ++d, ++cnt) {
               int dof = ((K - 1)*(K + 1)) + d;
-              first[((xi - xs)*K) + d] = inArr[ys + 1][xi][dof];
+              first[cnt] = inArr[ys + 1][xi][dof];
             }//end d
           }//end yi
           MPI_Isend(&(first[0]), len, MPI_DOUBLE, prevY, 3, comm, &sReq3);
@@ -374,10 +373,10 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
         if(ny == 1) {
           MPI_Isend(&(L1[0]), len, MPI_DOUBLE, nextY, 4, comm, &sReq4);
         } else {
-          for(int xi = xs; xi < (xs + nx); ++xi) {
-            for(int d = 0; d < K; ++d) {
+          for(int xi = xs, cnt = 0; xi < (xs + nx); ++xi) {
+            for(int d = 0; d < K; ++d, ++cnt) {
               int dof = ((K - 1)*(K + 1)) + d;
-              last[((xi - xs)*K) + d] = inArr[ys + ny - 2][xi][dof];
+              last[cnt] = inArr[ys + ny - 2][xi][dof];
             }//end d
           }//end yi
           MPI_Isend(&(last[0]), len, MPI_DOUBLE, nextY, 4, comm, &sReq4);
@@ -395,11 +394,10 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
       if((ys + ny) == (Ny - 1)) {
         MPI_Wait(&sReq4, &status);
       }
-      for(int xi = xs; xi < (xs + nx); ++xi) {
-        for(int d = 0; d < K; ++d) {
+      for(int xi = xs, gDof = 0; xi < (xs + nx); ++xi) {
+        for(int d = 0; d < K; ++d, ++gDof) {
           int outDof = (K*(K + 1)) + d;
           int inDof = ((K - 1)*(K + 1)) + d;
-          int gDof = ((xi - xs)*K) + d;
           if(rj == 0) {
             if(ny == 1) {
               outArr[ys][xi][outDof] = -((3.0*inArr[ys][xi][inDof]) - (4.0*R1[gDof]) + R2[gDof])/4.0;
