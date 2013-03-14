@@ -365,7 +365,7 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
               int dof = ((K - 1)*(K + 1)) + d;
               first[cnt] = inArr[ys + 1][xi][dof];
             }//end d
-          }//end yi
+          }//end xi
           MPI_Isend(&(first[0]), len, MPI_DOUBLE, prevY, 3, comm, &sReq3);
         }
       }
@@ -378,7 +378,7 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
               int dof = ((K - 1)*(K + 1)) + d;
               last[cnt] = inArr[ys + ny - 2][xi][dof];
             }//end d
-          }//end yi
+          }//end xi
           MPI_Isend(&(last[0]), len, MPI_DOUBLE, nextY, 4, comm, &sReq4);
         }
       }
@@ -745,6 +745,157 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
 
     //dy
     {
+      int len = nx*nz*K*K;
+      std::vector<double> L1(len);
+      std::vector<double> L2(len);
+      std::vector<double> R1(len);
+      std::vector<double> R2(len);
+      std::vector<double> first(len);
+      std::vector<double> last(len);
+      for(int zi = zs, cnt = 0; zi < (zs + nz); ++zi) {
+        for(int xi = xs; xi < (xs + nx); ++xi) {
+          for(int dz = 0; dz < K; ++dz) {
+            for(int dx = 0; dx < K; ++dx, ++cnt) {
+              int dof = (((dz*(K + 1)) + (K - 1))*(K + 1)) + dx;
+              first[cnt] = inArr[zi][ys][xi][dof];
+              last[cnt] = inArr[zi][ys + ny - 1][xi][dof];
+            }//end dx
+          }//end dz
+        }//end xi
+      }//end zi
+      MPI_Request sReq1;
+      MPI_Request rReq1;
+      MPI_Request sReq2;
+      MPI_Request rReq2;
+      if(rj > 0) {
+        MPI_Irecv(&(L1[0]), len, MPI_DOUBLE, prevY, 2, comm, &rReq2);
+        MPI_Isend(&(first[0]), len, MPI_DOUBLE, prevY, 1, comm, &sReq1);
+      }
+      if(rj < (py - 1)) {
+        MPI_Irecv(&(R1[0]), len, MPI_DOUBLE, nextY, 1, comm, &rReq1);
+        MPI_Isend(&(last[0]), len, MPI_DOUBLE, nextY, 2, comm, &sReq2);
+      }
+      for(int zi = zs; zi < (zs + nz); ++zi) {
+        for(int yi = ys + 1; yi < (ys + ny - 1); ++yi) {
+          for(int xi = xs; xi < (xs + nx); ++xi) {
+            for(int dz = 0; dz < K; ++dz) {
+              for(int dx = 0; dx < K; ++dx) {
+                int outDof = (((dz*(K + 1)) + K)*(K + 1)) + dx;
+                int inDof = (((dz*(K + 1)) + (K - 1))*(K + 1)) + dx;
+                outArr[zi][yi][xi][outDof] = (inArr[zi][yi + 1][xi][inDof] - inArr[zi][yi - 1][xi][inDof])/4.0;
+              }//end dx
+            }//end dz
+          }//end xi
+        }//end yi
+      }//end zi
+      MPI_Status status;
+      if(rj > 0) {
+        MPI_Wait(&sReq1, &status);
+        MPI_Wait(&rReq2, &status);
+      }
+      if(rj < (py - 1)) {
+        MPI_Wait(&sReq2, &status);
+        MPI_Wait(&rReq1, &status);
+      }
+      MPI_Request sReq3;
+      MPI_Request rReq3;
+      MPI_Request sReq4;
+      MPI_Request rReq4;
+      if((ys == 0) && (ny == 1)) {
+        MPI_Irecv(&(R2[0]), len, MPI_DOUBLE, nextY, 3, comm, &rReq3);
+      }
+      if(((ys + ny) == Ny) && (ny == 1)) {
+        MPI_Irecv(&(L2[0]), len, MPI_DOUBLE, prevY, 4, comm, &rReq4);
+      }
+      if(ys == 1) {
+        if(ny == 1) {
+          MPI_Isend(&(R1[0]), len, MPI_DOUBLE, prevY, 3, comm, &sReq3);
+        } else {
+          for(int zi = zs, cnt = 0; zi < (zs + nz); ++zi) {
+            for(int xi = xs; xi < (xs + nx); ++xi) {
+              for(int dz = 0; dz < K; ++dz) {
+                for(int dx = 0; dx < K; ++dx, ++cnt) {
+                  int dof = (((dz*(K + 1)) + (K - 1))*(K + 1)) + dx;
+                  first[cnt] = inArr[zi][ys + 1][xi][dof];
+                }//end dx
+              }//end dz
+            }//end xi
+          }//end zi
+          MPI_Isend(&(first[0]), len, MPI_DOUBLE, prevY, 3, comm, &sReq3);
+        }
+      }
+      if((ys + ny) == (Ny - 1)) {
+        if(ny == 1) {
+          MPI_Isend(&(L1[0]), len, MPI_DOUBLE, nextY, 4, comm, &sReq4);
+        } else {
+          for(int zi = zs, cnt = 0; zi < (zs + nz); ++zi) {
+            for(int xi = xs; xi < (xs + nx); ++xi) {
+              for(int dz = 0; dz < K; ++dz) {
+                for(int dx = 0; dx < K; ++dx, ++cnt) {
+                  int dof = (((dz*(K + 1)) + (K - 1))*(K + 1)) + dx;
+                  last[cnt] = inArr[zi][ys + ny - 2][xi][dof];
+                }//end dx
+              }//end dz
+            }//end xi
+          }//end zi
+          MPI_Isend(&(last[0]), len, MPI_DOUBLE, nextY, 4, comm, &sReq4);
+        }
+      }
+      if((ys == 0) && (ny == 1)) {
+        MPI_Wait(&rReq3, &status);
+      }
+      if(((ys + ny) == Ny) && (ny == 1)) {
+        MPI_Wait(&rReq4, &status);
+      }
+      if(ys == 1) {
+        MPI_Wait(&sReq3, &status);
+      }
+      if((ys + ny) == (Ny - 1)) {
+        MPI_Wait(&sReq4, &status);
+      }
+      for(int xi = xs, gDof = 0; xi < (xs + nx); ++xi) {
+        for(int d = 0; d < K; ++d, ++gDof) {
+          int outDof = (K*(K + 1)) + d;
+          int inDof = ((K - 1)*(K + 1)) + d;
+          if(rj == 0) {
+            if(ny == 1) {
+              outArr[ys][xi][outDof] = -((3.0*inArr[ys][xi][inDof]) - (4.0*R1[gDof]) + R2[gDof])/4.0;
+            } else if(ny == 2) {
+              outArr[ys][xi][outDof] = -((3.0*inArr[ys][xi][inDof]) -
+                  (4.0*inArr[ys + 1][xi][inDof]) + R1[gDof])/4.0;
+              outArr[ys + 1][xi][outDof] = (R1[gDof] - inArr[ys][xi][inDof])/4.0;
+            } else {
+              outArr[ys][xi][outDof] = -((3.0*inArr[ys][xi][inDof]) - (4.0*inArr[ys + 1][xi][inDof])
+                  + inArr[ys + 2][xi][inDof])/4.0;
+              if(py == 1) {
+                outArr[ys + ny - 1][xi][outDof] = ((3.0*inArr[ys + ny - 1][xi][inDof]) -
+                    (4.0*inArr[ys + ny - 2][xi][inDof]) + inArr[ys + ny - 3][xi][inDof])/4.0;
+              } else {
+                outArr[ys + ny - 1][xi][outDof] = (R1[gDof] - inArr[ys + ny - 2][xi][inDof])/4.0;
+              }
+            }
+          } else if(rj == (py - 1)) {
+            if(ny == 1) {
+              outArr[ys][xi][outDof] = ((3.0*inArr[ys][xi][inDof]) - (4.0*L1[gDof]) + L2[gDof])/4.0;
+            } else if(ny == 2) {
+              outArr[ys][xi][outDof] = (inArr[ys + 1][xi][inDof] - L1[gDof])/4.0;
+              outArr[ys + 1][xi][outDof] = ((3.0*inArr[ys + 1][xi][inDof]) -
+                  (4.0*inArr[ys][xi][inDof]) + L1[gDof])/4.0;
+            } else {
+              outArr[ys][xi][outDof] = (inArr[ys + 1][xi][inDof] - L1[gDof])/4.0;
+              outArr[ys + ny - 1][xi][outDof] = ((3.0*inArr[ys + ny - 1][xi][inDof]) -
+                  (4.0*inArr[ys + ny - 2][xi][inDof]) + inArr[ys + ny - 3][xi][inDof])/4.0;
+            }
+          } else {
+            if(ny == 1) {
+              outArr[ys][xi][outDof] = (R1[gDof] - L1[gDof])/4.0;
+            } else {
+              outArr[ys][xi][outDof] = (inArr[ys + 1][xi][inDof] - L1[gDof])/4.0;
+              outArr[ys + ny - 1][xi][outDof] = (R1[gDof] - inArr[ys + ny - 2][xi][inDof])/4.0;
+            }
+          }
+        }//end d
+      }//end xi
     }
 
     //dz
