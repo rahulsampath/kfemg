@@ -1,4 +1,6 @@
 
+-coeffsDirPath "../../common"
+
 -dim 3
 
 -extraGptsError 0

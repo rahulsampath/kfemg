@@ -1,4 +1,6 @@
 
+-coeffsDirPath "../../common"
+
 -dim 3
 -K 1
 

@@ -68,8 +68,11 @@ int main(int argc, char *argv[]) {
     std::cout<<"DofsPerNode = "<<dofsPerNode<<std::endl;
   }
 
+  char prefix[200] = "";
+  PetscOptionsGetString(PETSC_NULL, "-coeffsDirPath", prefix, 200, PETSC_NULL);
+
   std::vector<long long int> coeffsCK;
-  read1DshapeFnCoeffs(K, coeffsCK);
+  read1DshapeFnCoeffs(K, prefix, coeffsCK);
 
   std::vector<unsigned long long int> factorialsList;
   initFactorials(factorialsList); 
