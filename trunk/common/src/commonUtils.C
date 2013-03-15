@@ -450,9 +450,9 @@ void initFactorials(std::vector<unsigned long long int>& fac) {
   fac[20] = 2432902008176640000ULL;
 } 
 
-void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs) {
+void read1DshapeFnCoeffs(unsigned int K, char* prefix, std::vector<long long int> & coeffs) {
   char fname[256];
-  sprintf(fname, "../../common/ShFnCoeffs1D/C%uShFnCoeffs1D.txt", K);
+  sprintf(fname, "%s/ShFnCoeffs1D/C%uShFnCoeffs1D.txt", prefix, K);
   FILE *fp = fopen(fname, "r"); 
 #ifdef DEBUG
   assert(fp != NULL);

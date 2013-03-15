@@ -53,7 +53,7 @@ void initFactorials(std::vector<unsigned long long int>& fac);
 
 long double myIntPow(long double base, unsigned int exponent);
 
-void read1DshapeFnCoeffs(unsigned int K, std::vector<long long int> & coeffs);
+void read1DshapeFnCoeffs(unsigned int K, char* prefix, std::vector<long long int> & coeffs);
 
 void suppressSmallValues(const unsigned int len, double* vec);
 
