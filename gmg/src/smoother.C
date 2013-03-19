@@ -1,7 +1,6 @@
 
 #include "gmg/include/smoother.h"
 #include "gmg/include/gmgUtils.h"
-#include <iostream>
 
 void setupSmoother(SmootherData* data, Mat Kmat) {
   MPI_Comm comm;
