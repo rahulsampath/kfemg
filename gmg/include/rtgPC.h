@@ -7,6 +7,7 @@
 #include "petscmat.h"
 #include "petscksp.h"
 #include "petscpc.h"
+#include "petscdmda.h"
 #include "gmg/include/smoother.h"
 #include <vector>
 
