@@ -4,6 +4,8 @@
 
 #include "petsc.h"
 #include "petscvec.h"
+#include "petscmat.h"
+#include "petscksp.h"
 
 struct SmootherData {
   Mat Kmat;
