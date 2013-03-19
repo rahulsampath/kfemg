@@ -50,7 +50,7 @@ void setupRTG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& 
   }
   PCSetType(pc, PCSHELL);
   PCShellSetContext(pc, data);
-  PCShellSetName(pc, "MyVcycle");
+  PCShellSetName(pc, "MyRTG");
   PCShellSetApply(pc, &applyRTG);
   PCShellSetDestroy(pc, &destroyRTG);
 }
