@@ -2,8 +2,8 @@
 #include "gmg/include/newSmoother.h"
 #include "gmg/include/gmgUtils.h"
 
-void setupNewSmoother(NewSmootherData* data, int K, int currLev,
-    std::vector<std::vector<DM> >& da, std::vector<std::vector<Mat> >& Kmat,
+void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std::vector<DM> >& da,
+    std::vector<std::vector<long long int> >& coeffs, std::vector<std::vector<Mat> >& Kmat,
     std::vector<std::vector<Mat> >& Pmat, std::vector<std::vector<Vec> >& tmpCvec) {
   MPI_Comm comm;
   PetscObjectGetComm(((PetscObject)(Kmat[K][currLev])), &comm);
@@ -40,16 +40,16 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev,
     KSPSetType(data->ksp3, KSPGMRES);
     KSPSetPCSide(data->ksp3, PC_RIGHT);
     KSPGetPC(data->ksp3, &pc3);
-    setupNewRTG(pc3, (K-1), currLev, da, Kmat, Pmat, tmpCvec); 
+    setupNewRTG(pc3, (K-1), currLev, da, coeffs, Kmat, Pmat, tmpCvec); 
     KSPSetInitialGuessNonzero(data->ksp3, PETSC_TRUE);
     KSPSetOperators(data->ksp3, Kmat[K-1][currLev], Kmat[K-1][currLev], SAME_PRECONDITIONER);
     KSPSetTolerances(data->ksp3, PETSC_DEFAULT, 1.0e-12, 2.0, PETSC_DEFAULT);
     KSPDefaultConvergedSetUIRNorm(data->ksp3);
     KSPSetNormType(data->ksp3, KSP_NORM_UNPRECONDITIONED);
+    data->loa = new LOAdata;
+    setupLOA(data->loa, K, coeffs);
     data->ls = new LSdata;
     setupLS(data->ls);
-    data->loa = new LOAdata;
-    setupLOA(data->loa);
   }
 }
 
@@ -58,8 +58,8 @@ void destroyNewSmoother(NewSmootherData* data) {
   KSPDestroy(&(data->ksp2));
   if(data->ksp3 != NULL) {
     KSPDestroy(&(data->ksp3));
-    destroyLS(data->ls);
     destroyLOA(data->loa);
+    destroyLS(data->ls);
   }
   VecDestroy(&(data->res));
   delete data;
@@ -88,6 +88,14 @@ void applyNewSmoother(int maxIters, double tgtNorm, double currNorm,
     KSPSolve(data->ksp2, in, out);
     computeResidual(data->Kmat, out, in, data->res);
     VecNorm(data->res, NORM_2, &currNorm);
+    if((data->K) > 0) {
+      if(currNorm <= 1.0e-12) {
+        break;
+      }
+      if(currNorm <= tgtNorm) {
+        break;
+      }
+    }
   }//end iter
 }
 
