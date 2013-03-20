@@ -9,8 +9,8 @@
 #endif
 
 void setupNewRTG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
-    std::vector<std::vector<Mat> >& Kmat, std::vector<std::vector<Mat> >& Pmat, 
-    std::vector<std::vector<Vec> >& tmpCvec) {
+    std::vector<std::vector<long long int> >& coeffs, std::vector<std::vector<Mat> >& Kmat,
+    std::vector<std::vector<Mat> >& Pmat, std::vector<std::vector<Vec> >& tmpCvec) {
 #ifdef DEBUG
   assert(currLev > 0);
 #endif
@@ -21,7 +21,7 @@ void setupNewRTG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
   data->Pmat = Pmat[K][currLev - 1];
   data->tmpCvec = tmpCvec[K][currLev - 1];
   data->sData = new NewSmootherData;
-  setupNewSmoother(data->sData, K, currLev, da, Kmat, Pmat, tmpCvec);
+  setupNewSmoother(data->sData, K, currLev, da, coeffs, Kmat, Pmat, tmpCvec);
   MatGetVecs(Kmat[K][currLev], PETSC_NULL, &(data->res));
   data->cKsp = NULL;
   if(Kmat[K][currLev - 1] != NULL) {
@@ -34,7 +34,7 @@ void setupNewRTG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
     if(currLev > 1) {
       KSPSetType((data->cKsp), KSPFGMRES);
       KSPSetPCSide((data->cKsp), PC_RIGHT);
-      setupNewRTG(cPc, K, (currLev - 1), da, Kmat, Pmat, tmpCvec);
+      setupNewRTG(cPc, K, (currLev - 1), da, coeffs, Kmat, Pmat, tmpCvec);
     } else {
       KSPSetType((data->cKsp), KSPCG);
       KSPSetPCSide((data->cKsp), PC_LEFT);

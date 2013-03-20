@@ -20,8 +20,8 @@ struct NewSmootherData {
   LOAdata* loa;
 };
 
-void setupNewSmoother(NewSmootherData* data, int K, int currLev,
-    std::vector<std::vector<DM> >& da, std::vector<std::vector<Mat> >& Kmat,
+void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std::vector<DM> >& da,
+    std::vector<std::vector<long long int> >& coeffs, std::vector<std::vector<Mat> >& Kmat,
     std::vector<std::vector<Mat> >& Pmat, std::vector<std::vector<Vec> >& tmpCvec);
 
 void destroyNewSmoother(NewSmootherData* data);

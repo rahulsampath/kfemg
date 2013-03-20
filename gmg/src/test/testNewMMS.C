@@ -51,7 +51,6 @@ int main(int argc, char *argv[]) {
 #endif
   PetscInt K = 1;
   PetscOptionsGetInt(PETSC_NULL, "-K", &K, PETSC_NULL);
-  assert(K > 0 );
 
   int npes;
   MPI_Comm_size(MPI_COMM_WORLD, &npes);
@@ -194,7 +193,7 @@ int main(int argc, char *argv[]) {
   } else {
     KSPSetType(ksp, KSPFGMRES);
     KSPSetPCSide(ksp, PC_RIGHT);
-    setupNewRTG(pc, K, (nlevels - 1), da, Kmat, Pmat, tmpCvec);
+    setupNewRTG(pc, K, (nlevels - 1), da, coeffs, Kmat, Pmat, tmpCvec);
   }
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetOperators(ksp, Kmat[K][nlevels - 1], Kmat[K][nlevels - 1], SAME_PRECONDITIONER);
