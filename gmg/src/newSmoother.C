@@ -49,7 +49,7 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
     data->loa = new LOAdata;
     setupLOA(data->loa, K, coeffs);
     data->ls = new LSdata;
-    setupLS(data->ls);
+    setupLS(data->ls, Kmat[K][currLev]);
   }
 }
 
