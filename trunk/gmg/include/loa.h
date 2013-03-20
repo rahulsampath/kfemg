@@ -7,5 +7,7 @@ struct LOAdata {
 
 void setupLOA(LOAdata* data);
 
+void destroyLOA(LOAdata* data);
+
 #endif
 

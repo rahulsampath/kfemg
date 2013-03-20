@@ -7,5 +7,7 @@ struct LSdata {
 
 void setupLS(LSdata* data);
 
+void destroyLS(LSdata* data);
+
 #endif
 
