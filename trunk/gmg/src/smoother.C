@@ -38,7 +38,8 @@ void destroySmoother(SmootherData* data) {
   delete data;
 }
 
-void applySmoother(int maxIters, double tgtNorm, double currNorm, SmootherData* data, Vec in, Vec out) {
+void applySmoother(int maxIters, double tgtNorm, double currNorm,
+    SmootherData* data, Vec in, Vec out) {
   for(int iter = 0; iter < maxIters; ++iter) {
     if(currNorm <= 1.0e-12) {
       break;
