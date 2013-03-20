@@ -17,6 +17,7 @@ struct NewSmootherData {
   KSP ksp3;
   Vec res;
   LOAdata* loa;
+  LSdata* ls;
 };
 
 void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std::vector<DM> >& da,

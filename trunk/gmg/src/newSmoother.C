@@ -48,6 +48,8 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
     KSPSetNormType(data->ksp3, KSP_NORM_UNPRECONDITIONED);
     data->loa = new LOAdata;
     setupLOA(data->loa, K, coeffs);
+    data->ls = new LSdata;
+    setupLS(ls, Kmat[K][currLev]);
   }
 }
 
@@ -57,6 +59,7 @@ void destroyNewSmoother(NewSmootherData* data) {
   if(data->ksp3 != NULL) {
     KSPDestroy(&(data->ksp3));
     destroyLOA(data->loa);
+    destroyLS(data->ls);
   }
   VecDestroy(&(data->res));
   delete data;
