@@ -5,5 +5,7 @@
 struct LSdata {
 };
 
+void setupLS(LSdata* data);
+
 #endif
 

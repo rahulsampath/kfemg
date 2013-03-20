@@ -46,6 +46,10 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev,
     KSPSetTolerances(data->ksp3, PETSC_DEFAULT, 1.0e-12, 2.0, PETSC_DEFAULT);
     KSPDefaultConvergedSetUIRNorm(data->ksp3);
     KSPSetNormType(data->ksp3, KSP_NORM_UNPRECONDITIONED);
+    data->ls = new LSdata;
+    setupLS(data->ls);
+    data->loa = new LOAdata;
+    setupLOA(data->loa);
   }
 }
 
@@ -54,6 +58,8 @@ void destroyNewSmoother(NewSmootherData* data) {
   KSPDestroy(&(data->ksp2));
   if(data->ksp3 != NULL) {
     KSPDestroy(&(data->ksp3));
+    destroyLS(data->ls);
+    destroyLOA(data->loa);
   }
   VecDestroy(&(data->res));
   delete data;
