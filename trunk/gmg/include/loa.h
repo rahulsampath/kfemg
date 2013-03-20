@@ -5,5 +5,7 @@
 struct LOAdata {
 };
 
+void setupLOA(LOAdata* data);
+
 #endif
 
