@@ -16,6 +16,10 @@ struct NewSmootherData {
   KSP ksp2;
   KSP ksp3;
   Vec res;
+  Vec low;
+  Vec high;
+  Vec loaRhs;
+  Vec loaSol;
   LOAdata* loa;
   LSdata* ls;
 };
