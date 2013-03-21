@@ -10,6 +10,19 @@
 #include <cassert>
 #endif
 
+void eigenVals2x2(double mat[2][2], double val[2]) {
+  double a = mat[0][0];
+  double b = mat[0][1];
+  double c = mat[1][0];
+  double d = mat[1][1];
+  double det = det2x2(mat);
+  double tr = a + d;
+  double tmp1 = 0.5*tr;
+  double tmp2 = std::sqrt((0.25*tr*tr) - det);
+  val[0] = tmp1 + tmp2;
+  val[1] = tmp1 - tmp2;
+}
+
 void matMult3x3(double mat[3][3], double in[3], double out[3]) {
   for(int i = 0; i < 3; ++i) {
     out[i] = 0;
@@ -104,7 +117,7 @@ void matInvert2x2(double mat[2][2], double matInv[2][2]) {
   double b = mat[0][1];
   double c = mat[1][0];
   double d = mat[1][1];
-  double det = det2x2(mat) ;
+  double det = det2x2(mat);
 #ifdef DEBUG
   assert(fabs(det) > 1.0e-12);
 #endif

@@ -10,6 +10,8 @@ double det2x2(double mat[2][2]);
 
 double det3x3(double mat[3][3]);
 
+void eigenVals2x2(double mat[2][2], double val[2]);
+
 void matMult3x3(double mat[3][3], double in[3], double out[3]);
 
 void matMult2x2(double mat[2][2], double in[2], double out[2]);
