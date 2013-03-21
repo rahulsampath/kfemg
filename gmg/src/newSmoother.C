@@ -35,6 +35,7 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
   KSPSetNormType(data->ksp2, KSP_NORM_UNPRECONDITIONED);
   data->ksp3 = NULL;
   if(K > 0) {
+    data->daL = da[K - 1][currLev];
     PC pc3;
     KSPCreate(comm, &(data->ksp3));
     KSPSetType(data->ksp3, KSPGMRES);
@@ -47,20 +48,19 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
     KSPDefaultConvergedSetUIRNorm(data->ksp3);
     KSPSetNormType(data->ksp3, KSP_NORM_UNPRECONDITIONED);
     data->loa = new LOAdata;
-    setupLOA(data->loa, K, coeffs);
+    setupLOA(data->loa, K, (data->daL), (data->daH), coeffs);
     data->ls = new LSdata;
     setupLS(ls, Kmat[K][currLev]);
     VecDuplicate((data->res), &(data->low));
     VecDuplicate((data->res), &(data->high));
     MatGetVecs((Kmat[K-1][currLev]), &(data->loaSol), &(data->loaRhs));
-    data->daL = da[K - 1][currLev];
   }
 }
 
 void destroyNewSmoother(NewSmootherData* data) {
   KSPDestroy(&(data->ksp1));
   KSPDestroy(&(data->ksp2));
-  if(data->ksp3 != NULL) {
+  if((data->K) > 0) {
     KSPDestroy(&(data->ksp3));
     destroyLOA(data->loa);
     destroyLS(data->ls);
@@ -110,6 +110,7 @@ void applyNewSmoother(int maxIters, double tgtNorm, double currNorm,
         if(currNorm <= tgtNorm) {
           break;
         }
+        applyLOA(data->loa, data->res, data->loaRhs);
         VecZeroEntries(data->loaSol);
         KSPSolve(data->ksp3, data->loaRhs, data->loaSol);
         VecZeroEntries(data->low);
