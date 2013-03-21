@@ -14,7 +14,7 @@ void destroyLS(LSdata* data) {
   delete data;
 }
 
-void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double c[2],
+void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double a[2],
     int maxIters, double tgtNorm, double currNorm) {
   MatMult((data->Kmat), v1, (data->w1));
   MatMult((data->Kmat), v2, (data->w2));
@@ -29,7 +29,7 @@ void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double c[2],
   double w2g;
   VecDot((data->w1), g, &w1g);
   VecDot((data->w2), g, &w2g);
-  c[0] = c[1] = 0.0;
+  a[0] = a[1] = 0.0;
   double gDotG = currNorm*currNorm; 
   double tgtNrmSqr = tgtNorm*tgtNorm;
   double obj = gDotG;
@@ -38,8 +38,8 @@ void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double c[2],
       break;
     }
     double grad[2];
-    grad[0] = -w1g + (c[0]*Hmat[0][0]) + (c[1]*Hmat[1][0]);
-    grad[1] = -w2g + (c[0]*Hmat[0][1]) + (c[1]*Hmat[1][1]);
+    grad[0] = -w1g + (a[0]*Hmat[0][0]) + (a[1]*Hmat[1][0]);
+    grad[1] = -w2g + (a[0]*Hmat[0][1]) + (a[1]*Hmat[1][1]);
     if((fabs(grad[0]) <= 1.0e-12) && (fabs(grad[1]) <= 1.0e-12)) {
       break;
     }
@@ -51,8 +51,8 @@ void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double c[2],
     double alpha = 1.0;
     while(alpha >= 1.0e-12) {
       double tmp[2]; 
-      tmp[0] = c[0] - (alpha*step[0]);
-      tmp[1] = c[1] - (alpha*step[1]);
+      tmp[0] = a[0] - (alpha*step[0]);
+      tmp[1] = a[1] - (alpha*step[1]);
       double tmpObj = gDotG -2.0*((tmp[0]*w1g) + (tmp[1]*w2g));
       for(int r = 0; r < 2; ++r) {
         for(int c = 0; c < 2; ++c) {
@@ -61,8 +61,8 @@ void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double c[2],
       }//end r
       if(tmpObj < obj) {
         obj = tmpObj;
-        c[0] = tmp[0];
-        c[1] = tmp[1];
+        a[0] = tmp[0];
+        a[1] = tmp[1];
         break;
       } else {
         alpha *= 0.5;
