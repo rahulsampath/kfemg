@@ -166,10 +166,9 @@ void applyNewSmoother(int maxIters, double tgtNorm, double currNorm,
         VecZeroEntries(data->high);
         applyFD((data->daH), (data->K), (data->low), (data->high));
         double a[2];
-        applyLS(data->ls, data->res, data->low, data->high, a, (iter + it + 1), tgtNorm, currNorm); 
+        double normUpdate = applyLS(data->ls, data->res, data->low, data->high, a); 
         VecAXPBYPCZ(out, a[0], a[1], 1.0, data->low, data->high);
-        computeResidual(data->Kmat, out, in, data->res);
-        VecNorm(data->res, NORM_2, &currNorm);
+        currNorm = std::sqrt((currNorm*currNorm) + normUpdate);
       }//end it
     }
   }//end iter
