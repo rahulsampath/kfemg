@@ -2,6 +2,10 @@
 #include "gmg/include/ls.h"
 #include "common/include/commonUtils.h"
 
+#ifdef DEBUG
+#include <cassert>
+#endif
+
 void setupLS(LSdata* data, Mat Kmat) {
   data->Kmat = Kmat;
   MatGetVecs(Kmat, PETSC_NULL, &(data->w1));
@@ -23,6 +27,12 @@ void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double a[2],
   VecDot((data->w1), (data->w2), &(Hmat[0][1]));
   Hmat[1][0] = Hmat[0][1];
   VecDot((data->w2), (data->w2), &(Hmat[1][1]));
+#ifdef DEBUG
+  double eig[2];
+  eigenVals2x2(Hmat, eig);
+  assert(eig[0] > 0);
+  assert(eig[1] > 0);
+#endif
   double Hinv[2][2];
   matInvert2x2(Hmat, Hinv);
   double w1g;
