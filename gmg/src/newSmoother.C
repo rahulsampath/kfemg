@@ -9,7 +9,7 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
   PetscObjectGetComm(((PetscObject)(Kmat[K][currLev])), &comm);
   data->K = K;
   data->Kmat = Kmat[K][currLev];
-  data->da = da[K][currLev];
+  data->daH = da[K][currLev];
   MatGetVecs((data->Kmat), PETSC_NULL, &(data->res));
   PC pc1;
   KSPCreate(comm, &(data->ksp1));
@@ -53,6 +53,7 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
     VecDuplicate((data->res), &(data->low));
     VecDuplicate((data->res), &(data->high));
     MatGetVecs((Kmat[K-1][currLev]), &(data->loaSol), &(data->loaRhs));
+    data->daL = da[K - 1][currLev];
   }
 }
 
@@ -96,16 +97,78 @@ void applyNewSmoother(int maxIters, double tgtNorm, double currNorm,
     computeResidual(data->Kmat, out, in, data->res);
     VecNorm(data->res, NORM_2, &currNorm);
     if((data->K) > 0) {
-      if(currNorm <= 1.0e-12) {
-        break;
-      }
-      if(currNorm <= tgtNorm) {
-        break;
-      }
+      PetscInt dim;
+      DMDAGetInfo(data->daH, &dim, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+          PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+      PetscInt xs, ys, zs;
+      PetscInt nx, ny, nz;
+      DMDAGetCorners(data->daH, &xs, &ys, &zs, &nx, &ny, &nz);
       for(int it = 0; it < (iter + 1); ++it) {
+        if(currNorm <= 1.0e-12) {
+          break;
+        }
+        if(currNorm <= tgtNorm) {
+          break;
+        }
+        VecZeroEntries(data->loaSol);
+        KSPSolve(data->ksp3, data->loaRhs, data->loaSol);
         VecZeroEntries(data->low);
+        if(dim == 1) {
+          PetscScalar** inArr;
+          PetscScalar** outArr;
+          DMDAVecGetArrayDOF(data->daL, data->loaSol, &inArr);
+          DMDAVecGetArrayDOF(data->daH, data->low, &outArr);
+          for(int xi = xs; xi < (xs + nx); ++xi) {
+            for(int d = 0; d < (data->K); ++d) {
+              outArr[xi][d] = inArr[xi][d];
+            }//end d
+          }//end xi 
+          DMDAVecRestoreArrayDOF(data->daL, data->loaSol, &inArr);
+          DMDAVecRestoreArrayDOF(data->daH, data->low, &outArr);
+        } else if(dim == 2) {
+          PetscScalar*** inArr;
+          PetscScalar*** outArr;
+          DMDAVecGetArrayDOF(data->daL, data->loaSol, &inArr);
+          DMDAVecGetArrayDOF(data->daH, data->low, &outArr);
+          for(int yi = ys; yi < (ys + ny); ++yi) {
+            for(int xi = xs; xi < (xs + nx); ++xi) {
+              for(int dy = 0, d = 0; dy < (data->K); ++dy) {
+                for(int dx = 0; dx < (data->K); ++dx, ++d) {
+                  outArr[yi][xi][(dy*(K + 1)) + dx] = inArr[yi][xi][d];
+                }//end dx
+              }//end dy
+            }//end xi 
+          }//end yi 
+          DMDAVecRestoreArrayDOF(data->daL, data->loaSol, &inArr);
+          DMDAVecRestoreArrayDOF(data->daH, data->low, &outArr);
+        } else {
+          PetscScalar**** inArr;
+          PetscScalar**** outArr;
+          DMDAVecGetArrayDOF(data->daL, data->loaSol, &inArr);
+          DMDAVecGetArrayDOF(data->daH, data->low, &outArr);
+          for(int zi = zs; zi < (zs + nz); ++zi) {
+            for(int yi = ys; yi < (ys + ny); ++yi) {
+              for(int xi = xs; xi < (xs + nx); ++xi) {
+                for(int dz = 0, d = 0; dz < (data->K); ++dz) {
+                  for(int dy = 0; dy < (data->K); ++dy) {
+                    for(int dx = 0; dx < (data->K); ++dx, ++d) {
+                      outArr[zi][yi][xi][(((dz*(K + 1)) + dy)*(K + 1)) + dx] = inArr[zi][yi][xi][d];
+                    }//end dx
+                  }//end dy
+                }//end dz
+              }//end xi 
+            }//end yi 
+          }//end zi 
+          DMDAVecRestoreArrayDOF(data->daL, data->loaSol, &inArr);
+          DMDAVecRestoreArrayDOF(data->daH, data->low, &outArr);
+        }
         VecZeroEntries(data->high);
-        applyFD((data->da), (data->K), (data->low), (data->high));
+        applyFD((data->daH), (data->K), (data->low), (data->high));
+        double a[2];
+        applyLS(data->ls, data->res, data->low, data->high, a, (iter + it + 1), tgtNorm, currNorm); 
+        VecAXPBYPCZ(out, a[0], a[1], 1.0, data->low, data->high);
+        computeResidual(data->Kmat, out, in, data->res);
+        VecNorm(data->res, NORM_2, &currNorm);
       }//end it
     }
   }//end iter

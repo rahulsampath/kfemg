@@ -10,7 +10,8 @@
 
 struct NewSmootherData {
   int K;
-  DM da;
+  DM daL;
+  DM daH;
   Mat Kmat;
   KSP ksp1;
   KSP ksp2;

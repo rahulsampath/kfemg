@@ -16,7 +16,7 @@ void setupLS(LSdata* data, Mat Kmat);
 
 void destroyLS(LSdata* data);
 
-void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double c[2],
+void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double a[2],
     int maxIters, double tgtNorm, double currNorm); 
 
 #endif
