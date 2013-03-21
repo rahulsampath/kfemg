@@ -6,7 +6,7 @@
 #include "petscdmda.h"
 #include "petscvec.h"
 
-void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out);
+void applyFD(DM da, int K, Vec in, Vec out);
 
 #endif
 

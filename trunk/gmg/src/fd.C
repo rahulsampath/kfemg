@@ -6,7 +6,7 @@
 #include <cassert>
 #endif
 
-void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
+void applyFD(DM da, int K, Vec in, Vec out) {
   MPI_Comm comm;
   PetscObjectGetComm(((PetscObject)da), &comm);
 
@@ -18,7 +18,10 @@ void applyFD(DM da, int K, int px, int py, int pz, Vec in, Vec out) {
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+  PetscInt px;
+  PetscInt py; 
+  PetscInt pz; 
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, &px, &py, &pz,
       &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
 #ifdef DEBUG

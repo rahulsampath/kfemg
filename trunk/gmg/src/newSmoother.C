@@ -50,6 +50,9 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
     setupLOA(data->loa, K, coeffs);
     data->ls = new LSdata;
     setupLS(ls, Kmat[K][currLev]);
+    VecDuplicate((data->res), &(data->low));
+    VecDuplicate((data->res), &(data->high));
+    MatGetVecs((Kmat[K-1][currLev]), &(data->loaSol), &(data->loaRhs));
   }
 }
 
@@ -60,6 +63,10 @@ void destroyNewSmoother(NewSmootherData* data) {
     KSPDestroy(&(data->ksp3));
     destroyLOA(data->loa);
     destroyLS(data->ls);
+    VecDestroy(&(data->low));
+    VecDestroy(&(data->high));
+    VecDestroy(&(data->loaRhs));
+    VecDestroy(&(data->loaSol));
   }
   VecDestroy(&(data->res));
   delete data;
@@ -95,6 +102,11 @@ void applyNewSmoother(int maxIters, double tgtNorm, double currNorm,
       if(currNorm <= tgtNorm) {
         break;
       }
+      for(int it = 0; it < (iter + 1); ++it) {
+        VecZeroEntries(data->low);
+        VecZeroEntries(data->high);
+        applyFD((data->da), (data->K), (data->low), (data->high));
+      }//end it
     }
   }//end iter
 }
