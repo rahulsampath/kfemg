@@ -7,6 +7,17 @@
 #include <cassert>
 #endif
 
+void createGrids(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
+    std::vector<PetscInt>& Nx, bool print) {
+  if(dim == 1) {
+    createGrids1D(Nx, print);
+  } else if(dim == 2) {
+    createGrids2D(Ny, Nx, print);
+  } else {
+    createGrids3D(Nz, Ny, Nx, print);
+  }
+}
+
 void createDA(int dim, int dofsPerNode, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
     std::vector<PetscInt>& Nx, std::vector<std::vector<PetscInt> >& partZ, std::vector<std::vector<PetscInt> >& partY, 
     std::vector<std::vector<PetscInt> >& partX, std::vector<int>& activeNpes, std::vector<MPI_Comm>& activeComms, 
@@ -161,34 +172,23 @@ void computePartition(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>&
   }//end lev
 }
 
-void createGrids(int dim, std::vector<PetscInt>& Nz, std::vector<PetscInt>& Ny,
-    std::vector<PetscInt>& Nx, bool print) {
-  if(dim == 1) {
-    createGrids1D(Nx, print);
-  } else if(dim == 2) {
-    createGrids2D(Ny, Nx, print);
-  } else {
-    createGrids3D(Nz, Ny, Nx, print);
-  }
-}
-
 void computePartition3D(PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
     std::vector<PetscInt>& partZ, std::vector<PetscInt>& partY, std::vector<PetscInt>& partX,
     std::vector<PetscInt>& offsets, std::vector<PetscInt>& scanZ, 
     std::vector<PetscInt>& scanY, std::vector<PetscInt>& scanX) {
   PetscInt px = static_cast<PetscInt>(std::pow(maxNpes, (1.0/3.0)));
-  if(px > Nx) {
-    px = Nx;
+  if((5*px) > Nx) {
+    px = (Nx/5);
   }
 
   PetscInt py = static_cast<PetscInt>(std::sqrt(maxNpes/px));
-  if(py > Ny) {
-    py = Ny;
+  if((5*py) > Ny) {
+    py = (Ny/5);
   }
 
   PetscInt pz = maxNpes/(px*py);
-  if(pz > Nz) {
-    pz = Nz;
+  if((5*pz) > Nz) {
+    pz = (Nz/5);
   }
 
   PetscInt avgX = Nx/px;
@@ -251,13 +251,13 @@ void computePartition2D(PetscInt Ny, PetscInt Nx, int maxNpes, std::vector<Petsc
     std::vector<PetscInt>& partX, std::vector<PetscInt>& offsets, std::vector<PetscInt>& scanY, 
     std::vector<PetscInt>& scanX) {
   PetscInt px = static_cast<PetscInt>(std::sqrt(maxNpes));
-  if(px > Nx) {
-    px = Nx;
+  if((5*px) > Nx) {
+    px = (Nx/5);
   }
 
   PetscInt py = maxNpes/px;
-  if(py > Ny) {
-    py = Ny;
+  if((5*py) > Ny) {
+    py = (Ny/5);
   }
 
   PetscInt avgX = Nx/px;
@@ -303,8 +303,8 @@ void computePartition2D(PetscInt Ny, PetscInt Nx, int maxNpes, std::vector<Petsc
 void computePartition1D(PetscInt Nx, int maxNpes, std::vector<PetscInt>& partX, 
     std::vector<PetscInt>& offsets, std::vector<PetscInt>& scanX) {
   PetscInt px = maxNpes;
-  if(px > Nx) {
-    px = Nx;
+  if((5*px) > Nx) {
+    px = (Nx/5);
   }
 
   PetscInt avgX = Nx/px;

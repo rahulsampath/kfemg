@@ -43,13 +43,22 @@ void applyFD(DM da, int K, Vec in, Vec out) {
   DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
 
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+#ifdef DEBUG
+  assert(nx >= 5);
+#endif
   long double hy = 0;
   if(dim > 1) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
+#ifdef DEBUG
+    assert(ny >= 5);
+#endif
   }
   long double hz = 0;
   if(dim > 2) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
+#ifdef DEBUG
+    assert(nz >= 5);
+#endif
   }
 
   if(dim == 1) {
