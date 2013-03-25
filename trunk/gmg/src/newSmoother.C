@@ -1,6 +1,9 @@
 
 #include "gmg/include/newSmoother.h"
+#include "gmg/include/newRtgPC.h"
 #include "gmg/include/gmgUtils.h"
+#include "gmg/include/fd.h"
+#include <cmath>
 
 void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std::vector<DM> >& da,
     std::vector<std::vector<long long int> >& coeffs, std::vector<std::vector<Mat> >& Kmat,
@@ -50,7 +53,7 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
     data->loa = new LOAdata;
     setupLOA(data->loa, K, (data->daL), (data->daH), coeffs);
     data->ls = new LSdata;
-    setupLS(ls, Kmat[K][currLev]);
+    setupLS(data->ls, Kmat[K][currLev]);
     VecDuplicate((data->res), &(data->low));
     VecDuplicate((data->res), &(data->high));
     MatGetVecs((Kmat[K-1][currLev]), &(data->loaSol), &(data->loaRhs));
@@ -135,7 +138,7 @@ void applyNewSmoother(int maxIters, double tgtNorm, double currNorm,
             for(int xi = xs; xi < (xs + nx); ++xi) {
               for(int dy = 0, d = 0; dy < (data->K); ++dy) {
                 for(int dx = 0; dx < (data->K); ++dx, ++d) {
-                  outArr[yi][xi][(dy*(K + 1)) + dx] = inArr[yi][xi][d];
+                  outArr[yi][xi][(dy*(data->K + 1)) + dx] = inArr[yi][xi][d];
                 }//end dx
               }//end dy
             }//end xi 
@@ -153,7 +156,7 @@ void applyNewSmoother(int maxIters, double tgtNorm, double currNorm,
                 for(int dz = 0, d = 0; dz < (data->K); ++dz) {
                   for(int dy = 0; dy < (data->K); ++dy) {
                     for(int dx = 0; dx < (data->K); ++dx, ++d) {
-                      outArr[zi][yi][xi][(((dz*(K + 1)) + dy)*(K + 1)) + dx] = inArr[zi][yi][xi][d];
+                      outArr[zi][yi][xi][(((dz*(data->K + 1)) + dy)*(data->K + 1)) + dx] = inArr[zi][yi][xi][d];
                     }//end dx
                   }//end dy
                 }//end dz

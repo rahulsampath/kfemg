@@ -7,6 +7,8 @@
 #include "petscmat.h"
 #include "petscdmda.h"
 #include "petscksp.h"
+#include "gmg/include/loa.h"
+#include "gmg/include/ls.h"
 
 struct NewSmootherData {
   int K;

@@ -12,8 +12,6 @@
 
 void eigenVals2x2(double mat[2][2], double val[2]) {
   double a = mat[0][0];
-  double b = mat[0][1];
-  double c = mat[1][0];
   double d = mat[1][1];
   double det = det2x2(mat);
   double tr = a + d;

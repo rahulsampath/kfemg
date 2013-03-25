@@ -93,11 +93,14 @@ int main(int argc, char *argv[]) {
   std::vector<unsigned long long int> factorialsList;
   initFactorials(factorialsList); 
 
+  char prefix[200] = "";
+  PetscOptionsGetString(PETSC_NULL, "-coeffsDirPath", prefix, 200, PETSC_NULL);
+
   std::vector<std::vector<long long int> > coeffs(K + 1);
-  read1DshapeFnCoeffs(K, coeffs[K]);
+  read1DshapeFnCoeffs(K, prefix, coeffs[K]);
   if(nlevels > 1) {
     for(int k = 0; k < K; ++k) {
-      read1DshapeFnCoeffs(k, coeffs[k]);
+      read1DshapeFnCoeffs(k, prefix, coeffs[k]);
     }//end k
   }
 
