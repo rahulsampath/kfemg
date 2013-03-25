@@ -44,7 +44,7 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
     setupNewRTG(pc3, (K-1), currLev, da, coeffs, Kmat, Pmat, tmpCvec); 
     KSPSetInitialGuessNonzero(data->ksp3, PETSC_TRUE);
     KSPSetOperators(data->ksp3, Kmat[K-1][currLev], Kmat[K-1][currLev], SAME_PRECONDITIONER);
-    KSPSetTolerances(data->ksp3, PETSC_DEFAULT, 1.0e-12, 2.0, PETSC_DEFAULT);
+    KSPSetTolerances(data->ksp3, 0.1, 1.0e-12, 2.0, 10);
     KSPDefaultConvergedSetUIRNorm(data->ksp3);
     KSPSetNormType(data->ksp3, KSP_NORM_UNPRECONDITIONED);
     data->loa = new LOAdata;
