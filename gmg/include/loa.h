@@ -14,6 +14,15 @@ struct LOAdata {
   DM daH;
 };
 
+template<int DIM>
+struct PointAndVal {
+  int p[DIM];
+  double v;
+  bool operator < (PointAndVal<DIM>& other) {
+    return (v < (other.v));
+  }
+};
+
 void setupLOA(LOAdata* data, int K, DM daL, DM daH, 
     std::vector<std::vector<long long int> >& coeffs);
 
