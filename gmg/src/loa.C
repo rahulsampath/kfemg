@@ -133,7 +133,9 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     }//end zi
     DMDAVecRestoreArrayDOF(data->daH, high, &arr);
   }
+
   std::sort(list.begin(), list.end());
+
   std::vector<int> map((nx*ny*nz), -1);
   for(int i = 0; i < list.size(); ++i) {
     int dx = (list[i].x - xs);
@@ -141,6 +143,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     int dz = (list[i].z - zs);
     map[(((dz*ny)+ dy)*nx) + dx] = i;
   }//end i
+
   std::vector<int> xStar;
   std::vector<double> vStar;
   for(int i = (list.size() - 1); i >= 0; --i) {
@@ -191,7 +194,9 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       }//end l
     }
   }//end i
+
   list.clear();
+
   for(int i = 0; i < map.size(); ++i) {
     map[i] = -1;
   }//end i
@@ -210,6 +215,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       map[(((dz*ny)+ dy)*nx) + dx] = i;
     }
   }//end i
+
 }
 
 /*
