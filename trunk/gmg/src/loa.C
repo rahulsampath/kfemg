@@ -154,7 +154,6 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       if(dim > 2) {
         xStar.push_back(z);
       }
-      list[i].v = 0;
       for(int l = -2; l < 3; ++l) {
         if((x + l) < xs) {
           continue;
@@ -181,7 +180,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
               int oy = y + m - ys;
               int oz = z + n - zs;
               int idx = map[(((oz*ny)+ oy)*nx) + ox];
-              if(idx >= 0) {
+              if(idx < i) {
                 list[idx].v = 0; 
               }
             }
