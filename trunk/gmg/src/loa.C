@@ -1,5 +1,6 @@
 
 #include "gmg/include/loa.h"
+#include <algorithm>
 
 void setupLOA(LOAdata* data, int K, DM daL, DM daH,
     std::vector<std::vector<long long int> >& coeffs) {
@@ -14,6 +15,9 @@ void destroyLOA(LOAdata* data) {
 }
 
 void applyLOA(LOAdata* data, Vec high, Vec low) {
+  MPI_Comm comm;
+  PetscObjectGetComm(((PetscObject)(data->daH)), &comm);
+
   PetscInt dim;
   PetscInt Nx;
   PetscInt Ny;
@@ -40,24 +44,152 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   }
 #endif
 
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  long double hy;
+  if(dim < 2) {
+    ys = 0;
+    ny = 1;
+    Ny = 1;
+  } else {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+  }
+  long double hz;
+  if(dim < 3) {
+    zs = 0;
+    nz = 1;
+    Nz = 1;
+  } else {
+    hz = 1.0L/(static_cast<long double>(Nz - 1));
+  }
+
+  std::vector<PointAndVal> list;
   if(dim == 1) {
     PetscScalar** arr;
     DMDAVecGetArrayDOF(data->daH, high, &arr);
     for(int xi = xs; xi < (xs + nx); ++xi) {
+      double val = 0.0;
       for(int d = 0; d < dofsPerNode; ++d) {
+        double tmp = fabs(arr[xi][d]);
+        if(tmp > val) {
+          val = tmp;
+        }
       }//end d
+      if(val > 1.0e-12) {
+        PointAndVal tmp;
+        tmp.x = xi;
+        tmp.y = 0;
+        tmp.z = 0;
+        tmp.v = val;
+        list.push_back(tmp);
+      }
     }//end xi
     DMDAVecRestoreArrayDOF(data->daH, high, &arr);
   } else if(dim == 2) {
     PetscScalar*** arr;
     DMDAVecGetArrayDOF(data->daH, high, &arr);
+    for(int yi = ys; yi < (ys + ny); ++yi) {
+      for(int xi = xs; xi < (xs + nx); ++xi) {
+        double val = 0.0;
+        for(int d = 0; d < dofsPerNode; ++d) {
+          double tmp = fabs(arr[yi][xi][d]);
+          if(tmp > val) {
+            val = tmp;
+          }
+        }//end d
+        if(val > 1.0e-12) {
+          PointAndVal tmp;
+          tmp.x = xi;
+          tmp.y = yi;
+          tmp.z = 0;
+          tmp.v = val;
+          list.push_back(tmp);
+        }
+      }//end xi
+    }//end yi
     DMDAVecRestoreArrayDOF(data->daH, high, &arr);
   } else {
     PetscScalar**** arr;
     DMDAVecGetArrayDOF(data->daH, high, &arr);
+    for(int zi = zs; zi < (zs + nz); ++zi) {
+      for(int yi = ys; yi < (ys + ny); ++yi) {
+        for(int xi = xs; xi < (xs + nx); ++xi) {
+          double val = 0.0;
+          for(int d = 0; d < dofsPerNode; ++d) {
+            double tmp = fabs(arr[zi][yi][xi][d]);
+            if(tmp > val) {
+              val = tmp;
+            }
+          }//end d
+          if(val > 1.0e-12) {
+            PointAndVal tmp;
+            tmp.x = xi;
+            tmp.y = yi;
+            tmp.z = zi;
+            tmp.v = val;
+            list.push_back(tmp);
+          }
+        }//end xi
+      }//end yi
+    }//end zi
     DMDAVecRestoreArrayDOF(data->daH, high, &arr);
   }
-
+  std::sort(list.begin(), list.end());
+  std::vector<int> map((nx*ny*nz), -1);
+  for(int i = 0; i < list.size(); ++i) {
+    int dx = (list[i].x - xs);
+    int dy = (list[i].y - ys);
+    int dz = (list[i].z - zs);
+    map[(((dz*ny)+ dy)*nx) + dx] = i;
+  }//end i
+  std::vector<int> xStar;
+  for(int i = (list.size() - 1); i >= 0; --i) {
+    if(list[i].v > 1.0e-12) {
+      int x = list[i].x;
+      int y = list[i].y;
+      int z = list[i].z;
+      xStar.push_back(x);
+      if(dim > 1) {
+        xStar.push_back(y);
+      }
+      if(dim > 2) {
+        xStar.push_back(z);
+      }
+      list[i].v = 0;
+      for(int l = -2; l < 3; ++l) {
+        if((x + l) < xs) {
+          continue;
+        }
+        if((x + l) >= (xs + nx)) {
+          continue;
+        }
+        for(int m = -2; m < 3; ++m) {
+          if((y + m) < ys) {
+            continue;
+          }
+          if((y + m) >= (ys + ny)) {
+            continue;
+          }
+          for(int n = -2; n < 3; ++n) {
+            if((z + n) < zs) {
+              continue;
+            }
+            if((z + n) >= (zs + nz)) {
+              continue;
+            }
+            if(l || m || n) {
+              int ox = x + l - xs;
+              int oy = y + m - ys;
+              int oz = z + n - zs;
+              int idx = map[(((oz*ny)+ oy)*nx) + ox];
+              if(idx >= 0) {
+                list[idx].v = 0; 
+              }
+            }
+          }//end n
+        }//end m
+      }//end l
+    }
+  }//end i
 }
 
 /*
