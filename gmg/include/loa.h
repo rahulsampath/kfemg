@@ -14,9 +14,10 @@ struct LOAdata {
   DM daH;
 };
 
-template<int DIM>
 struct PointAndVal {
-  int p[DIM];
+  int x;
+  int y;
+  int z;
   double v;
   bool operator < (PointAndVal<DIM>& other) {
     return (v < (other.v));
