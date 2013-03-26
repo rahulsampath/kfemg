@@ -142,6 +142,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     map[(((dz*ny)+ dy)*nx) + dx] = i;
   }//end i
   std::vector<int> xStar;
+  std::vector<double> vStar;
   for(int i = (list.size() - 1); i >= 0; --i) {
     if(list[i].v > 1.0e-12) {
       int x = list[i].x;
@@ -154,6 +155,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       if(dim > 2) {
         xStar.push_back(z);
       }
+      vStar.push_back(list[i].v);
       for(int l = -2; l < 3; ++l) {
         if((x + l) < xs) {
           continue;
@@ -187,6 +189,25 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
           }//end n
         }//end m
       }//end l
+    }
+  }//end i
+  list.clear();
+  for(int i = 0; i < map.size(); ++i) {
+    map[i] = -1;
+  }//end i
+  for(int i = 0; i < vStar.size(); ++i) {
+    if(dim == 1) {
+      int dx = (xStar[i] - xs);
+      map[dx] = i;
+    } else if(dim == 2) {
+      int dx = (xStar[2*i] - xs);
+      int dy = (xStar[(2*i) + 1] - ys);
+      map[(dy*nx) + dx] = i;
+    } else {
+      int dx = (xStar[3*i] - xs);
+      int dy = (xStar[(3*i) + 1] - ys);
+      int dz = (xStar[(3*i) + 2] - zs);
+      map[(((dz*ny)+ dy)*nx) + dx] = i;
     }
   }//end i
 }
