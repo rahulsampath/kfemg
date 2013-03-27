@@ -15,15 +15,15 @@ void destroyLOA(LOAdata* data) {
 }
 
 void applyLOA(LOAdata* data, Vec high, Vec low) {
-  MPI_Comm comm;
-  PetscObjectGetComm(((PetscObject)(data->daH)), &comm);
-
   PetscInt dim;
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
+  PetscInt px;
+  PetscInt py;
+  PetscInt pz;
   PetscInt dofsPerNode;
-  DMDAGetInfo(data->daH, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+  DMDAGetInfo(data->daH, &dim, &Nx, &Ny, &Nz, &px, &py, &pz,
       &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
@@ -215,6 +215,75 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       map[(((dz*ny)+ dy)*nx) + dx] = i;
     }
   }//end i
+
+  MPI_Comm comm;
+  PetscObjectGetComm(((PetscObject)(data->daH)), &comm);
+
+  int rank;
+  MPI_Comm_rank(comm, &rank);
+
+  if(dim == 1) {
+    std::vector<double> sendVstar;
+    std::vector<int> sendXstar;
+    MPI_Request sReq1;
+    int numSend = 0;
+    if(rank > 0) {
+      int idx1 = map[0];
+      int idx2 = map[1];
+      if(idx1 >= 0) {
+        sendVstar.push_back(vStar[idx1]);
+        sendXstar.push_back(xStar[idx1]);
+      }
+      if(idx2 >= 0) {
+        sendVstar.push_back(vStar[idx2]);
+        sendXstar.push_back(xStar[idx2]);
+      }
+      numSend = sendVstar.size();
+      MPI_Isend(&numSend, 1, MPI_INT, (rank - 1), 1, comm, &sReq1);
+    }
+    MPI_Request sReq2;
+    MPI_Request sReq3;
+    if(numSend > 0) {
+      MPI_Isend(&(sendVstar[0]), numSend, MPI_DOUBLE, (rank - 1), 2, comm, &sReq2);
+      MPI_Isend(&(sendXstar[0]), numSend, MPI_INT, (rank - 1), 3, comm, &sReq3);
+    }
+    std::vector<double> recvVstar;
+    std::vector<int> recvXstar;
+    int numRecv = 0;
+    if(rank < (px - 1)) {
+      MPI_Status status;
+      MPI_Recv(&numRecv, 1, MPI_INT, (rank + 1), 1, comm, &status);
+      recvXstar.resize(numRecv);
+      recvVstar.resize(numRecv);
+    }
+    MPI_Request rReq2;
+    MPI_Request rReq3;
+    if(numRecv > 0) {
+      MPI_Irecv(&(recvVstar[0]), numRecv, MPI_DOUBLE, (rank + 1), 2, comm, &rReq2);
+      MPI_Irecv(&(recvXstar[0]), numRecv, MPI_INT, (rank + 1), 3, comm, &rReq3);
+    }
+    if(rank > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq1, &status);
+    }
+    if(numSend > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq2, &status);
+      MPI_Wait(&sReq3, &status);
+    }
+    if(numRecv > 0) {
+      MPI_Status status;
+      MPI_Wait(&rReq2, &status);
+      MPI_Wait(&rReq3, &status);
+    }
+  } else if(dim == 2) {
+    int rj = rank/px;
+    int ri = rank%px;
+  } else {
+    int rk = rank/(px*py);
+    int rj = (rank/px)%py;
+    int ri = rank%px;
+  }
 
 }
 
