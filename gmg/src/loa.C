@@ -144,19 +144,19 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     map[(((dz*ny)+ dy)*nx) + dx] = i;
   }//end i
 
-  std::vector<int> xStar;
+  std::vector<int> pStar;
   std::vector<double> vStar;
   for(int i = (list.size() - 1); i >= 0; --i) {
     if(list[i].v > 1.0e-12) {
       int x = list[i].x;
       int y = list[i].y;
       int z = list[i].z;
-      xStar.push_back(x);
+      pStar.push_back(x);
       if(dim > 1) {
-        xStar.push_back(y);
+        pStar.push_back(y);
       }
       if(dim > 2) {
-        xStar.push_back(z);
+        pStar.push_back(z);
       }
       vStar.push_back(list[i].v);
       for(int l = -2; l < 3; ++l) {
@@ -184,7 +184,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
               int ox = x + l - xs;
               int oy = y + m - ys;
               int oz = z + n - zs;
-              int idx = map[(((oz*ny)+ oy)*nx) + ox];
+              int idx = map[(((oz*ny) + oy)*nx) + ox];
               if(idx < i) {
                 list[idx].v = 0; 
               }
@@ -202,16 +202,16 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   }//end i
   for(int i = 0; i < vStar.size(); ++i) {
     if(dim == 1) {
-      int dx = (xStar[i] - xs);
+      int dx = (pStar[i] - xs);
       map[dx] = i;
     } else if(dim == 2) {
-      int dx = (xStar[2*i] - xs);
-      int dy = (xStar[(2*i) + 1] - ys);
+      int dx = (pStar[2*i] - xs);
+      int dy = (pStar[(2*i) + 1] - ys);
       map[(dy*nx) + dx] = i;
     } else {
-      int dx = (xStar[3*i] - xs);
-      int dy = (xStar[(3*i) + 1] - ys);
-      int dz = (xStar[(3*i) + 2] - zs);
+      int dx = (pStar[3*i] - xs);
+      int dy = (pStar[(3*i) + 1] - ys);
+      int dz = (pStar[(3*i) + 2] - zs);
       map[(((dz*ny)+ dy)*nx) + dx] = i;
     }
   }//end i
@@ -224,7 +224,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
 
   if(dim == 1) {
     std::vector<double> sendVstar;
-    std::vector<int> sendXstar;
+    std::vector<int> sendPstar;
     MPI_Request sReq1;
     int numSend = 0;
     if(rank > 0) {
@@ -232,7 +232,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         int idx = map[dx];
         if(idx >= 0) {
           sendVstar.push_back(vStar[idx]);
-          sendXstar.push_back(xStar[idx]);
+          sendPstar.push_back(pStar[idx]);
         }
       }//end dx
       numSend = sendVstar.size();
@@ -242,10 +242,10 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     MPI_Request sReq3;
     if(numSend > 0) {
       MPI_Isend(&(sendVstar[0]), numSend, MPI_DOUBLE, (rank - 1), 2, comm, &sReq2);
-      MPI_Isend(&(sendXstar[0]), numSend, MPI_INT, (rank - 1), 3, comm, &sReq3);
+      MPI_Isend(&(sendPstar[0]), numSend, MPI_INT, (rank - 1), 3, comm, &sReq3);
     }
     std::vector<double> recvVstar;
-    std::vector<int> recvXstar;
+    std::vector<int> recvPstar;
     int numRecv = 0;
     if(rank < (px - 1)) {
       MPI_Status status;
@@ -258,14 +258,14 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Request rReq2;
       MPI_Request rReq3;
       MPI_Irecv(&(recvVstar[0]), numRecv, MPI_DOUBLE, (rank + 1), 2, comm, &rReq2);
-      MPI_Irecv(&(recvXstar[0]), numRecv, MPI_INT, (rank + 1), 3, comm, &rReq3);
+      MPI_Irecv(&(recvPstar[0]), numRecv, MPI_INT, (rank + 1), 3, comm, &rReq3);
       MPI_Wait(&rReq2, &status);
       MPI_Wait(&rReq3, &status);
     }
     std::vector<int> sendFlgs(recvVstar.size(), 0);
     for(int i = 0; i < recvVstar.size(); ++i) {
       for(int l = -2; l < 0; ++l) {
-        int t = recvXstar[i] + l; 
+        int t = recvPstar[i] + l; 
         if((t == (xs + nx - 1)) || (t == (xs + nx - 2))) {
           int idx = map[t - xs];
           if(idx >= 0) {
@@ -289,7 +289,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     }
     for(int i = 0; i < recvFlgs.size(); ++i) {
       if(recvFlgs[i] == 1) {
-        map[sendXstar[i] - xs] = -1;
+        map[sendPstar[i] - xs] = -1;
       }
     }//end i
     if(numSend > 0) {
@@ -308,6 +308,10 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   } else if(dim == 2) {
     int rj = rank/px;
     int ri = rank%px;
+    std::vector<double> sendVstar1;
+    std::vector<int> sendPstar1;
+    MPI_Request sReq1;
+    int numSend1 = 0;
   } else {
     int rk = rank/(px*py);
     int rj = (rank/px)%py;
