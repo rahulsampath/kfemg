@@ -250,8 +250,8 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     if(rank < (px - 1)) {
       MPI_Status status;
       MPI_Recv(&numRecv, 1, MPI_INT, (rank + 1), 1, comm, &status);
-      recvXstar.resize(numRecv);
       recvVstar.resize(numRecv);
+      recvPstar.resize(numRecv);
     }
     if(numRecv > 0) {
       MPI_Status status;
@@ -266,7 +266,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     for(int i = 0; i < recvVstar.size(); ++i) {
       for(int l = -2; l < 0; ++l) {
         int t = recvPstar[i] + l; 
-        if((t == (xs + nx - 1)) || (t == (xs + nx - 2))) {
+        if((t >= xs) && (t < (xs + nx))) {
           int idx = map[t - xs];
           if(idx >= 0) {
             if(vStar[idx] > recvVstar[i]) {
@@ -292,6 +292,10 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         map[sendPstar[i] - xs] = -1;
       }
     }//end i
+    if(rank > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq1, &status);
+    }
     if(numSend > 0) {
       MPI_Status status;
       MPI_Wait(&sReq2, &status);
@@ -301,10 +305,6 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Status status;
       MPI_Wait(&sReq4, &status);
     }
-    if(rank > 0) {
-      MPI_Status status;
-      MPI_Wait(&sReq1, &status);
-    }
   } else if(dim == 2) {
     int rj = rank/px;
     int ri = rank%px;
@@ -312,6 +312,80 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     std::vector<int> sendPstar1;
     MPI_Request sReq1;
     int numSend1 = 0;
+    if(ri > 0) {
+      for(int dy = 0; dy < ny; ++dy) {
+        for(int dx = 0; dx < 2; ++dx) {
+          int idx = map[(dy*nx) + dx];
+          if(idx >= 0) {
+            sendVstar1.push_back(vStar[idx]);
+            sendPstar1.push_back(pStar[2*idx]);
+            sendPstar1.push_back(pStar[(2*idx) + 1]);
+          }
+        }//end dx
+      }//end dy
+      numSend1 = sendVstar1.size();
+      int other = (rj*px) + ri - 1;
+      MPI_Isend(&numSend1, 1, MPI_INT, other, 1, comm, &sReq1);
+    }
+    MPI_Request sReq2;
+    MPI_Request sReq3;
+    if(numSend1 > 0) {
+      int other = (rj*px) + ri - 1;
+      MPI_Isend(&(sendVstar1[0]), numSend1, MPI_DOUBLE, other, 2, comm, &sReq2);
+      MPI_Isend(&(sendPstar1[0]), (2*numSend1), MPI_INT, other, 3, comm, &sReq3);
+    }
+    std::vector<double> recvVstar1;
+    std::vector<int> recvPstar1;
+    int numRecv1 = 0;
+    if(ri < (px - 1)) {
+      MPI_Status status;
+      int other = (rj*px) + ri + 1;
+      MPI_Recv(&numRecv1, 1, MPI_INT, other, 1, comm, &status);
+      recvVstar1.resize(numRecv1);
+      recvPstar1.resize(2*numRecv1);
+    }
+    if(numRecv1 > 0) {
+      MPI_Status status;
+      MPI_Request rReq2;
+      MPI_Request rReq3;
+      int other = (rj*px) + ri + 1;
+      MPI_Irecv(&(recvVstar1[0]), numRecv1, MPI_DOUBLE, other, 2, comm, &rReq2);
+      MPI_Irecv(&(recvPstar1[0]), (2*numRecv1), MPI_INT, other, 3, comm, &rReq3);
+      MPI_Wait(&rReq2, &status);
+      MPI_Wait(&rReq3, &status);
+    }    
+    std::vector<int> sendFlgs1(recvVstar1.size(), 0);
+    for(int i = 0; i < recvVstar1.size(); ++i) {
+      for(int m = -2; m < 3; ++m) {
+        for(int l = -2; l < 0; ++l) {
+          int t1 = recvPstar1[2*i] + l; 
+          int t2 = recvPstar1[(2*i) + 1] + m; 
+          if((t1 >= xs) && (t1 < (xs + nx))) {
+            int dx = (t1 - xs);
+            if((t2 >= ys) && (t2 < (ys + ny))) {
+              int dy = (t2 - ys);
+              int idx = map[(dy*nx) + dx];
+              if(idx >= 0) {
+                if(vStar[idx] > recvVstar1[i]) {
+                  sendFlgs1[i] = 1;
+                } else {
+                  map[(dy*nx) + dx] = -1;
+                }
+              }
+            }
+          }
+        }//end l
+      }//end m
+    }//end i
+    if(ri > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq1, &status);
+    }
+    if(numSend1 > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq2, &status);
+      MPI_Wait(&sReq3, &status);
+    }
   } else {
     int rk = rank/(px*py);
     int rj = (rank/px)%py;
