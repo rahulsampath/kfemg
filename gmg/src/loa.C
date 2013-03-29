@@ -256,16 +256,54 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       recvXstar.resize(numRecv);
       recvVstar.resize(numRecv);
     }
-    MPI_Request rReq2;
-    MPI_Request rReq3;
     if(numRecv > 0) {
+      MPI_Status status;
+      MPI_Request rReq2;
+      MPI_Request rReq3;
       MPI_Irecv(&(recvVstar[0]), numRecv, MPI_DOUBLE, (rank + 1), 2, comm, &rReq2);
       MPI_Irecv(&(recvXstar[0]), numRecv, MPI_INT, (rank + 1), 3, comm, &rReq3);
+      MPI_Wait(&rReq2, &status);
+      MPI_Wait(&rReq3, &status);
     }
-    if(rank > 0) {
+    std::vector<int> sendFlgs(recvVstar.size(), 0);
+    for(int i = 0; i < recvVstar.size(); ++i) {
+      int t1 = recvXstar[i] - 1;
+      int t2 = recvXstar[i] - 2;
+      if(t1 == (xs + nx - 1)) {
+        int idx = map[t1 - xs];
+        if(idx >= 0) {
+          if(vStar[idx] > recvVstar[i]) {
+            sendFlgs[i] = 1;
+          } else {
+            map[t1 - xs] = -1;
+          }
+        }
+      }
+      if((t2 == (xs + nx - 1)) || (t2 == (xs + nx - 2))) {
+        int idx = map[t2 - xs];
+        if(idx >= 0) {
+          if(vStar[idx > recvVstar[i]]) {
+            sendFlgs[i] = 1;
+          } else {
+            map[t1 - xs] = -1;
+          }
+        }
+      }
+    }//end i
+    MPI_Request sReq4;
+    if(numRecv > 0) {
+      MPI_Isend(&(sendFlgs[0]), numRecv, MPI_INT, (rank + 1), 4, comm, &sReq4);
+    }
+    std::vector<int> recvFlgs(sendVstar.size());
+    if(numSend > 0) {
       MPI_Status status;
-      MPI_Wait(&sReq1, &status);
+      MPI_Recv(&(recvFlg[0]), numSend, MPI_INT, (rank - 1), 4, comm, &status);
     }
+    for(int i = 0; i < recvFlgs.size(); ++i) {
+      if(recvFlgs[i] == 1) {
+        map[sendXstar[i] - xs] = -1;
+      }
+    }//end i
     if(numSend > 0) {
       MPI_Status status;
       MPI_Wait(&sReq2, &status);
@@ -273,8 +311,11 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     }
     if(numRecv > 0) {
       MPI_Status status;
-      MPI_Wait(&rReq2, &status);
-      MPI_Wait(&rReq3, &status);
+      MPI_Wait(&sReq4, &status);
+    }
+    if(rank > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq1, &status);
     }
   } else if(dim == 2) {
     int rj = rank/px;
