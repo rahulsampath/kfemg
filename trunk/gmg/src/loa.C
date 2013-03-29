@@ -228,16 +228,13 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     MPI_Request sReq1;
     int numSend = 0;
     if(rank > 0) {
-      int idx1 = map[0];
-      int idx2 = map[1];
-      if(idx1 >= 0) {
-        sendVstar.push_back(vStar[idx1]);
-        sendXstar.push_back(xStar[idx1]);
-      }
-      if(idx2 >= 0) {
-        sendVstar.push_back(vStar[idx2]);
-        sendXstar.push_back(xStar[idx2]);
-      }
+      for(int dx = 0; dx < 2; ++dx) {
+        int idx = map[dx];
+        if(idx >= 0) {
+          sendVstar.push_back(vStar[idx]);
+          sendXstar.push_back(xStar[idx]);
+        }
+      }//end dx
       numSend = sendVstar.size();
       MPI_Isend(&numSend, 1, MPI_INT, (rank - 1), 1, comm, &sReq1);
     }
@@ -267,28 +264,19 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     }
     std::vector<int> sendFlgs(recvVstar.size(), 0);
     for(int i = 0; i < recvVstar.size(); ++i) {
-      int t1 = recvXstar[i] - 1;
-      int t2 = recvXstar[i] - 2;
-      if(t1 == (xs + nx - 1)) {
-        int idx = map[t1 - xs];
-        if(idx >= 0) {
-          if(vStar[idx] > recvVstar[i]) {
-            sendFlgs[i] = 1;
-          } else {
-            map[t1 - xs] = -1;
+      for(int l = -2; l < 0; ++l) {
+        int t = recvXstar[i] + l; 
+        if((t == (xs + nx - 1)) || (t == (xs + nx - 2))) {
+          int idx = map[t - xs];
+          if(idx >= 0) {
+            if(vStar[idx] > recvVstar[i]) {
+              sendFlgs[i] = 1;
+            } else {
+              map[t - xs] = -1;
+            }
           }
         }
-      }
-      if((t2 == (xs + nx - 1)) || (t2 == (xs + nx - 2))) {
-        int idx = map[t2 - xs];
-        if(idx >= 0) {
-          if(vStar[idx > recvVstar[i]]) {
-            sendFlgs[i] = 1;
-          } else {
-            map[t1 - xs] = -1;
-          }
-        }
-      }
+      }//end l
     }//end i
     MPI_Request sReq4;
     if(numRecv > 0) {
