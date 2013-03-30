@@ -19,7 +19,7 @@ struct PointAndVal {
   int y;
   int z;
   double v;
-  bool operator < (PointAndVal<DIM>& other) {
+  bool operator < (PointAndVal const & other) const {
     return (v < (other.v));
   }
 };
