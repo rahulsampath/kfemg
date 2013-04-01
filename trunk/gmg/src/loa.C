@@ -531,6 +531,39 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     int ri = rank%px;
   }
 
+  pStar.clear();
+  vStar.clear();
+
+  if(dim == 1) {
+    for(int xi = xs, cnt = 0; xi < (xs + nx); ++xi, ++cnt) {
+      if(map[cnt] >= 0) {
+        pStar.push_back(xi);
+      }
+    }//end xi
+  } else if(dim == 2) {
+    for(int yi = ys, cnt = 0; yi < (ys + ny); ++yi) {
+      for(int xi = xs; xi < (xs + nx); ++xi, ++cnt) {
+        if(map[cnt] >= 0) {
+          pStar.push_back(xi);
+          pStar.push_back(yi);
+        }
+      }//end xi
+    }//end yi
+  } else {
+    for(int zi = zs, cnt = 0; zi < (zs + nz); ++zi) {
+      for(int yi = ys; yi < (ys + ny); ++yi) {
+        for(int xi = xs; xi < (xs + nx); ++xi, ++cnt) {
+          if(map[cnt] >= 0) {
+            pStar.push_back(xi);
+            pStar.push_back(yi);
+            pStar.push_back(zi);
+          }
+        }//end xi
+      }//end yi
+    }//end zi
+  }
+
+
 }
 
 /*
