@@ -31,5 +31,7 @@ void destroyLOA(LOAdata* data);
 
 void applyLOA(LOAdata* data, Vec high, Vec low);
 
+void computePstar(DM da, Vec vec, std::vector<int>& pStar);
+
 #endif
 
