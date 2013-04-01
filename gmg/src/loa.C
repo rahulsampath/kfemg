@@ -19,11 +19,8 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   PetscInt Nx;
   PetscInt Ny;
   PetscInt Nz;
-  PetscInt px;
-  PetscInt py;
-  PetscInt pz;
   PetscInt dofsPerNode;
-  DMDAGetInfo(data->daH, &dim, &Nx, &Ny, &Nz, &px, &py, &pz,
+  DMDAGetInfo((data->daH), &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
       &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
   PetscInt xs;
@@ -32,17 +29,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   PetscInt nx;
   PetscInt ny;
   PetscInt nz;
-  DMDAGetCorners(data->daH, &xs, &ys, &zs, &nx, &ny, &nz);
-
-#ifdef DEBUG
-  assert(nx >= 5);
-  if(dim > 1) {
-    assert(ny >= 5);
-  }
-  if(dim > 2) {
-    assert(nz >= 5);
-  }
-#endif
+  DMDAGetCorners((data->daH), &xs, &ys, &zs, &nx, &ny, &nz);
 
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
   long double hy;
@@ -62,10 +49,52 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
+  std::vector<int> pStar;
+  computePstar((data->daH), high, pStar);
+}
+
+void computePstar(DM da, Vec vec, std::vector<int>& pStar) {
+  pStar.clear();
+
+  PetscInt dim;
+  PetscInt px;
+  PetscInt py;
+  PetscInt pz;
+  PetscInt dofsPerNode;
+  DMDAGetInfo(da, &dim, PETSC_NULL, PETSC_NULL, PETSC_NULL, &px, &py, &pz,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+#ifdef DEBUG
+  assert(nx >= 5);
+  if(dim > 1) {
+    assert(ny >= 5);
+  }
+  if(dim > 2) {
+    assert(nz >= 5);
+  }
+#endif
+
+  if(dim < 2) {
+    ys = 0;
+    ny = 1;
+  }
+  if(dim < 3) {
+    zs = 0;
+    nz = 1;
+  }
+
   std::vector<PointAndVal> list;
   if(dim == 1) {
     PetscScalar** arr;
-    DMDAVecGetArrayDOF(data->daH, high, &arr);
+    DMDAVecGetArrayDOF(da, vec, &arr);
     for(int xi = xs; xi < (xs + nx); ++xi) {
       double val = 0.0;
       for(int d = 0; d < dofsPerNode; ++d) {
@@ -83,10 +112,10 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         list.push_back(tmp);
       }
     }//end xi
-    DMDAVecRestoreArrayDOF(data->daH, high, &arr);
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
   } else if(dim == 2) {
     PetscScalar*** arr;
-    DMDAVecGetArrayDOF(data->daH, high, &arr);
+    DMDAVecGetArrayDOF(da, vec, &arr);
     for(int yi = ys; yi < (ys + ny); ++yi) {
       for(int xi = xs; xi < (xs + nx); ++xi) {
         double val = 0.0;
@@ -106,10 +135,10 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         }
       }//end xi
     }//end yi
-    DMDAVecRestoreArrayDOF(data->daH, high, &arr);
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
   } else {
     PetscScalar**** arr;
-    DMDAVecGetArrayDOF(data->daH, high, &arr);
+    DMDAVecGetArrayDOF(da, vec, &arr);
     for(int zi = zs; zi < (zs + nz); ++zi) {
       for(int yi = ys; yi < (ys + ny); ++yi) {
         for(int xi = xs; xi < (xs + nx); ++xi) {
@@ -131,7 +160,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         }//end xi
       }//end yi
     }//end zi
-    DMDAVecRestoreArrayDOF(data->daH, high, &arr);
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
   }
 
   std::sort(list.begin(), list.end());
@@ -144,13 +173,16 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     map[(((dz*ny)+ dy)*nx) + dx] = i;
   }//end i
 
-  std::vector<int> pStar;
   std::vector<double> vStar;
   for(int i = (((int)(list.size())) - 1); i >= 0; --i) {
-    if(list[i].v > 1.0e-12) {
-      int x = list[i].x;
-      int y = list[i].y;
-      int z = list[i].z;
+    int x = list[i].x;
+    int y = list[i].y;
+    int z = list[i].z;
+    int dx = x - xs;
+    int dy = y - ys;
+    int dz = z - zs;
+    int idx = map[(((dz*ny) + dy)*nx) + dx];
+    if(idx >= 0) {
       pStar.push_back(x);
       if(dim > 1) {
         pStar.push_back(y);
@@ -158,6 +190,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       if(dim > 2) {
         pStar.push_back(z);
       }
+      map[(((dz*ny) + dy)*nx) + dx] = vStar.size();
       vStar.push_back(list[i].v);
       for(int l = -2; l < 3; ++l) {
         if((x + l) < xs) {
@@ -181,13 +214,10 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
               continue;
             }
             if(l || m || n) {
-              int ox = x + l - xs;
-              int oy = y + m - ys;
-              int oz = z + n - zs;
-              int idx = map[(((oz*ny) + oy)*nx) + ox];
-              if(idx < i) {
-                list[idx].v = 0; 
-              }
+              int ox = dx + l;
+              int oy = dy + m;
+              int oz = dz + n;
+              map[(((oz*ny) + oy)*nx) + ox] = -1;
             }
           }//end n
         }//end m
@@ -197,27 +227,8 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
 
   list.clear();
 
-  for(size_t i = 0; i < map.size(); ++i) {
-    map[i] = -1;
-  }//end i
-  for(size_t i = 0; i < vStar.size(); ++i) {
-    if(dim == 1) {
-      int dx = (pStar[i] - xs);
-      map[dx] = i;
-    } else if(dim == 2) {
-      int dx = (pStar[2*i] - xs);
-      int dy = (pStar[(2*i) + 1] - ys);
-      map[(dy*nx) + dx] = i;
-    } else {
-      int dx = (pStar[3*i] - xs);
-      int dy = (pStar[(3*i) + 1] - ys);
-      int dz = (pStar[(3*i) + 2] - zs);
-      map[(((dz*ny)+ dy)*nx) + dx] = i;
-    }
-  }//end i
-
   MPI_Comm comm;
-  PetscObjectGetComm(((PetscObject)(data->daH)), &comm);
+  PetscObjectGetComm(((PetscObject)da), &comm);
 
   int rank;
   MPI_Comm_rank(comm, &rank);
@@ -928,8 +939,6 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       }//end yi
     }//end zi
   }
-
-
 }
 
 /*
