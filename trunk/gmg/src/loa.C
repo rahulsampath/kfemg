@@ -274,8 +274,8 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
             } else {
               map[t - xs] = -1;
             }
-          }
-        }
+          }//idx
+        }//t
       }//end l
     }//end i
     MPI_Request sReq4;
@@ -371,9 +371,9 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
                 } else {
                   map[(dy*nx) + dx] = -1;
                 }
-              }
-            }
-          }
+              }//idx
+            }//t2
+          }//t1
         }//end l
       }//end m
     }//end i
@@ -452,9 +452,9 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
                 } else {
                   map[(dy*nx) + dx] = -1;
                 }
-              }
-            }
-          }
+              }//idx
+            }//t2
+          }//t1
         }//end l
       }//end m
     }//end i
@@ -529,6 +529,372 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     int rk = rank/(px*py);
     int rj = (rank/px)%py;
     int ri = rank%px;
+    std::vector<double> sendVstar1;
+    std::vector<int> sendPstar1;
+    MPI_Request sReq1;
+    int numSend1 = 0;
+    if(ri > 0) {
+      for(int dz = 0; dz < nz; ++dz) {
+        for(int dy = 0; dy < ny; ++dy) {
+          for(int dx = 0; dx < 2; ++dx) {
+            int idx = map[(((dz*ny) + dy)*nx) + dx];
+            if(idx >= 0) {
+              sendVstar1.push_back(vStar[idx]);
+              sendPstar1.push_back(pStar[3*idx]);
+              sendPstar1.push_back(pStar[(3*idx) + 1]);
+              sendPstar1.push_back(pStar[(3*idx) + 2]);
+            }
+          }//end dx
+        }//end dy
+      }//end dz
+      numSend1 = sendVstar1.size();
+      int other = (((rk*py) + rj)*px) + ri - 1;
+      MPI_Isend(&numSend1, 1, MPI_INT, other, 1, comm, &sReq1);
+    }
+    MPI_Request sReq2;
+    MPI_Request sReq3;
+    if(numSend1 > 0) {
+      int other = (((rk*py) + rj)*px) + ri - 1;
+      MPI_Isend(&(sendVstar1[0]), numSend1, MPI_DOUBLE, other, 2, comm, &sReq2);
+      MPI_Isend(&(sendPstar1[0]), (3*numSend1), MPI_INT, other, 3, comm, &sReq3);
+    }
+    std::vector<double> recvVstar1;
+    std::vector<int> recvPstar1;
+    int numRecv1 = 0;
+    if(ri < (px - 1)) {
+      MPI_Status status;
+      int other = (((rk*py) + rj)*px) + ri + 1;
+      MPI_Recv(&numRecv1, 1, MPI_INT, other, 1, comm, &status);
+      recvVstar1.resize(numRecv1);
+      recvPstar1.resize(3*numRecv1);
+    }
+    if(numRecv1 > 0) {
+      MPI_Status status;
+      MPI_Request rReq2;
+      MPI_Request rReq3;
+      int other = (((rk*py) + rj)*px) + ri + 1;
+      MPI_Irecv(&(recvVstar1[0]), numRecv1, MPI_DOUBLE, other, 2, comm, &rReq2);
+      MPI_Irecv(&(recvPstar1[0]), (3*numRecv1), MPI_INT, other, 3, comm, &rReq3);
+      MPI_Wait(&rReq2, &status);
+      MPI_Wait(&rReq3, &status);
+    }    
+    std::vector<int> sendFlgs1(recvVstar1.size(), 0);
+    for(int i = 0; i < recvVstar1.size(); ++i) {
+      for(int n = -2; n < 3; ++n) {
+        for(int m = -2; m < 3; ++m) {
+          for(int l = -2; l < 0; ++l) {
+            int t1 = recvPstar1[3*i] + l; 
+            int t2 = recvPstar1[(3*i) + 1] + m; 
+            int t3 = recvPstar1[(3*i) + 2] + n; 
+            if((t1 >= xs) && (t1 < (xs + nx))) {
+              int dx = (t1 - xs);
+              if((t2 >= ys) && (t2 < (ys + ny))) {
+                int dy = (t2 - ys);
+                if((t3 >= zs) && (t3 < (zs + nz))) {
+                  int dz = (t3 - zs);
+                  int idx = map[(((dz*ny) + dy)*nx) + dx];
+                  if(idx >= 0) {
+                    if(vStar[idx] > recvVstar1[i]) {
+                      sendFlgs1[i] = 1;
+                    } else {
+                      map[(((dz*ny) + dy)*nx) + dx] = -1;
+                    }
+                  }//idx
+                }//t3
+              }//t2
+            }//t1
+          }//end l
+        }//end m
+      }//end n
+    }//end i
+    std::vector<int> tmpMap1;
+    std::vector<double> sendVstar2;
+    std::vector<int> sendPstar2;
+    MPI_Request sReq4;
+    int numSend2 = 0;
+    if(rj > 0) {
+      for(int i = 0; i < recvVstar1.size(); ++i) {
+        if(sendFlgs1[i] == 0) {
+          if((recvPstar1[(3*i) + 1] == ys) ||
+              (recvPstar1[(3*i) + 1] == (ys + 1))) {
+            tmpMap1.push_back(i);
+            sendVstar2.push_back(recvVstar1[i]);
+            sendPstar2.push_back(recvPstar1[3*i]);
+            sendPstar2.push_back(recvPstar1[(3*i) + 1]);
+            sendPstar2.push_back(recvPstar1[(3*i) + 2]);
+          }
+        }
+      }//end i
+      for(int dz = 0; dz < nz; ++dz) {
+        for(int dy = 0; dy < 2; ++dy) {
+          for(int dx = 0; dx < nx; ++dx) {
+            int idx = map[(((dz*ny) + dy)*nx) + dx];
+            if(idx >= 0) {
+              sendVstar2.push_back(vStar[idx]);
+              sendPstar2.push_back(pStar[3*idx]);
+              sendPstar2.push_back(pStar[(3*idx) + 1]);
+              sendPstar2.push_back(pStar[(3*idx) + 2]);
+            }
+          }//end dx
+        }//end dy
+      }//end dz
+      numSend2 = sendVstar2.size();
+      int other = (((rk*py) + (rj - 1))*px) + ri;
+      MPI_Isend(&numSend2, 1, MPI_INT, other, 4, comm, &sReq4);
+    }
+    MPI_Request sReq5;
+    MPI_Request sReq6;
+    if(numSend2 > 0) {
+      int other = (((rk*py) + (rj - 1))*px) + ri;
+      MPI_Isend(&(sendVstar2[0]), numSend2, MPI_DOUBLE, other, 5, comm, &sReq5);
+      MPI_Isend(&(sendPstar2[0]), (3*numSend2), MPI_INT, other, 6, comm, &sReq6);
+    }
+    std::vector<double> recvVstar2;
+    std::vector<int> recvPstar2;
+    int numRecv2 = 0;
+    if(rj < (py - 1)) {
+      MPI_Status status;
+      int other = (((rk*py) + (rj + 1))*px) + ri;
+      MPI_Recv(&numRecv2, 1, MPI_INT, other, 4, comm, &status);
+      recvVstar2.resize(numRecv2);
+      recvPstar2.resize(3*numRecv2);
+    }
+    if(numRecv2 > 0) {
+      MPI_Status status;
+      MPI_Request rReq5;
+      MPI_Request rReq6;
+      int other = (((rk*py) + (rj + 1))*px) + ri;
+      MPI_Irecv(&(recvVstar2[0]), numRecv2, MPI_DOUBLE, other, 5, comm, &rReq5);
+      MPI_Irecv(&(recvPstar2[0]), (3*numRecv2), MPI_INT, other, 6, comm, &rReq6);
+      MPI_Wait(&rReq5, &status);
+      MPI_Wait(&rReq6, &status);
+    }    
+    std::vector<int> sendFlgs2(recvVstar2.size(), 0);
+    for(int i = 0; i < recvVstar2.size(); ++i) {
+      for(int n = -2; n < 3; ++n) {
+        for(int m = -2; m < 0; ++m) {
+          for(int l = -2; l < 3; ++l) {
+            int t1 = recvPstar2[3*i] + l; 
+            int t2 = recvPstar2[(3*i) + 1] + m; 
+            int t3 = recvPstar2[(3*i) + 2] + n; 
+            if((t1 >= xs) && (t1 < (xs + nx))) {
+              int dx = (t1 - xs);
+              if((t2 >= ys) && (t2 < (ys + ny))) {
+                int dy = (t2 - ys);
+                if((t3 >= zs) && (t3 < (zs + nz))) {
+                  int dz = (t3 - zs);
+                  int idx = map[(((dz*ny) + dy)*nx) + dx];
+                  if(idx >= 0) {
+                    if(vStar[idx] > recvVstar2[i]) {
+                      sendFlgs2[i] = 1;
+                    } else {
+                      map[(((dz*ny) + dy)*nx) + dx] = -1;
+                    }
+                  }//idx
+                }//t3
+              }//t2
+            }//t1
+          }//end l
+        }//end m
+      }//end n
+    }//end i
+    std::vector<int> tmpMap2;
+    std::vector<double> sendVstar3;
+    std::vector<int> sendPstar3;
+    MPI_Request sReq7;
+    int numSend3 = 0;
+    if(rk > 0) {
+      for(int i = 0; i < recvVstar2.size(); ++i) {
+        if(sendFlgs2[i] == 0) {
+          if((recvPstar2[(3*i) + 2] == zs) ||
+              (recvPstar2[(3*i) + 2] == (zs + 1))) {
+            tmpMap2.push_back(i);
+            sendVstar3.push_back(recvVstar2[i]);
+            sendPstar3.push_back(recvPstar2[3*i]);
+            sendPstar3.push_back(recvPstar2[(3*i) + 1]);
+            sendPstar3.push_back(recvPstar2[(3*i) + 2]);
+          }
+        }
+      }//end i
+      for(int dz = 0; dz < 2; ++dz) {
+        for(int dy = 0; dy < ny; ++dy) {
+          for(int dx = 0; dx < nx; ++dx) {
+            int idx = map[(((dz*ny) + dy)*nx) + dx];
+            if(idx >= 0) {
+              sendVstar3.push_back(vStar[idx]);
+              sendPstar3.push_back(pStar[3*idx]);
+              sendPstar3.push_back(pStar[(3*idx) + 1]);
+              sendPstar3.push_back(pStar[(3*idx) + 2]);
+            }
+          }//end dx
+        }//end dy
+      }//end dz
+      numSend3 = sendVstar3.size();
+      int other = ((((rk - 1)*py) + rj)*px) + ri;
+      MPI_Isend(&numSend3, 1, MPI_INT, other, 7, comm, &sReq7);
+    }
+    MPI_Request sReq8;
+    MPI_Request sReq9;
+    if(numSend3 > 0) {
+      int other = ((((rk - 1)*py) + rj)*px) + ri;
+      MPI_Isend(&(sendVstar3[0]), numSend3, MPI_DOUBLE, other, 8, comm, &sReq8);
+      MPI_Isend(&(sendPstar3[0]), (3*numSend3), MPI_INT, other, 9, comm, &sReq9);
+    }
+    std::vector<double> recvVstar3;
+    std::vector<int> recvPstar3;
+    int numRecv3 = 0;
+    if(rk < (pk - 1)) {
+      MPI_Status status;
+      int other = ((((rk + 1)*py) + rj)*px) + ri;
+      MPI_Recv(&numRecv3, 1, MPI_INT, other, 7, comm, &status);
+      recvVstar3.resize(numRecv3);
+      recvPstar3.resize(3*numRecv3);
+    }
+    if(numRecv3 > 0) {
+      MPI_Status status;
+      MPI_Request rReq8;
+      MPI_Request rReq9;
+      int other = ((((rk + 1)*py) + rj)*px) + ri;
+      MPI_Irecv(&(recvVstar3[0]), numRecv3, MPI_DOUBLE, other, 8, comm, &rReq8);
+      MPI_Irecv(&(recvPstar3[0]), (3*numRecv3), MPI_INT, other, 9, comm, &rReq9);
+      MPI_Wait(&rReq8, &status);
+      MPI_Wait(&rReq9, &status);
+    }    
+    std::vector<int> sendFlgs3(recvVstar3.size(), 0);
+    for(int i = 0; i < recvVstar3.size(); ++i) {
+      for(int n = -2; n < 0; ++n) {
+        for(int m = -2; m < 3; ++m) {
+          for(int l = -2; l < 3; ++l) {
+            int t1 = recvPstar3[3*i] + l; 
+            int t2 = recvPstar3[(3*i) + 1] + m; 
+            int t3 = recvPstar3[(3*i) + 2] + n; 
+            if((t1 >= xs) && (t1 < (xs + nx))) {
+              int dx = (t1 - xs);
+              if((t2 >= ys) && (t2 < (ys + ny))) {
+                int dy = (t2 - ys);
+                if((t3 >= zs) && (t3 < (zs + nz))) {
+                  int dz = (t3 - zs);
+                  int idx = map[(((dz*ny) + dy)*nx) + dx];
+                  if(idx >= 0) {
+                    if(vStar[idx] > recvVstar3[i]) {
+                      sendFlgs3[i] = 1;
+                    } else {
+                      map[(((dz*ny) + dy)*nx) + dx] = -1;
+                    }
+                  }//idx
+                }//t3
+              }//t2
+            }//t1
+          }//end l
+        }//end m
+      }//end n
+    }//end i
+    MPI_Request sReq10;
+    if(numRecv3 > 0) {
+      int other = ((((rk + 1)*py) + rj)*px) + ri;
+      MPI_Isend(&(sendFlgs3[0]), numRecv3, MPI_INT, other, 10, comm, &sReq10);
+    }
+    std::vector<int> recvFlgs3(sendVstar3.size());
+    if(numSend3 > 0) {
+      MPI_Status status;
+      int other = ((((rk - 1)*py) + rj)*px) + ri;
+      MPI_Recv(&(recvFlgs3[0]), numSend3, MPI_INT, other, 10, comm, &status);
+    }
+    for(int i = 0; i < tmpMap2.size(); ++i) {
+      if(recvFlgs3[i] == 1) {
+        sendFlgs2[tmpMap2[i]] = 1;
+      }
+    }//end i
+    for(int i = tmpMap2.size(); i < recvFlgs3.size(); ++i) {
+      if(recvFlgs3[i] == 1) {
+        int dx = sendPstar3[3*i] - xs;
+        int dy = sendPstar3[(3*i) + 1] - ys;
+        int dz = sendPstar3[(3*i) + 2] - zs;
+        map[(((dz*ny) + dy)*nx) + dx] = -1;
+      }
+    }//end i
+    MPI_Request sReq11;
+    if(numRecv2 > 0) {
+      int other = (((rk*py) + (rj + 1))*px) + ri;
+      MPI_Isend(&(sendFlgs2[0]), numRecv2, MPI_INT, other, 11, comm, &sReq11);
+    }
+    std::vector<int> recvFlgs2(sendVstar2.size());
+    if(numSend2 > 0) {
+      MPI_Status status;
+      int other = (((rk*py) + (rj - 1))*px) + ri;
+      MPI_Recv(&(recvFlgs2[0]), numSend2, MPI_INT, other, 11, comm, &status);
+    }
+    for(int i = 0; i < tmpMap1.size(); ++i) {
+      if(recvFlgs2[i] == 1) {
+        sendFlgs1[tmpMap1[i]] = 1;
+      }
+    }//end i
+    for(int i = tmpMap1.size(); i < recvFlgs2.size(); ++i) {
+      if(recvFlgs2[i] == 1) {
+        int dx = sendPstar2[3*i] - xs;
+        int dy = sendPstar2[(3*i) + 1] - ys;
+        int dz = sendPstar2[(3*i) + 2] - zs;
+        map[(((dz*ny) + dy)*nx) + dx] = -1;
+      }
+    }//end i
+    MPI_Request sReq12;
+    if(numRecv1 > 0) {
+      int other = (((rk*py) + rj)*px) + ri + 1;
+      MPI_Isend(&(sendFlgs1[0]), numRecv1, MPI_INT, other, 12, comm, &sReq12);
+    }
+    std::vector<int> recvFlgs1(sendVstar1.size());
+    if(numSend1 > 0) {
+      MPI_Status status;
+      int other = (((rk*py) + rj)*px) + ri - 1;
+      MPI_Recv(&(recvFlgs1[0]), numSend1, MPI_INT, other, 12, comm, &status);
+    }
+    for(int i = 0; i < recvFlgs1.size(); ++i) {
+      if(recvFlgs1[i] == 1) {
+        int dx = sendPstar1[3*i] - xs;
+        int dy = sendPstar1[(3*i) + 1] - ys;
+        int dz = sendPstar1[(3*i) + 2] - zs;
+        map[(((dz*ny) + dy)*nx) + dx] = -1;
+      }
+    }//end i
+    if(ri > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq1, &status);
+    }
+    if(numSend1 > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq2, &status);
+      MPI_Wait(&sReq3, &status);
+    }
+    if(rj > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq4, &status);
+    }
+    if(numSend2 > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq5, &status);
+      MPI_Wait(&sReq6, &status);
+    }
+    if(rk > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq7, &status);
+    }
+    if(numSend3 > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq8, &status);
+      MPI_Wait(&sReq9, &status);
+    }
+    if(numRecv3 > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq10, &status);
+    }
+    if(numRecv2 > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq11, &status);
+    }
+    if(numRecv1 > 0) {
+      MPI_Status status;
+      MPI_Wait(&sReq12, &status);
+    }
   }
 
   pStar.clear();
