@@ -137,7 +137,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   std::sort(list.begin(), list.end());
 
   std::vector<int> map((nx*ny*nz), -1);
-  for(int i = 0; i < list.size(); ++i) {
+  for(size_t i = 0; i < list.size(); ++i) {
     int dx = (list[i].x - xs);
     int dy = (list[i].y - ys);
     int dz = (list[i].z - zs);
@@ -146,7 +146,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
 
   std::vector<int> pStar;
   std::vector<double> vStar;
-  for(int i = (list.size() - 1); i >= 0; --i) {
+  for(int i = (((int)(list.size())) - 1); i >= 0; --i) {
     if(list[i].v > 1.0e-12) {
       int x = list[i].x;
       int y = list[i].y;
@@ -197,10 +197,10 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
 
   list.clear();
 
-  for(int i = 0; i < map.size(); ++i) {
+  for(size_t i = 0; i < map.size(); ++i) {
     map[i] = -1;
   }//end i
-  for(int i = 0; i < vStar.size(); ++i) {
+  for(size_t i = 0; i < vStar.size(); ++i) {
     if(dim == 1) {
       int dx = (pStar[i] - xs);
       map[dx] = i;
@@ -263,7 +263,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Wait(&rReq3, &status);
     }
     std::vector<int> sendFlgs(recvVstar.size(), 0);
-    for(int i = 0; i < recvVstar.size(); ++i) {
+    for(size_t i = 0; i < recvVstar.size(); ++i) {
       for(int l = -2; l < 0; ++l) {
         int t = recvPstar[i] + l; 
         if((t >= xs) && (t < (xs + nx))) {
@@ -287,7 +287,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Status status;
       MPI_Recv(&(recvFlgs[0]), numSend, MPI_INT, (rank - 1), 4, comm, &status);
     }
-    for(int i = 0; i < recvFlgs.size(); ++i) {
+    for(size_t i = 0; i < recvFlgs.size(); ++i) {
       if(recvFlgs[i] == 1) {
         map[sendPstar[i] - xs] = -1;
       }
@@ -355,7 +355,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Wait(&rReq3, &status);
     }    
     std::vector<int> sendFlgs1(recvVstar1.size(), 0);
-    for(int i = 0; i < recvVstar1.size(); ++i) {
+    for(size_t i = 0; i < recvVstar1.size(); ++i) {
       for(int m = -2; m < 3; ++m) {
         for(int l = -2; l < 0; ++l) {
           int t1 = recvPstar1[2*i] + l; 
@@ -383,7 +383,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     MPI_Request sReq4;
     int numSend2 = 0;
     if(rj > 0) {
-      for(int i = 0; i < recvVstar1.size(); ++i) {
+      for(size_t i = 0; i < recvVstar1.size(); ++i) {
         if(sendFlgs1[i] == 0) {
           if((recvPstar1[(2*i) + 1] == ys) ||
               (recvPstar1[(2*i) + 1] == (ys + 1))) {
@@ -436,7 +436,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Wait(&rReq6, &status);
     }    
     std::vector<int> sendFlgs2(recvVstar2.size(), 0);
-    for(int i = 0; i < recvVstar2.size(); ++i) {
+    for(size_t i = 0; i < recvVstar2.size(); ++i) {
       for(int m = -2; m < 0; ++m) {
         for(int l = -2; l < 3; ++l) {
           int t1 = recvPstar2[2*i] + l; 
@@ -469,12 +469,12 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       int other = ((rj - 1)*px) + ri;
       MPI_Recv(&(recvFlgs2[0]), numSend2, MPI_INT, other, 7, comm, &status);
     }
-    for(int i = 0; i < tmpMap.size(); ++i) {
+    for(size_t i = 0; i < tmpMap.size(); ++i) {
       if(recvFlgs2[i] == 1) {
         sendFlgs1[tmpMap[i]] = 1;
       }
     }//end i
-    for(int i = tmpMap.size(); i < recvFlgs2.size(); ++i) {
+    for(size_t i = tmpMap.size(); i < recvFlgs2.size(); ++i) {
       if(recvFlgs2[i] == 1) {
         int dx = sendPstar2[2*i] - xs;
         int dy = sendPstar2[(2*i) + 1] - ys;
@@ -492,7 +492,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       int other = (rj*px) + ri - 1;
       MPI_Recv(&(recvFlgs1[0]), numSend1, MPI_INT, other, 8, comm, &status);
     }
-    for(int i = 0; i < recvFlgs1.size(); ++i) {
+    for(size_t i = 0; i < recvFlgs1.size(); ++i) {
       if(recvFlgs1[i] == 1) {
         int dx = sendPstar1[2*i] - xs;
         int dy = sendPstar1[(2*i) + 1] - ys;
@@ -579,7 +579,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Wait(&rReq3, &status);
     }    
     std::vector<int> sendFlgs1(recvVstar1.size(), 0);
-    for(int i = 0; i < recvVstar1.size(); ++i) {
+    for(size_t i = 0; i < recvVstar1.size(); ++i) {
       for(int n = -2; n < 3; ++n) {
         for(int m = -2; m < 3; ++m) {
           for(int l = -2; l < 0; ++l) {
@@ -613,7 +613,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     MPI_Request sReq4;
     int numSend2 = 0;
     if(rj > 0) {
-      for(int i = 0; i < recvVstar1.size(); ++i) {
+      for(size_t i = 0; i < recvVstar1.size(); ++i) {
         if(sendFlgs1[i] == 0) {
           if((recvPstar1[(3*i) + 1] == ys) ||
               (recvPstar1[(3*i) + 1] == (ys + 1))) {
@@ -670,7 +670,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Wait(&rReq6, &status);
     }    
     std::vector<int> sendFlgs2(recvVstar2.size(), 0);
-    for(int i = 0; i < recvVstar2.size(); ++i) {
+    for(size_t i = 0; i < recvVstar2.size(); ++i) {
       for(int n = -2; n < 3; ++n) {
         for(int m = -2; m < 0; ++m) {
           for(int l = -2; l < 3; ++l) {
@@ -704,7 +704,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     MPI_Request sReq7;
     int numSend3 = 0;
     if(rk > 0) {
-      for(int i = 0; i < recvVstar2.size(); ++i) {
+      for(size_t i = 0; i < recvVstar2.size(); ++i) {
         if(sendFlgs2[i] == 0) {
           if((recvPstar2[(3*i) + 2] == zs) ||
               (recvPstar2[(3*i) + 2] == (zs + 1))) {
@@ -743,7 +743,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     std::vector<double> recvVstar3;
     std::vector<int> recvPstar3;
     int numRecv3 = 0;
-    if(rk < (pk - 1)) {
+    if(rk < (pz - 1)) {
       MPI_Status status;
       int other = ((((rk + 1)*py) + rj)*px) + ri;
       MPI_Recv(&numRecv3, 1, MPI_INT, other, 7, comm, &status);
@@ -761,7 +761,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       MPI_Wait(&rReq9, &status);
     }    
     std::vector<int> sendFlgs3(recvVstar3.size(), 0);
-    for(int i = 0; i < recvVstar3.size(); ++i) {
+    for(size_t i = 0; i < recvVstar3.size(); ++i) {
       for(int n = -2; n < 0; ++n) {
         for(int m = -2; m < 3; ++m) {
           for(int l = -2; l < 3; ++l) {
@@ -800,12 +800,12 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       int other = ((((rk - 1)*py) + rj)*px) + ri;
       MPI_Recv(&(recvFlgs3[0]), numSend3, MPI_INT, other, 10, comm, &status);
     }
-    for(int i = 0; i < tmpMap2.size(); ++i) {
+    for(size_t i = 0; i < tmpMap2.size(); ++i) {
       if(recvFlgs3[i] == 1) {
         sendFlgs2[tmpMap2[i]] = 1;
       }
     }//end i
-    for(int i = tmpMap2.size(); i < recvFlgs3.size(); ++i) {
+    for(size_t i = tmpMap2.size(); i < recvFlgs3.size(); ++i) {
       if(recvFlgs3[i] == 1) {
         int dx = sendPstar3[3*i] - xs;
         int dy = sendPstar3[(3*i) + 1] - ys;
@@ -824,12 +824,12 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       int other = (((rk*py) + (rj - 1))*px) + ri;
       MPI_Recv(&(recvFlgs2[0]), numSend2, MPI_INT, other, 11, comm, &status);
     }
-    for(int i = 0; i < tmpMap1.size(); ++i) {
+    for(size_t i = 0; i < tmpMap1.size(); ++i) {
       if(recvFlgs2[i] == 1) {
         sendFlgs1[tmpMap1[i]] = 1;
       }
     }//end i
-    for(int i = tmpMap1.size(); i < recvFlgs2.size(); ++i) {
+    for(size_t i = tmpMap1.size(); i < recvFlgs2.size(); ++i) {
       if(recvFlgs2[i] == 1) {
         int dx = sendPstar2[3*i] - xs;
         int dy = sendPstar2[(3*i) + 1] - ys;
@@ -848,7 +848,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       int other = (((rk*py) + rj)*px) + ri - 1;
       MPI_Recv(&(recvFlgs1[0]), numSend1, MPI_INT, other, 12, comm, &status);
     }
-    for(int i = 0; i < recvFlgs1.size(); ++i) {
+    for(size_t i = 0; i < recvFlgs1.size(); ++i) {
       if(recvFlgs1[i] == 1) {
         int dx = sendPstar1[3*i] - xs;
         int dy = sendPstar1[(3*i) + 1] - ys;
