@@ -1,6 +1,9 @@
 
 #include "gmg/include/loa.h"
+#include "gmg/include/boundary.h"
+#include "common/include/commonUtils.h"
 #include <algorithm>
+#include <cmath>
 
 void setupLOA(LOAdata* data, int K, DM daL, DM daH,
     std::vector<std::vector<long long int> >& coeffs) {
@@ -32,7 +35,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   DMDAGetCorners((data->daH), &xs, &ys, &zs, &nx, &ny, &nz);
 
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
-  long double hy;
+  long double hy = 0;
   if(dim < 2) {
     ys = 0;
     ny = 1;
@@ -40,7 +43,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   } else {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
   }
-  long double hz;
+  long double hz = 0;
   if(dim < 3) {
     zs = 0;
     nz = 1;
@@ -51,7 +54,199 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
 
   std::vector<int> pStar;
   computePstar((data->daH), high, pStar);
+
+  std::vector<double> aStar;
+  std::vector<double> cStar;
+  if(dim == 1) {
+    aStar.resize(pStar.size(), 0.0);
+    cStar.resize(aStar.size(), hx);
+  } else if(dim == 2) {
+    aStar.resize((pStar.size()/2), 0.0);
+    cStar.resize(aStar.size(), std::sqrt((hx*hx) + (hy*hy)));
+  } else {
+    aStar.resize((pStar.size()/3), 0.0);
+    cStar.resize(aStar.size(), std::sqrt((hx*hx) + (hy*hy) + (hz*hz)));
+  }
+
 }
+
+void computeFhat(DM da, int K, std::vector<long long int>& coeffs, std::vector<int>& pStar,
+    std::vector<double>& aStar, std::vector<double>& cStar, Vec out) {
+  PetscInt dim;
+  PetscInt dofsPerNode;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  long double hx = 1.0L/(static_cast<long double>(Nx - 1));
+  long double hy = 0;
+  if(dim > 1) {
+    hy = 1.0L/(static_cast<long double>(Ny - 1));
+  }
+  long double hz = 0;
+  if(dim > 2) {
+    hz = 1.0L/(static_cast<long double>(Nz - 1));
+  }
+
+  PetscInt extraNumGpts = 0;
+  //PetscOptionsGetInt(PETSC_NULL, "-extraGptsFhat", &extraNumGpts, PETSC_NULL);
+  int numGaussPts = (2*K) + 2 + extraNumGpts;
+
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(int node = 0; node < 2; ++node) {
+    shFnVals[node].resize(K + 1);
+    for(int dof = 0; dof <= K; ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, K, coeffs, gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
+
+  Vec loc;
+  DMGetLocalVector(da, &loc);
+
+  VecZeroEntries(loc);
+
+  PetscScalar** arr1d = NULL;
+  PetscScalar*** arr2d = NULL;
+  PetscScalar**** arr3d = NULL;
+
+  if(dim == 1) {
+    DMDAVecGetArrayDOF(da, loc, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecGetArrayDOF(da, loc, &arr2d);
+  } else {
+    DMDAVecGetArrayDOF(da, loc, &arr3d);
+  }
+
+  if(dim == 1) {
+    for(size_t i = 0; i < aStar.size(); ++i) {
+    }//end i
+  } else if(dim == 2) {
+    for(size_t i = 0; i < aStar.size(); ++i) {
+    }//end i
+  } else {
+    for(size_t i = 0; i < aStar.size(); ++i) {
+    }//end i
+  }
+
+  if(dim == 1) {
+    DMDAVecRestoreArrayDOF(da, loc, &arr1d);
+  } else if(dim == 2) {
+    DMDAVecRestoreArrayDOF(da, loc, &arr2d);
+  } else {
+    DMDAVecRestoreArrayDOF(da, loc, &arr3d);
+  }
+
+  VecZeroEntries(out);
+
+  DMLocalToGlobalBegin(da, loc, ADD_VALUES, out);
+  DMLocalToGlobalEnd(da, loc, ADD_VALUES, out);
+
+  DMRestoreLocalVector(da, &loc);
+
+  long double jac = hx * 0.5L;
+  if(dim > 1) {
+    jac *= (hy * 0.5L);
+  }
+  if(dim > 2) {
+    jac *= (hz * 0.5L);
+  }
+
+  VecScale(out, jac);
+
+  setBoundariesZero(da, out, K);
+}
+
+/*
+   void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs) {
+   if(dim == 1) {
+   for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+   long double xa = (static_cast<long double>(xi))*hx;
+   for(int node = 0; node < 2; ++node) {
+   for(int dof = 0; dof <= K; ++dof) {
+   for(int g = 0; g < numGaussPts; ++g) {
+   long double xg = coordLocalToGlobal(gPt[g], xa, hx);
+   arr1d[xi + node][dof] += ( gWt[g] * shFnVals[node][dof][g] * force1D(xg) );
+   }//end g
+   }//end dof
+   }//end node
+   }//end xi
+   } else if(dim == 2) {
+   for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+   long double ya = (static_cast<long double>(yi))*hy;
+   for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+   long double xa = (static_cast<long double>(xi))*hx;
+   for(int nodeY = 0; nodeY < 2; ++nodeY) {
+   for(int nodeX = 0; nodeX < 2; ++nodeX) {
+   for(int dofY = 0, d = 0; dofY <= K; ++dofY) {
+   for(int dofX = 0; dofX <= K; ++dofX, ++d) {
+   for(int gY = 0; gY < numGaussPts; ++gY) {
+   long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+   for(int gX = 0; gX < numGaussPts; ++gX) {
+   long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+   arr2d[yi + nodeY][xi + nodeX][d] += ( gWt[gX] * gWt[gY] 
+ * shFnVals[nodeX][dofX][gX] * shFnVals[nodeY][dofY][gY] * force2D(xg, yg) );
+ }//end gX
+ }//end gY
+ }//end dofX
+ }//end dofY
+ }//end nodeX
+ }//end nodeY
+ }//end xi
+ }//end yi
+ } else {
+ for(PetscInt zi = zs; zi < (zs + nze); ++zi) {
+ long double za = (static_cast<long double>(zi))*hz;
+ for(PetscInt yi = ys; yi < (ys + nye); ++yi) {
+ long double ya = (static_cast<long double>(yi))*hy;
+ for(PetscInt xi = xs; xi < (xs + nxe); ++xi) {
+ long double xa = (static_cast<long double>(xi))*hx;
+ for(int nodeZ = 0; nodeZ < 2; ++nodeZ) {
+ for(int nodeY = 0; nodeY < 2; ++nodeY) {
+ for(int nodeX = 0; nodeX < 2; ++nodeX) {
+ for(int dofZ = 0, d = 0; dofZ <= K; ++dofZ) {
+ for(int dofY = 0; dofY <= K; ++dofY) {
+ for(int dofX = 0; dofX <= K; ++dofX, ++d) {
+ for(int gZ = 0; gZ < numGaussPts; ++gZ) {
+ long double zg = coordLocalToGlobal(gPt[gZ], za, hz);
+ for(int gY = 0; gY < numGaussPts; ++gY) {
+ long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+ for(int gX = 0; gX < numGaussPts; ++gX) {
+ long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+ arr3d[zi + nodeZ][yi + nodeY][xi + nodeX][d] += ( gWt[gX] * gWt[gY] * gWt[gZ] 
+ * shFnVals[nodeX][dofX][gX] * shFnVals[nodeY][dofY][gY] * shFnVals[nodeZ][dofZ][gZ]
+ * force3D(xg, yg, zg) );
+ }//end gX
+ }//end gY
+ }//end gZ
+ }//end dofX
+ }//end dofY
+ }//end dofZ
+ }//end nodeX
+ }//end nodeY
+ }//end nodeZ
+ }//end xi
+ }//end yi
+ }//end zi
+}
+}
+*/
 
 void computePstar(DM da, Vec vec, std::vector<int>& pStar) {
   pStar.clear();

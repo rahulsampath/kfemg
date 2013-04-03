@@ -33,5 +33,8 @@ void applyLOA(LOAdata* data, Vec high, Vec low);
 
 void computePstar(DM da, Vec vec, std::vector<int>& pStar);
 
+void computeFhat(DM da, int K, std::vector<long long int>& coeffs, std::vector<int>& pStar,
+    std::vector<double>& aStar, std::vector<double>& cStar, Vec out);
+
 #endif
 

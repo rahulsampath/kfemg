@@ -217,7 +217,7 @@ long double computeError(DM da, Vec sol, std::vector<long long int>& coeffs, con
   }
 
   PetscInt extraNumGpts = 0;
-  PetscOptionsGetInt(PETSC_NULL, "-extraGptsError", &extraNumGpts, PETSC_NULL);
+  //PetscOptionsGetInt(PETSC_NULL, "-extraGptsError", &extraNumGpts, PETSC_NULL);
   PetscInt numGaussPts = (2*K) + 3 + extraNumGpts;
   std::vector<long double> gPt(numGaussPts);
   std::vector<long double> gWt(numGaussPts);
@@ -400,7 +400,7 @@ void computeRHS(DM da, std::vector<long long int>& coeffs, const int K, Vec rhs)
   }
 
   PetscInt extraNumGpts = 0;
-  PetscOptionsGetInt(PETSC_NULL, "-extraGptsRHS", &extraNumGpts, PETSC_NULL);
+  //PetscOptionsGetInt(PETSC_NULL, "-extraGptsRHS", &extraNumGpts, PETSC_NULL);
   int numGaussPts = (2*K) + 2 + extraNumGpts;
   std::vector<long double> gPt(numGaussPts);
   std::vector<long double> gWt(numGaussPts);
