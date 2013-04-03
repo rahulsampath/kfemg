@@ -5,6 +5,143 @@
 #include <cassert>
 #endif
 
+void setBoundariesZero(DM da, Vec vec, const int K) {
+  PetscInt dim;
+  PetscInt Nx;
+  PetscInt Ny;
+  PetscInt Nz;
+  DMDAGetInfo(da, &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+      PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+
+  PetscInt xs;
+  PetscInt ys;
+  PetscInt zs;
+  PetscInt nx;
+  PetscInt ny;
+  PetscInt nz;
+  DMDAGetCorners(da, &xs, &ys, &zs, &nx, &ny, &nz);
+
+  if(dim == 1) {
+    PetscScalar** arr; 
+    DMDAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      arr[0][0] = 0;
+    }
+    if((xs + nx) == Nx) {
+      arr[Nx - 1][0] = 0;
+    }
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
+  } else if(dim == 2) {
+    PetscScalar*** arr; 
+    DMDAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        for(int d = 0; d <= K; ++d) {
+          arr[yi][0][d*(K + 1)] = 0;
+        }//end d
+      }//end yi
+    }
+    if((xs + nx) == Nx) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        for(int d = 0; d <= K; ++d) {
+          arr[yi][Nx - 1][d*(K + 1)] = 0;
+        }//end d
+      }//end yi
+    }
+    if(ys == 0) {
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        for(int d = 0; d <= K; ++d) {
+          arr[0][xi][d] = 0;
+        }//end d
+      }//end xi
+    }
+    if((ys + ny) == Ny) {
+      for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+        for(int d = 0; d <= K; ++d) {
+          arr[Ny - 1][xi][d] = 0;
+        }//end d
+      }//end xi
+    }
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
+  } else {
+    PetscScalar**** arr; 
+    DMDAVecGetArrayDOF(da, vec, &arr);
+    if(xs == 0) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dy = 0; dy <= K; ++dy) {
+              int dof = ((dz*(K + 1)) + dy)*(K + 1);
+              arr[zi][yi][0][dof] = 0;
+            }//end dy
+          }//end dz
+        }//end yi
+      }//end zi
+    }
+    if((xs + nx) == Nx) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dy = 0; dy <= K; ++dy) {
+              int dof = ((dz*(K + 1)) + dy)*(K + 1);
+              arr[zi][yi][Nx - 1][dof] = 0;
+            }//end dy
+          }//end dz
+        }//end yi
+      }//end zi
+    }
+    if(ys == 0) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dz*(K + 1)*(K + 1)) + dx;
+              arr[zi][0][xi][dof] = 0;
+            }//end dx
+          }//end dz
+        }//end xi
+      }//end zi
+    }
+    if((ys + ny) == Ny) {
+      for(PetscInt zi = zs; zi < (zs + nz); ++zi) {
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          for(int dz = 0; dz <= K; ++dz) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dz*(K + 1)*(K + 1)) + dx;
+              arr[zi][Ny - 1][xi][dof] = 0;
+            }//end dx
+          }//end dz
+        }//end xi
+      }//end zi
+    }
+    if(zs == 0) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          for(int dy = 0; dy <= K; ++dy) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dy*(K + 1)) + dx;
+              arr[0][yi][xi][dof] = 0;
+            }//end dx
+          }//end dy
+        }//end xi
+      }//end yi
+    }
+    if((zs + nz) == Nz) {
+      for(PetscInt yi = ys; yi < (ys + ny); ++yi) {
+        for(PetscInt xi = xs; xi < (xs + nx); ++xi) {
+          for(int dy = 0; dy <= K; ++dy) {
+            for(int dx = 0; dx <= K; ++dx) {
+              int dof = (dy*(K + 1)) + dx;
+              arr[Nz - 1][yi][xi][dof] = 0;
+            }//end dx
+          }//end dy
+        }//end xi
+      }//end yi
+    }
+    DMDAVecRestoreArrayDOF(da, vec, &arr);
+  }
+}
+
 void makeBoundariesConsistent(DM da, Vec in, Vec out, const int K) {
   PetscInt dim;
   PetscInt Nx;

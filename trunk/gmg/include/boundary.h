@@ -14,5 +14,7 @@ void dirichletMatrixCorrection(Mat Kmat, DM da, const int K);
 
 void makeBoundariesConsistent(DM da, Vec in, Vec out, const int K);
 
+void setBoundariesZero(DM da, Vec vec, const int K);
+
 #endif
 
