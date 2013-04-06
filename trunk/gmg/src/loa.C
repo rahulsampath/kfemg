@@ -68,6 +68,8 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     cStar.resize(aStar.size(), std::sqrt((hx*hx) + (hy*hy) + (hz*hz)));
   }
 
+  computeFhat((data->daL), ((data->K) - 1), (*(data->coeffs))[((data->K) - 1)], pStar,
+      aStar, cStar, low);
 }
 
 void computeFhat(DM da, int K, std::vector<long long int>& coeffs, std::vector<int>& pStar,
