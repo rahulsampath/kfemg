@@ -68,6 +68,112 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     cStar.resize(aStar.size(), std::sqrt((hx*hx) + (hy*hy) + (hz*hz)));
   }
 
+  Vec loc;
+  DMGetLocalVector((data->daH), &loc);
+
+  DMGlobalToLocalBegin((data->daH), high, INSERT_VALUES, loc);
+  DMGlobalToLocalEnd((data->daH), high, INSERT_VALUES, loc);
+
+  if(dim == 1) {
+    PetscScalar** arr = NULL;
+    DMDAVecGetArrayDOF((data->daH), loc, &arr);
+    for(size_t i = 0; i < aStar.size(); ++i) {
+      int xSt = pStar[i];
+      int xs = xSt - 1;
+      int xe = xSt + 1;
+      if(xs < 0) {
+        xs = 0;
+      }
+      if(xe >= Nx) {
+        xe = Nx - 1;
+      }
+      std::vector<double> fVec; 
+      for(int xi = xs; xi <= xe; ++xi) {
+        for(int d = 0; d < dofsPerNode; ++d) {
+          fVec.push_back(arr[xi][d]);
+        }//end d
+      }//end xi
+    }//end i
+    DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
+  } else if(dim == 2) {
+    PetscScalar*** arr = NULL;
+    DMDAVecGetArrayDOF((data->daH), loc, &arr);
+    for(size_t i = 0; i < aStar.size(); ++i) {
+      int xSt = pStar[2*i];
+      int ySt = pStar[(2*i) + 1];
+      int xs = xSt - 1;
+      int xe = xSt + 1;
+      int ys = ySt - 1;
+      int ye = ySt + 1;
+      if(xs < 0) {
+        xs = 0;
+      }
+      if(xe >= Nx) {
+        xe = Nx - 1;
+      }
+      if(ys < 0) {
+        ys = 0;
+      }
+      if(ye >= Ny) {
+        ye = Ny - 1;
+      }
+      std::vector<double> fVec; 
+      for(int yi = ys; yi <= ye; ++yi) {
+        for(int xi = xs; xi <= xe; ++xi) {
+          for(int d = 0; d < dofsPerNode; ++d) {
+            fVec.push_back(arr[yi][xi][d]);
+          }//end d
+        }//end xi
+      }//end yi
+    }//end i
+    DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
+  } else {
+    PetscScalar**** arr = NULL;
+    DMDAVecGetArrayDOF((data->daH), loc, &arr);
+    for(size_t i = 0; i < aStar.size(); ++i) {
+      int xSt = pStar[3*i];
+      int ySt = pStar[(3*i) + 1];
+      int zSt = pStar[(3*i) + 2];
+      int xs = xSt - 1;
+      int xe = xSt + 1;
+      int ys = ySt - 1;
+      int ye = ySt + 1;
+      int zs = zSt - 1;
+      int ze = zSt + 1;
+      if(xs < 0) {
+        xs = 0;
+      }
+      if(xe >= Nx) {
+        xe = Nx - 1;
+      }
+      if(ys < 0) {
+        ys = 0;
+      }
+      if(ye >= Ny) {
+        ye = Ny - 1;
+      }
+      if(zs < 0) {
+        zs = 0;
+      }
+      if(ze >= Nz) {
+        ze = Nz - 1;
+      }
+      std::vector<double> fVec; 
+      for(int zi = zs; zi <= ze; ++zi) {
+        for(int yi = ys; yi <= ye; ++yi) {
+          for(int xi = xs; xi <= xe; ++xi) {
+            for(int d = 0; d < dofsPerNode; ++d) {
+              fVec.push_back(arr[zi][yi][xi][d]);
+            }//end d
+          }//end xi
+        }//end yi
+      }//end zi
+    }//end i
+    DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
+  }
+
+  DMRestoreLocalVector((data->daH), &loc);
+
   computeFhat((data->daL), ((data->K) - 1), (*(data->coeffs))[((data->K) - 1)], pStar,
       aStar, cStar, low);
 }
