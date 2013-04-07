@@ -74,6 +74,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   DMGlobalToLocalBegin((data->daH), high, INSERT_VALUES, loc);
   DMGlobalToLocalEnd((data->daH), high, INSERT_VALUES, loc);
 
+  const double epsilon = 1.0e-11;
   if(dim == 1) {
     PetscScalar** arr = NULL;
     DMDAVecGetArrayDOF((data->daH), loc, &arr);
@@ -93,6 +94,47 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
           fVec.push_back(arr[xi][d]);
         }//end d
       }//end xi
+      double cSqr = cStar[i] * cStar[i];
+      std::vector<double> fHat(fVec.size(), 0.0);
+      double aStarNum = 0.0;
+      double aStarDen = 0.0;
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        aStarNum += (fHat[j] * fVec[j]);
+        aStarDen += (fHat[j] * fHat[j]);
+      }//end j
+      aStar[i] = aStarNum/aStarDen;
+      double cPlusSqr = (cStar[i] + epsilon) * (cStar[i] + epsilon);
+      std::vector<double> fPlus(fVec.size(), 0.0);
+      std::vector<double> rVec(fVec.size());
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        rVec[j] = (aStar[i] * fHat[j]) - fVec[j];
+      }//end j
+      double oHat = 0;
+      for(size_t j = 0; j < rVec.size(); ++j) {
+        oHat += (rVec[j] * rVec[j]);
+      }//end j
+      oHat *= 0.5;
+      double aPlusNum = 0.0;
+      double aPlusDen = 0.0;
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        aPlusNum += (fPlus[j] * fVec[j]);
+        aPlusDen += (fPlus[j] * fPlus[j]);
+      }//end j
+      double aPlus = aPlusNum/aPlusDen;
+      double gradA = (aPlus - aStar[i])/epsilon;
+      std::vector<double> gradFhat(fVec.size(), 0.0);
+      std::vector<double> jVec(fVec.size());
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        jVec[j] = (gradA * fHat[j]) + (aStar[i] * gradFhat[j]);
+      }//end j
+      double gradO = 0;
+      for(size_t j = 0; j < rVec.size(); ++j) {
+        gradO += (rVec[j] * jVec[j]);
+      }//end j
+      double hessO = 0;
+      for(size_t j = 0; j < jVec.size(); ++j) {
+        hessO += (jVec[j] * jVec[j]);
+      }//end j
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   } else if(dim == 2) {
@@ -125,6 +167,15 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
           }//end d
         }//end xi
       }//end yi
+      double cSqr = cStar[i] * cStar[i];
+      std::vector<double> fHat(fVec.size(), 0.0);
+      double aStarNum = 0.0;
+      double aStarDen = 0.0;
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        aStarNum += (fHat[j] * fVec[j]);
+        aStarDen += (fHat[j] * fHat[j]);
+      }//end j
+      aStar[i] = aStarNum/aStarDen;
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   } else {
@@ -168,6 +219,15 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
           }//end xi
         }//end yi
       }//end zi
+      double cSqr = cStar[i] * cStar[i];
+      std::vector<double> fHat(fVec.size(), 0.0);
+      double aStarNum = 0.0;
+      double aStarDen = 0.0;
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        aStarNum += (fHat[j] * fVec[j]);
+        aStarDen += (fHat[j] * fHat[j]);
+      }//end j
+      aStar[i] = aStarNum/aStarDen;
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   }
