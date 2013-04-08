@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
   }
   KSPSetInitialGuessNonzero(ksp, PETSC_TRUE);
   KSPSetOperators(ksp, Kmat[K][nlevels - 1], Kmat[K][nlevels - 1], SAME_PRECONDITIONER);
-  KSPSetTolerances(ksp, 1.0e-10, 1.0e-10, PETSC_DEFAULT, 500);
+  KSPSetTolerances(ksp, 1.0e-12, 1.0e-12, PETSC_DEFAULT, 500);
   KSPDefaultConvergedSetUIRNorm(ksp);
   KSPSetNormType(ksp, KSP_NORM_UNPRECONDITIONED);
   KSPSetOptionsPrefix(ksp, "outer_");

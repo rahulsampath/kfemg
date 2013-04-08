@@ -238,10 +238,10 @@ int main(int argc, char *argv[]) {
     if(print) {
       std::cout<<"Iter = "<<iter<<" Res = "<<currNorm<<std::endl;
     }
-    if(currNorm <= 1.0e-10) {
+    if(currNorm <= 1.0e-12) {
       break;
     }
-    if(currNorm <= (1.0e-10*initNorm)) {
+    if(currNorm <= (1.0e-12*initNorm)) {
       break;
     }
     applyVcycle((nlevels - 1), ksp, Kmat, Pmat, tmpCvec, tmpRhs, tmpSol, res);
