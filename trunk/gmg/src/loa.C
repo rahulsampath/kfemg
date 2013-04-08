@@ -93,8 +93,13 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
           fVec.push_back(arr[xi][d]);
         }//end d
       }//end xi
+      std::vector<double> fHat(fVec.size());
+      std::vector<double> rVec(fVec.size());
+      std::vector<double> gradFhat(fVec.size());
       double cSqr = cStar[i] * cStar[i];
-      std::vector<double> fHat(fVec.size(), 0.0);
+      for(size_t j = 0; j < fHat.size(); ++j) {
+        fHat[j] = 0;
+      }//end j
       double aNum = 0.0;
       double aDen = 0.0;
       for(size_t j = 0; j < fVec.size(); ++j) {
@@ -102,7 +107,6 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         aDen += (fHat[j] * fHat[j]);
       }//end j
       aStar[i] = aNum/aDen;
-      std::vector<double> rVec(fVec.size());
       for(size_t j = 0; j < fVec.size(); ++j) {
         rVec[j] = (aStar[i] * fHat[j]) - fVec[j];
       }//end j
@@ -111,26 +115,57 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         oHat += (rVec[j] * rVec[j]);
       }//end j
       oHat *= 0.5;
-      std::vector<double> gradFhat(fVec.size(), 0.0);
-      double term1 = 0;
-      double term2 = 0;
-      for(size_t j = 0; j < fVec.size(); ++j) {
-        term1 += (gradFhat[j] * fVec[j]);
-        term2 += (fHat[j] * gradFhat[j]);
-      }//end j
-      double gradA = ((aDen * term1) - (2.0 * term2 * aNum))/(aDen * aDen);
-      std::vector<double> jVec(fVec.size());
-      for(size_t j = 0; j < fVec.size(); ++j) {
-        jVec[j] = (gradA * fHat[j]) + (aStar[i] * gradFhat[j]);
-      }//end j
-      double gradO = 0;
-      for(size_t j = 0; j < rVec.size(); ++j) {
-        gradO += (rVec[j] * jVec[j]);
-      }//end j
-      double hessO = 0;
-      for(size_t j = 0; j < jVec.size(); ++j) {
-        hessO += (jVec[j] * jVec[j]);
-      }//end j
+      for(int iter = 0; iter < 100; ++iter) {
+        if(oHat <= 1.0e-12) {
+          break;
+        }
+        for(size_t j = 0; j < gradFhat.size(); ++j) {
+          gradFhat[j] = 0;
+        }//end j
+        double term1 = 0;
+        double term2 = 0;
+        for(size_t j = 0; j < fVec.size(); ++j) {
+          term1 += (gradFhat[j] * fVec[j]);
+          term2 += (fHat[j] * gradFhat[j]);
+        }//end j
+        double gradA = ((aDen * term1) - (2.0 * term2 * aNum))/(aDen * aDen);
+        std::vector<double> jVec(fVec.size());
+        for(size_t j = 0; j < fVec.size(); ++j) {
+          jVec[j] = (gradA * fHat[j]) + (aStar[i] * gradFhat[j]);
+        }//end j
+        double gradO = 0;
+        for(size_t j = 0; j < rVec.size(); ++j) {
+          gradO += (rVec[j] * jVec[j]);
+        }//end j
+        if(fabs(gradO) <= 1.0e-12) {
+          break;
+        }
+        double hessO = 0;
+        for(size_t j = 0; j < jVec.size(); ++j) {
+          hessO += (jVec[j] * jVec[j]);
+        }//end j
+        double step = -gradO/hessO;
+        if(fabs(step) <= 1.0e-12) {
+          break;
+        }
+        double alpha = 1.0;
+        while(alpha > 1.0e-12) {
+          double tmp = cStar[i] + (alpha * step); 
+          cSqr = tmp * tmp;
+          double tmpAstar = aNum/aDen;
+          if(tmpObj < oHat) {
+            oHat = tmpObj;
+            cStar[i] = tmp;
+            aStar[i] = tmpAstar;
+            break;
+          } else {
+            alpha *= 0.5;
+          }
+        }//end while
+        if(alpha <= 1.0e-12) {
+          break;
+        }
+      }//end iter
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   } else if(dim == 2) {
@@ -163,15 +198,18 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
           }//end d
         }//end xi
       }//end yi
+      std::vector<double> fHat(fVec.size());
       double cSqr = cStar[i] * cStar[i];
-      std::vector<double> fHat(fVec.size(), 0.0);
-      double aStarNum = 0.0;
-      double aStarDen = 0.0;
-      for(size_t j = 0; j < fVec.size(); ++j) {
-        aStarNum += (fHat[j] * fVec[j]);
-        aStarDen += (fHat[j] * fHat[j]);
+      for(size_t j = 0; j < fHat.size(); ++j) {
+        fHat[j] = 0;
       }//end j
-      aStar[i] = aStarNum/aStarDen;
+      double aNum = 0.0;
+      double aDen = 0.0;
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        aNum += (fHat[j] * fVec[j]);
+        aDen += (fHat[j] * fHat[j]);
+      }//end j
+      aStar[i] = aNum/aDen;
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   } else {
@@ -215,15 +253,18 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
           }//end xi
         }//end yi
       }//end zi
+      std::vector<double> fHat(fVec.size());
       double cSqr = cStar[i] * cStar[i];
-      std::vector<double> fHat(fVec.size(), 0.0);
-      double aStarNum = 0.0;
-      double aStarDen = 0.0;
-      for(size_t j = 0; j < fVec.size(); ++j) {
-        aStarNum += (fHat[j] * fVec[j]);
-        aStarDen += (fHat[j] * fHat[j]);
+      for(size_t j = 0; j < fHat.size(); ++j) {
+        fHat[j] = 0;
       }//end j
-      aStar[i] = aStarNum/aStarDen;
+      double aNum = 0.0;
+      double aDen = 0.0;
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        aNum += (fHat[j] * fVec[j]);
+        aDen += (fHat[j] * fHat[j]);
+      }//end j
+      aStar[i] = aNum/aDen;
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   }
@@ -1351,80 +1392,5 @@ void computePstar(DM da, Vec vec, std::vector<int>& pStar) {
     }//end zi
   }
 }
-
-/*
-   void applyLS(LSdata* data, Vec g, Vec v1, Vec v2, double a[2],
-   int maxIters, double tgtNorm, double currNorm) {
-   MatMult((data->Kmat), v1, (data->w1));
-   MatMult((data->Kmat), v2, (data->w2));
-   double Hmat[2][2];
-   VecDot((data->w1), (data->w1), &(Hmat[0][0]));
-   VecDot((data->w1), (data->w2), &(Hmat[0][1]));
-   Hmat[1][0] = Hmat[0][1];
-   VecDot((data->w2), (data->w2), &(Hmat[1][1]));
-   double eig[2];
-   eigenVals2x2(Hmat, eig);
-   double minEig = ((eig[0] < eig[1]) ? (eig[0]) : (eig[1]));
-   double Hinv[2][2];
-   if(minEig <= 1.0e-12) {
-   double shift = 1.0 - minEig;
-   double Lmat[2][2];
-   Lmat[0][0] = Hmat[0][0] + shift;
-   Lmat[0][1] = Hmat[0][1];
-   Lmat[1][0] = Hmat[1][0];
-   Lmat[1][1] = Hmat[1][1] + shift;
-   matInvert2x2(Lmat, Hinv);
-   } else {
-   matInvert2x2(Hmat, Hinv);
-   }
-   double w1g;
-   double w2g;
-   VecDot((data->w1), g, &w1g);
-   VecDot((data->w2), g, &w2g);
-   a[0] = a[1] = 0.0;
-   double gDotG = currNorm*currNorm; 
-   double tgtNrmSqr = tgtNorm*tgtNorm;
-   double obj = gDotG;
-   for(int iter = 0; iter < maxIters; ++iter) {
-   if(obj <= tgtNrmSqr) {
-   break;
-   }
-   double grad[2];
-   grad[0] = -w1g + (a[0]*Hmat[0][0]) + (a[1]*Hmat[1][0]);
-   grad[1] = -w2g + (a[0]*Hmat[0][1]) + (a[1]*Hmat[1][1]);
-   if((fabs(grad[0]) <= 1.0e-12) && (fabs(grad[1]) <= 1.0e-12)) {
-   break;
-   }
-   double step[2];
-   matMult2x2(Hinv, grad, step);
-   if((fabs(step[0]) <= 1.0e-12) && (fabs(step[1]) <= 1.0e-12)) {
-   break;
-   }
-   double alpha = 1.0;
-   while(alpha >= 1.0e-12) {
-   double tmp[2]; 
-   tmp[0] = a[0] - (alpha*step[0]);
-   tmp[1] = a[1] - (alpha*step[1]);
-   double tmpObj = gDotG -2.0*((tmp[0]*w1g) + (tmp[1]*w2g));
-   for(int r = 0; r < 2; ++r) {
-   for(int c = 0; c < 2; ++c) {
-   tmpObj += (tmp[r]*tmp[c]*Hmat[r][c]);
-   }//end c
-   }//end r
-   if(tmpObj < obj) {
-   obj = tmpObj;
-   a[0] = tmp[0];
-   a[1] = tmp[1];
-   break;
-   } else {
-   alpha *= 0.5;
-   }
-   }
-   if(alpha < 1.0e-12) {
-   break;
-   }
-}//end iter
-}
-*/
 
 
