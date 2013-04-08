@@ -26,29 +26,13 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
   DMDAGetInfo((data->daH), &dim, &Nx, &Ny, &Nz, PETSC_NULL, PETSC_NULL, PETSC_NULL,
       &dofsPerNode, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
-  PetscInt xs;
-  PetscInt ys;
-  PetscInt zs;
-  PetscInt nx;
-  PetscInt ny;
-  PetscInt nz;
-  DMDAGetCorners((data->daH), &xs, &ys, &zs, &nx, &ny, &nz);
-
   long double hx = 1.0L/(static_cast<long double>(Nx - 1));
   long double hy = 0;
-  if(dim < 2) {
-    ys = 0;
-    ny = 1;
-    Ny = 1;
-  } else {
+  if(dim > 1) {
     hy = 1.0L/(static_cast<long double>(Ny - 1));
   }
   long double hz = 0;
-  if(dim < 3) {
-    zs = 0;
-    nz = 1;
-    Nz = 1;
-  } else {
+  if(dim > 2) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
@@ -307,6 +291,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       if(ye >= Ny) {
         ye = Ny - 1;
       }
+      int nx = xe - xs + 1;
       std::vector<double> fVec; 
       for(int yi = ys; yi <= ye; ++yi) {
         for(int xi = xs; xi <= xe; ++xi) {
@@ -316,10 +301,45 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         }//end xi
       }//end yi
       std::vector<double> fHat(fVec.size());
+      std::vector<double> rVec(fVec.size());
+      std::vector<double> gradFhat(fVec.size());
       double cSqr = cStar[i] * cStar[i];
       for(size_t j = 0; j < fHat.size(); ++j) {
         fHat[j] = 0;
       }//end j
+      for(size_t j = 0; j < fHat.size(); ++j) {
+        fHat[j] *= jac;
+      }//end j
+      if(xs == 0) {
+        for(int yi = ys; yi <= ye; ++yi) {
+          for(int d = 0; d <= (data->K); ++d) {
+            int id = ((yi - ys)*nx*dofsPerNode) + (d*((data->K) + 1));
+            fHat[id] = 0;
+          }//end d
+        }//end yi
+      }
+      if(xe == (Nx - 1)) {
+        for(int yi = ys; yi <= ye; ++yi) {
+          for(int d = 0; d <= (data->K); ++d) {
+            int id = ((((yi - ys)*nx) + (xe - xs))*dofsPerNode) + (d*((data->K) + 1));
+            fHat[id] = 0;
+          }//end d
+        }//end yi
+      }
+      if(ys == 0) {
+        for(int xi = xs; xi <= xe; ++xi) {
+          for(int d = 0; d <= (data->K); ++d) {
+            int id = ((xi - xs)*dofsPerNode) + d;
+            fHat[id] = 0;
+          }//end d
+        }//end xi
+      }
+      if(ye == (Ny - 1)) {
+        for(int xi = xs; xi <= xe; ++xi) {
+          for(int d = 0; d <= (data->K); ++d) {
+          }//end d
+        }//end xi
+      }
       double aNum = 0.0;
       double aDen = 0.0;
       for(size_t j = 0; j < fVec.size(); ++j) {
@@ -327,6 +347,14 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         aDen += (fHat[j] * fHat[j]);
       }//end j
       aStar[i] = aNum/aDen;
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        rVec[j] = (aStar[i] * fHat[j]) - fVec[j];
+      }//end j
+      double oHat = 0;
+      for(size_t j = 0; j < rVec.size(); ++j) {
+        oHat += (rVec[j] * rVec[j]);
+      }//end j
+      oHat *= 0.5;
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   } else {
@@ -371,9 +399,14 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         }//end yi
       }//end zi
       std::vector<double> fHat(fVec.size());
+      std::vector<double> rVec(fVec.size());
+      std::vector<double> gradFhat(fVec.size());
       double cSqr = cStar[i] * cStar[i];
       for(size_t j = 0; j < fHat.size(); ++j) {
         fHat[j] = 0;
+      }//end j
+      for(size_t j = 0; j < fHat.size(); ++j) {
+        fHat[j] *= jac;
       }//end j
       double aNum = 0.0;
       double aDen = 0.0;
@@ -382,6 +415,14 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         aDen += (fHat[j] * fHat[j]);
       }//end j
       aStar[i] = aNum/aDen;
+      for(size_t j = 0; j < fVec.size(); ++j) {
+        rVec[j] = (aStar[i] * fHat[j]) - fVec[j];
+      }//end j
+      double oHat = 0;
+      for(size_t j = 0; j < rVec.size(); ++j) {
+        oHat += (rVec[j] * rVec[j]);
+      }//end j
+      oHat *= 0.5;
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   }
