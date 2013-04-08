@@ -52,6 +52,14 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
+  long double jac = hx * 0.5L;
+  if(dim > 1) {
+    jac *= (hy * 0.5L);
+  }
+  if(dim > 2) {
+    jac *= (hz * 0.5L);
+  }
+
   std::vector<int> pStar;
   computePstar((data->daH), high, pStar);
 
@@ -67,6 +75,23 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
     aStar.resize((pStar.size()/3), 0.0);
     cStar.resize(aStar.size(), std::sqrt((hx*hx) + (hy*hy) + (hz*hz)));
   }
+
+  int numGaussPts = (2*(data->K)) + 2;
+
+  std::vector<long double> gPt(numGaussPts);
+  std::vector<long double> gWt(numGaussPts);
+  gaussQuad(gPt, gWt);
+
+  std::vector<std::vector<std::vector<long double> > > shFnVals(2);
+  for(int node = 0; node < 2; ++node) {
+    shFnVals[node].resize((data->K) + 1);
+    for(int dof = 0; dof <= (data->K); ++dof) {
+      (shFnVals[node][dof]).resize(numGaussPts);
+      for(int g = 0; g < numGaussPts; ++g) {
+        shFnVals[node][dof][g] = eval1DshFn(node, dof, (data->K), (*(data->coeffs))[data->K], gPt[g]);
+      }//end g
+    }//end dof
+  }//end node
 
   Vec loc;
   DMGetLocalVector((data->daH), &loc);
@@ -100,6 +125,31 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       for(size_t j = 0; j < fHat.size(); ++j) {
         fHat[j] = 0;
       }//end j
+      for(int xi = xs; xi < xe; ++xi) {
+        long double xa = (static_cast<long double>(xi))*hx;
+        for(int node = 0; node < 2; ++node) {
+          for(int dof = 0; dof <= (data->K); ++dof) {
+            for(int g = 0; g < numGaussPts; ++g) {
+              long double xg = coordLocalToGlobal(gPt[g], xa, hx);
+              int deltaX = xg - xSt;
+              double denom = (deltaX*deltaX) - (hx*hx);
+              double force = std::exp(-cSqr/denom);
+              int id = ((xi + node - xs)*dofsPerNode) + dof;
+              fHat[id] += ( gWt[g] * shFnVals[node][dof][g] * force );
+            }//end g
+          }//end dof
+        }//end node
+      }//end xi
+      for(size_t j = 0; j < fHat.size(); ++j) {
+        fHat[j] *= jac;
+      }//end j
+      if(xs == 0) {
+        fHat[0] = 0;
+      }
+      if(xe == (Nx - 1)) {
+        int id = (xe - xs) * dofsPerNode;
+        fHat[id] = 0;
+      }
       double aNum = 0.0;
       double aDen = 0.0;
       for(size_t j = 0; j < fVec.size(); ++j) {
@@ -122,6 +172,31 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         for(size_t j = 0; j < gradFhat.size(); ++j) {
           gradFhat[j] = 0;
         }//end j
+        for(int xi = xs; xi < xe; ++xi) {
+          long double xa = (static_cast<long double>(xi))*hx;
+          for(int node = 0; node < 2; ++node) {
+            for(int dof = 0; dof <= (data->K); ++dof) {
+              for(int g = 0; g < numGaussPts; ++g) {
+                long double xg = coordLocalToGlobal(gPt[g], xa, hx);
+                int deltaX = xg - xSt;
+                double denom = (deltaX*deltaX) - (hx*hx);
+                double force = (std::exp(-cSqr/denom))*(-2.0*cStar[i]/denom);
+                int id = ((xi + node - xs)*dofsPerNode) + dof;
+                gradFhat[id] += ( gWt[g] * shFnVals[node][dof][g] * force );
+              }//end g
+            }//end dof
+          }//end node
+        }//end xi
+        for(size_t j = 0; j < gradFhat.size(); ++j) {
+          gradFhat[j] *= jac;
+        }//end j
+        if(xs == 0) {
+          gradFhat[0] = 0;
+        }
+        if(xe == (Nx - 1)) {
+          int id = (xe - xs) * dofsPerNode;
+          gradFhat[id] = 0;
+        }
         double term1 = 0;
         double term2 = 0;
         for(size_t j = 0; j < fVec.size(); ++j) {
@@ -152,7 +227,49 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         while(alpha > 1.0e-12) {
           double tmp = cStar[i] + (alpha * step); 
           cSqr = tmp * tmp;
+          for(size_t j = 0; j < fHat.size(); ++j) {
+            fHat[j] = 0;
+          }//end j
+          for(int xi = xs; xi < xe; ++xi) {
+            long double xa = (static_cast<long double>(xi))*hx;
+            for(int node = 0; node < 2; ++node) {
+              for(int dof = 0; dof <= (data->K); ++dof) {
+                for(int g = 0; g < numGaussPts; ++g) {
+                  long double xg = coordLocalToGlobal(gPt[g], xa, hx);
+                  int deltaX = xg - xSt;
+                  double denom = (deltaX*deltaX) - (hx*hx);
+                  double force = std::exp(-cSqr/denom);
+                  int id = ((xi + node - xs)*dofsPerNode) + dof;
+                  fHat[id] += ( gWt[g] * shFnVals[node][dof][g] * force );
+                }//end g
+              }//end dof
+            }//end node
+          }//end xi
+          for(size_t j = 0; j < fHat.size(); ++j) {
+            fHat[j] *= jac;
+          }//end j
+          if(xs == 0) {
+            fHat[0] = 0;
+          }
+          if(xe == (Nx - 1)) {
+            int id = (xe - xs) * dofsPerNode;
+            fHat[id] = 0;
+          }
+          double aNum = 0.0;
+          double aDen = 0.0;
+          for(size_t j = 0; j < fVec.size(); ++j) {
+            aNum += (fHat[j] * fVec[j]);
+            aDen += (fHat[j] * fHat[j]);
+          }//end j
           double tmpAstar = aNum/aDen;
+          for(size_t j = 0; j < fVec.size(); ++j) {
+            rVec[j] = (tmpAstar * fHat[j]) - fVec[j];
+          }//end j
+          double tmpObj = 0;
+          for(size_t j = 0; j < rVec.size(); ++j) {
+            tmpObj += (rVec[j] * rVec[j]);
+          }//end j
+          tmpObj *= 0.5;
           if(tmpObj < oHat) {
             oHat = tmpObj;
             cStar[i] = tmp;
@@ -271,7 +388,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
 
   DMRestoreLocalVector((data->daH), &loc);
 
-  computeFhat((data->daL), ((data->K) - 1), (*(data->coeffs))[((data->K) - 1)], pStar,
+  computeFhat((data->daL), ((data->K) - 1), (*(data->coeffs))[(data->K) - 1], pStar,
       aStar, cStar, low);
 }
 
@@ -294,9 +411,7 @@ void computeFhat(DM da, int K, std::vector<long long int>& coeffs, std::vector<i
     hz = 1.0L/(static_cast<long double>(Nz - 1));
   }
 
-  PetscInt extraNumGpts = 0;
-  //PetscOptionsGetInt(PETSC_NULL, "-extraGptsFhat", &extraNumGpts, PETSC_NULL);
-  int numGaussPts = (2*K) + 2 + extraNumGpts;
+  int numGaussPts = (2*K) + 2;
 
   std::vector<long double> gPt(numGaussPts);
   std::vector<long double> gWt(numGaussPts);
