@@ -357,6 +357,144 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         oHat += (rVec[j] * rVec[j]);
       }//end j
       oHat *= 0.5;
+      for(int iter = 0; iter < 100; ++iter) {
+        if(oHat <= 1.0e-12) {
+          break;
+        }
+        for(size_t j = 0; j < gradFhat.size(); ++j) {
+          gradFhat[j] = 0;
+        }//end j
+        for(size_t j = 0; j < gradFhat.size(); ++j) {
+          gradFhat[j] *= jac;
+        }//end j
+        if(xs == 0) {
+          for(int yi = ys; yi <= ye; ++yi) {
+            for(int d = 0; d <= (data->K); ++d) {
+              int id = ((yi - ys)*nx*dofsPerNode) + (d*((data->K) + 1));
+              gradFhat[id] = 0;
+            }//end d
+          }//end yi
+        }
+        if(xe == (Nx - 1)) {
+          for(int yi = ys; yi <= ye; ++yi) {
+            for(int d = 0; d <= (data->K); ++d) {
+              int id = ((((yi - ys)*nx) + (xe - xs))*dofsPerNode) + (d*((data->K) + 1));
+              gradFhat[id] = 0;
+            }//end d
+          }//end yi
+        }
+        if(ys == 0) {
+          for(int xi = xs; xi <= xe; ++xi) {
+            for(int d = 0; d <= (data->K); ++d) {
+              int id = ((xi - xs)*dofsPerNode) + d;
+              gradFhat[id] = 0;
+            }//end d
+          }//end xi
+        }
+        if(ye == (Ny - 1)) {
+          for(int xi = xs; xi <= xe; ++xi) {
+            for(int d = 0; d <= (data->K); ++d) {
+              int id = ((((ye - ys)*nx) + (xi - xs))*dofsPerNode) + d;
+              gradFhat[id] = 0;
+            }//end d
+          }//end xi
+        }
+        double term1 = 0;
+        double term2 = 0;
+        for(size_t j = 0; j < fVec.size(); ++j) {
+          term1 += (gradFhat[j] * fVec[j]);
+          term2 += (fHat[j] * gradFhat[j]);
+        }//end j
+        double gradA = ((aDen * term1) - (2.0 * term2 * aNum))/(aDen * aDen);
+        std::vector<double> jVec(fVec.size());
+        for(size_t j = 0; j < fVec.size(); ++j) {
+          jVec[j] = (gradA * fHat[j]) + (aStar[i] * gradFhat[j]);
+        }//end j
+        double gradO = 0;
+        for(size_t j = 0; j < rVec.size(); ++j) {
+          gradO += (rVec[j] * jVec[j]);
+        }//end j
+        if(fabs(gradO) <= 1.0e-12) {
+          break;
+        }
+        double hessO = 0;
+        for(size_t j = 0; j < jVec.size(); ++j) {
+          hessO += (jVec[j] * jVec[j]);
+        }//end j
+        double step = -gradO/hessO;
+        if(fabs(step) <= 1.0e-12) {
+          break;
+        }
+        double alpha = 1.0;
+        while(alpha > 1.0e-12) {
+          double tmp = cStar[i] + (alpha * step); 
+          cSqr = tmp * tmp;
+          for(size_t j = 0; j < fHat.size(); ++j) {
+            fHat[j] = 0;
+          }//end j
+          for(size_t j = 0; j < fHat.size(); ++j) {
+            fHat[j] *= jac;
+          }//end j
+          if(xs == 0) {
+            for(int yi = ys; yi <= ye; ++yi) {
+              for(int d = 0; d <= (data->K); ++d) {
+                int id = ((yi - ys)*nx*dofsPerNode) + (d*((data->K) + 1));
+                fHat[id] = 0;
+              }//end d
+            }//end yi
+          }
+          if(xe == (Nx - 1)) {
+            for(int yi = ys; yi <= ye; ++yi) {
+              for(int d = 0; d <= (data->K); ++d) {
+                int id = ((((yi - ys)*nx) + (xe - xs))*dofsPerNode) + (d*((data->K) + 1));
+                fHat[id] = 0;
+              }//end d
+            }//end yi
+          }
+          if(ys == 0) {
+            for(int xi = xs; xi <= xe; ++xi) {
+              for(int d = 0; d <= (data->K); ++d) {
+                int id = ((xi - xs)*dofsPerNode) + d;
+                fHat[id] = 0;
+              }//end d
+            }//end xi
+          }
+          if(ye == (Ny - 1)) {
+            for(int xi = xs; xi <= xe; ++xi) {
+              for(int d = 0; d <= (data->K); ++d) {
+                int id = ((((ye - ys)*nx) + (xi - xs))*dofsPerNode) + d;
+                fHat[id] = 0;
+              }//end d
+            }//end xi
+          }
+          double aNum = 0.0;
+          double aDen = 0.0;
+          for(size_t j = 0; j < fVec.size(); ++j) {
+            aNum += (fHat[j] * fVec[j]);
+            aDen += (fHat[j] * fHat[j]);
+          }//end j
+          double tmpAstar = aNum/aDen;
+          for(size_t j = 0; j < fVec.size(); ++j) {
+            rVec[j] = (tmpAstar * fHat[j]) - fVec[j];
+          }//end j
+          double tmpObj = 0;
+          for(size_t j = 0; j < rVec.size(); ++j) {
+            tmpObj += (rVec[j] * rVec[j]);
+          }//end j
+          tmpObj *= 0.5;
+          if(tmpObj < oHat) {
+            oHat = tmpObj;
+            cStar[i] = tmp;
+            aStar[i] = tmpAstar;
+            break;
+          } else {
+            alpha *= 0.5;
+          }
+        }//end while
+        if(alpha <= 1.0e-12) {
+          break;
+        }
+      }//end iter
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   } else {
@@ -505,6 +643,236 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         oHat += (rVec[j] * rVec[j]);
       }//end j
       oHat *= 0.5;
+      for(int iter = 0; iter < 100; ++iter) {
+        if(oHat <= 1.0e-12) {
+          break;
+        }
+        for(size_t j = 0; j < gradFhat.size(); ++j) {
+          gradFhat[j] = 0;
+        }//end j
+        for(size_t j = 0; j < gradFhat.size(); ++j) {
+          gradFhat[j] *= jac;
+        }//end j
+        if(xs == 0) {
+          for(int zi = zs; zi <= ze; ++zi) {
+            for(int yi = ys; yi <= ye; ++yi) {
+              for(int dz = 0; dz <= (data->K); ++dz) {
+                for(int dy = 0; dy <= (data->K); ++dy) {
+                  int id = ((((zi - zs)*ny) + (yi - ys))*nx*dofsPerNode) +
+                    (((dz*((data->K) + 1)) + dy)*((data->K) + 1));
+                  gradFhat[id] = 0;
+                }//dy
+              }//dz
+            }//end yi
+          }//end zi
+        }
+        if(xe == (Nx - 1)) {
+          for(int zi = zs; zi <= ze; ++zi) {
+            for(int yi = ys; yi <= ye; ++yi) {
+              for(int dz = 0; dz <= (data->K); ++dz) {
+                for(int dy = 0; dy <= (data->K); ++dy) {
+                  int id = ((((((zi - zs)*ny) + (yi - ys))*nx) + (xe - xs))*dofsPerNode) +
+                    (((dz*((data->K) + 1)) + dy)*((data->K) + 1));
+                  gradFhat[id] = 0;
+                }//dy
+              }//dz
+            }//end yi
+          }//end zi
+        }
+        if(ys == 0) {
+          for(int zi = zs; zi <= ze; ++zi) {
+            for(int xi = xs; xi <= xe; ++xi) {
+              for(int dz = 0; dz <= (data->K); ++dz) {
+                for(int dx = 0; dx <= (data->K); ++dx) {
+                  int id = ((((zi - zs)*ny*nx) + (xi - xs))*dofsPerNode) +
+                    (dz*((data->K) + 1)*((data->K) + 1)) + dx;
+                  gradFhat[id] = 0;
+                }//dx
+              }//dz
+            }//end xi
+          }//end zi
+        }
+        if(ye == (Ny - 1)) {
+          for(int zi = zs; zi <= ze; ++zi) {
+            for(int xi = xs; xi <= xe; ++xi) {
+              for(int dz = 0; dz <= (data->K); ++dz) {
+                for(int dx = 0; dx <= (data->K); ++dx) {
+                  int id = ((((((zi - zs)*ny) + (ye - ys))*nx) + (xi - xs))*dofsPerNode) + 
+                    (dz*((data->K) + 1)*((data->K) + 1)) + dx;
+                  gradFhat[id] = 0;
+                }//dx
+              }//dz
+            }//end xi
+          }//end zi
+        }
+        if(zs == 0) {
+          for(int yi = ys; yi <= ye; ++yi) {
+            for(int xi = xs; xi <= xe; ++xi) {
+              for(int dy = 0; dy <= (data->K); ++dy) {
+                for(int dx = 0; dx <= (data->K); ++dx) {
+                  int id = ((((yi - ys)*nx) + (xi - xs))*dofsPerNode) +
+                    (dy*((data->K) + 1)) + dx;
+                  gradFhat[id] = 0;
+                }//dx
+              }//dy
+            }//end xi
+          }//end yi
+        }
+        if(ze == (Nz - 1)) {
+          for(int yi = ys; yi <= ye; ++yi) {
+            for(int xi = xs; xi <= xe; ++xi) {
+              for(int dy = 0; dy <= (data->K); ++dy) {
+                for(int dx = 0; dx <= (data->K); ++dx) {
+                  int id = ((((((ze - zs)*ny) + (yi - ys))*nx) + (xi - xs))*dofsPerNode) +
+                    (dy*((data->K) + 1)) + dx;
+                  gradFhat[id] = 0;
+                }//dx
+              }//dy
+            }//end xi
+          }//end yi
+        }
+        double term1 = 0;
+        double term2 = 0;
+        for(size_t j = 0; j < fVec.size(); ++j) {
+          term1 += (gradFhat[j] * fVec[j]);
+          term2 += (fHat[j] * gradFhat[j]);
+        }//end j
+        double gradA = ((aDen * term1) - (2.0 * term2 * aNum))/(aDen * aDen);
+        std::vector<double> jVec(fVec.size());
+        for(size_t j = 0; j < fVec.size(); ++j) {
+          jVec[j] = (gradA * fHat[j]) + (aStar[i] * gradFhat[j]);
+        }//end j
+        double gradO = 0;
+        for(size_t j = 0; j < rVec.size(); ++j) {
+          gradO += (rVec[j] * jVec[j]);
+        }//end j
+        if(fabs(gradO) <= 1.0e-12) {
+          break;
+        }
+        double hessO = 0;
+        for(size_t j = 0; j < jVec.size(); ++j) {
+          hessO += (jVec[j] * jVec[j]);
+        }//end j
+        double step = -gradO/hessO;
+        if(fabs(step) <= 1.0e-12) {
+          break;
+        }
+        double alpha = 1.0;
+        while(alpha > 1.0e-12) {
+          double tmp = cStar[i] + (alpha * step); 
+          cSqr = tmp * tmp;
+          for(size_t j = 0; j < fHat.size(); ++j) {
+            fHat[j] = 0;
+          }//end j
+          for(size_t j = 0; j < fHat.size(); ++j) {
+            fHat[j] *= jac;
+          }//end j
+          if(xs == 0) {
+            for(int zi = zs; zi <= ze; ++zi) {
+              for(int yi = ys; yi <= ye; ++yi) {
+                for(int dz = 0; dz <= (data->K); ++dz) {
+                  for(int dy = 0; dy <= (data->K); ++dy) {
+                    int id = ((((zi - zs)*ny) + (yi - ys))*nx*dofsPerNode) +
+                      (((dz*((data->K) + 1)) + dy)*((data->K) + 1));
+                    fHat[id] = 0;
+                  }//dy
+                }//dz
+              }//end yi
+            }//end zi
+          }
+          if(xe == (Nx - 1)) {
+            for(int zi = zs; zi <= ze; ++zi) {
+              for(int yi = ys; yi <= ye; ++yi) {
+                for(int dz = 0; dz <= (data->K); ++dz) {
+                  for(int dy = 0; dy <= (data->K); ++dy) {
+                    int id = ((((((zi - zs)*ny) + (yi - ys))*nx) + (xe - xs))*dofsPerNode) +
+                      (((dz*((data->K) + 1)) + dy)*((data->K) + 1));
+                    fHat[id] = 0;
+                  }//dy
+                }//dz
+              }//end yi
+            }//end zi
+          }
+          if(ys == 0) {
+            for(int zi = zs; zi <= ze; ++zi) {
+              for(int xi = xs; xi <= xe; ++xi) {
+                for(int dz = 0; dz <= (data->K); ++dz) {
+                  for(int dx = 0; dx <= (data->K); ++dx) {
+                    int id = ((((zi - zs)*ny*nx) + (xi - xs))*dofsPerNode) +
+                      (dz*((data->K) + 1)*((data->K) + 1)) + dx;
+                    fHat[id] = 0;
+                  }//dx
+                }//dz
+              }//end xi
+            }//end zi
+          }
+          if(ye == (Ny - 1)) {
+            for(int zi = zs; zi <= ze; ++zi) {
+              for(int xi = xs; xi <= xe; ++xi) {
+                for(int dz = 0; dz <= (data->K); ++dz) {
+                  for(int dx = 0; dx <= (data->K); ++dx) {
+                    int id = ((((((zi - zs)*ny) + (ye - ys))*nx) + (xi - xs))*dofsPerNode) + 
+                      (dz*((data->K) + 1)*((data->K) + 1)) + dx;
+                    fHat[id] = 0;
+                  }//dx
+                }//dz
+              }//end xi
+            }//end zi
+          }
+          if(zs == 0) {
+            for(int yi = ys; yi <= ye; ++yi) {
+              for(int xi = xs; xi <= xe; ++xi) {
+                for(int dy = 0; dy <= (data->K); ++dy) {
+                  for(int dx = 0; dx <= (data->K); ++dx) {
+                    int id = ((((yi - ys)*nx) + (xi - xs))*dofsPerNode) +
+                      (dy*((data->K) + 1)) + dx;
+                    fHat[id] = 0;
+                  }//dx
+                }//dy
+              }//end xi
+            }//end yi
+          }
+          if(ze == (Nz - 1)) {
+            for(int yi = ys; yi <= ye; ++yi) {
+              for(int xi = xs; xi <= xe; ++xi) {
+                for(int dy = 0; dy <= (data->K); ++dy) {
+                  for(int dx = 0; dx <= (data->K); ++dx) {
+                    int id = ((((((ze - zs)*ny) + (yi - ys))*nx) + (xi - xs))*dofsPerNode) +
+                      (dy*((data->K) + 1)) + dx;
+                    fHat[id] = 0;
+                  }//dx
+                }//dy
+              }//end xi
+            }//end yi
+          }
+          double aNum = 0.0;
+          double aDen = 0.0;
+          for(size_t j = 0; j < fVec.size(); ++j) {
+            aNum += (fHat[j] * fVec[j]);
+            aDen += (fHat[j] * fHat[j]);
+          }//end j
+          double tmpAstar = aNum/aDen;
+          for(size_t j = 0; j < fVec.size(); ++j) {
+            rVec[j] = (tmpAstar * fHat[j]) - fVec[j];
+          }//end j
+          double tmpObj = 0;
+          for(size_t j = 0; j < rVec.size(); ++j) {
+            tmpObj += (rVec[j] * rVec[j]);
+          }//end j
+          tmpObj *= 0.5;
+          if(tmpObj < oHat) {
+            oHat = tmpObj;
+            cStar[i] = tmp;
+            aStar[i] = tmpAstar;
+            break;
+          } else {
+            alpha *= 0.5;
+          }
+        }//end while
+        if(alpha <= 1.0e-12) {
+          break;
+        }
+      }//end iter
     }//end i
     DMDAVecRestoreArrayDOF((data->daH), loc, &arr);
   }
