@@ -122,14 +122,8 @@ int main(int argc, char *argv[]) {
   std::vector<Vec> tmpCvec;
   buildPmat(dim, dofsPerNode, Pmat, tmpCvec, da, activeComms, activeNpes); 
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  std::cout<<rank<<" BuildP Done"<<std::endl;
-
   computePmat(dim, factorialsList, Pmat, Nz, Ny, Nx, partZ, partY, partX, offsets,
       scanZ, scanY, scanX, dofsPerNode, coeffs, K);
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  std::cout<<rank<<" compP Done"<<std::endl;
 
   PetscLogEventEnd(buildPmatEvent, 0, 0, 0, 0);
 
@@ -138,13 +132,7 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  std::cout<<rank<<" buildK Done"<<std::endl;
-
   assembleKmat(dim, Nz, Ny, Nx, Kmat, da, K, coeffs, factorialsList, print);
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  std::cout<<rank<<" assembleK Done"<<std::endl;
 
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 
@@ -166,9 +154,6 @@ int main(int argc, char *argv[]) {
   makeBoundariesConsistent(da[da.size() - 1], sol, rhs, K);
 
   PetscLogEventEnd(rhsEvent, 0, 0, 0, 0);
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  std::cout<<rank<<" RHS Done"<<std::endl;
 
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
