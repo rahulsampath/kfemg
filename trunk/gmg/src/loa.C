@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <cmath>
 
+#ifdef DEBUG
+#include <cassert>
+#endif
+
 void setupLOA(LOAdata* data, int K, DM daL, DM daH,
     std::vector<std::vector<long long int> >& coeffs) {
   data->K = K;

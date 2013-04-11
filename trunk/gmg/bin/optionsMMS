@@ -2,7 +2,7 @@
 -coeffsDirPath "../../common"
 
 -dim 3
--K 2
+-K 1
 
 -finestNx 17
 -finestNy 17
@@ -15,5 +15,5 @@
 -outer_ksp_monitor
 -outer_ksp_converged_reason
 
--log_summary
+%-log_summary
 

@@ -11,10 +11,7 @@
 #include "common/include/commonUtils.h"
 #include <iomanip>
 #include <iostream>
-
-#ifdef DEBUG
 #include <cassert>
-#endif
 
 PetscClassId gmgCookie;
 PetscLogEvent meshEvent;
@@ -83,9 +80,7 @@ int main(int argc, char *argv[]) {
   computePartition(dim, Nz, Ny, Nx, partZ, partY, partX, offsets, 
       scanZ, scanY, scanX, activeNpes, print);
   int nlevels = activeNpes.size();
-#ifdef DEBUG
   assert(activeNpes[nlevels - 1] == npes);
-#endif
 
   std::vector<MPI_Comm> activeComms;
   createActiveComms(activeNpes, activeComms);
