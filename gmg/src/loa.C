@@ -631,6 +631,47 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
       for(size_t j = 0; j < fHat.size(); ++j) {
         fHat[j] = 0;
       }//end j
+      for(int zi = zs; zi < ze; ++zi) {
+        long double za = (static_cast<long double>(zi))*hz;
+        for(int yi = ys; yi < ye; ++yi) {
+          long double ya = (static_cast<long double>(yi))*hy;
+          for(int xi = xs; xi < xe; ++xi) {
+            long double xa = (static_cast<long double>(xi))*hx;
+            for(int nodeZ = 0; nodeZ < 2; ++nodeZ) {
+              for(int nodeY = 0; nodeY < 2; ++nodeY) {
+                for(int nodeX = 0; nodeX < 2; ++nodeX) {
+                  for(int dofZ = 0; dofZ <= (data->K); ++dofZ) {
+                    for(int dofY = 0; dofY <= (data->K); ++dofY) {
+                      for(int dofX = 0; dofX <= (data->K); ++dofX) {
+                        for(int gZ = 0; gZ < numGaussPts; ++gZ) {
+                          long double zg = coordLocalToGlobal(gPt[gZ], za, hz);
+                          int deltaZ = zg - zSt;
+                          for(int gY = 0; gY < numGaussPts; ++gY) {
+                            long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+                            int deltaY = yg - ySt;
+                            for(int gX = 0; gX < numGaussPts; ++gX) {
+                              long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+                              int deltaX = xg - xSt;
+                              double denom = (deltaX*deltaX) + (deltaY*deltaY) + (deltaZ*deltaZ) 
+                                - (hx*hx) - (hy*hy) - (hz*hz);
+                              double force = std::exp(-cSqr/denom);
+                              int id = ((((((zi + nodeZ - zs)*ny) + (yi + nodeY - ys))*nx) +
+                                    (xi + nodeX - xs))*dofsPerNode) +
+                                (((dofZ*((data->K) + 1)) + dofY)*((data->K) + 1)) + dofX;
+                              fHat[id] += ( gWt[gX] * gWt[gY] * gWt[gZ] * shFnVals[nodeX][dofX][gX]
+                                  * shFnVals[nodeY][dofY][gY] * shFnVals[nodeZ][dofZ][gZ] * force );
+                            }//end gX
+                          }//end gY
+                        }//end gZ
+                      }//end dofX
+                    }//end dofY
+                  }//end dofZ
+                }//end nodeX
+              }//end nodeY
+            }//end nodeZ
+          }//end xi
+        }//end yi
+      }//end zi
       for(size_t j = 0; j < fHat.size(); ++j) {
         fHat[j] *= jac;
       }//end j
@@ -734,6 +775,47 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         for(size_t j = 0; j < gradFhat.size(); ++j) {
           gradFhat[j] = 0;
         }//end j
+        for(int zi = zs; zi < ze; ++zi) {
+          long double za = (static_cast<long double>(zi))*hz;
+          for(int yi = ys; yi < ye; ++yi) {
+            long double ya = (static_cast<long double>(yi))*hy;
+            for(int xi = xs; xi < xe; ++xi) {
+              long double xa = (static_cast<long double>(xi))*hx;
+              for(int nodeZ = 0; nodeZ < 2; ++nodeZ) {
+                for(int nodeY = 0; nodeY < 2; ++nodeY) {
+                  for(int nodeX = 0; nodeX < 2; ++nodeX) {
+                    for(int dofZ = 0; dofZ <= (data->K); ++dofZ) {
+                      for(int dofY = 0; dofY <= (data->K); ++dofY) {
+                        for(int dofX = 0; dofX <= (data->K); ++dofX) {
+                          for(int gZ = 0; gZ < numGaussPts; ++gZ) {
+                            long double zg = coordLocalToGlobal(gPt[gZ], za, hz);
+                            int deltaZ = zg - zSt;
+                            for(int gY = 0; gY < numGaussPts; ++gY) {
+                              long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+                              int deltaY = yg - ySt;
+                              for(int gX = 0; gX < numGaussPts; ++gX) {
+                                long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+                                int deltaX = xg - xSt;
+                                double denom = (deltaX*deltaX) + (deltaY*deltaY) + (deltaZ*deltaZ) 
+                                  - (hx*hx) - (hy*hy) - (hz*hz);
+                                double force = (std::exp(-cSqr/denom))*(-2.0*cStar[i]/denom);
+                                int id = ((((((zi + nodeZ - zs)*ny) + (yi + nodeY - ys))*nx) +
+                                      (xi + nodeX - xs))*dofsPerNode) +
+                                  (((dofZ*((data->K) + 1)) + dofY)*((data->K) + 1)) + dofX;
+                                gradFhat[id] += ( gWt[gX] * gWt[gY] * gWt[gZ] * shFnVals[nodeX][dofX][gX]
+                                    * shFnVals[nodeY][dofY][gY] * shFnVals[nodeZ][dofZ][gZ] * force );
+                              }//end gX
+                            }//end gY
+                          }//end gZ
+                        }//end dofX
+                      }//end dofY
+                    }//end dofZ
+                  }//end nodeX
+                }//end nodeY
+              }//end nodeZ
+            }//end xi
+          }//end yi
+        }//end zi
         for(size_t j = 0; j < gradFhat.size(); ++j) {
           gradFhat[j] *= jac;
         }//end j
@@ -848,6 +930,47 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
           for(size_t j = 0; j < fHat.size(); ++j) {
             fHat[j] = 0;
           }//end j
+          for(int zi = zs; zi < ze; ++zi) {
+            long double za = (static_cast<long double>(zi))*hz;
+            for(int yi = ys; yi < ye; ++yi) {
+              long double ya = (static_cast<long double>(yi))*hy;
+              for(int xi = xs; xi < xe; ++xi) {
+                long double xa = (static_cast<long double>(xi))*hx;
+                for(int nodeZ = 0; nodeZ < 2; ++nodeZ) {
+                  for(int nodeY = 0; nodeY < 2; ++nodeY) {
+                    for(int nodeX = 0; nodeX < 2; ++nodeX) {
+                      for(int dofZ = 0; dofZ <= (data->K); ++dofZ) {
+                        for(int dofY = 0; dofY <= (data->K); ++dofY) {
+                          for(int dofX = 0; dofX <= (data->K); ++dofX) {
+                            for(int gZ = 0; gZ < numGaussPts; ++gZ) {
+                              long double zg = coordLocalToGlobal(gPt[gZ], za, hz);
+                              int deltaZ = zg - zSt;
+                              for(int gY = 0; gY < numGaussPts; ++gY) {
+                                long double yg = coordLocalToGlobal(gPt[gY], ya, hy);
+                                int deltaY = yg - ySt;
+                                for(int gX = 0; gX < numGaussPts; ++gX) {
+                                  long double xg = coordLocalToGlobal(gPt[gX], xa, hx);
+                                  int deltaX = xg - xSt;
+                                  double denom = (deltaX*deltaX) + (deltaY*deltaY) + (deltaZ*deltaZ) 
+                                    - (hx*hx) - (hy*hy) - (hz*hz);
+                                  double force = std::exp(-cSqr/denom);
+                                  int id = ((((((zi + nodeZ - zs)*ny) + (yi + nodeY - ys))*nx) +
+                                        (xi + nodeX - xs))*dofsPerNode) +
+                                    (((dofZ*((data->K) + 1)) + dofY)*((data->K) + 1)) + dofX;
+                                  fHat[id] += ( gWt[gX] * gWt[gY] * gWt[gZ] * shFnVals[nodeX][dofX][gX]
+                                      * shFnVals[nodeY][dofY][gY] * shFnVals[nodeZ][dofZ][gZ] * force );
+                                }//end gX
+                              }//end gY
+                            }//end gZ
+                          }//end dofX
+                        }//end dofY
+                      }//end dofZ
+                    }//end nodeX
+                  }//end nodeY
+                }//end nodeZ
+              }//end xi
+            }//end yi
+          }//end zi
           for(size_t j = 0; j < fHat.size(); ++j) {
             fHat[j] *= jac;
           }//end j
