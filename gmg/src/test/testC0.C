@@ -10,10 +10,7 @@
 #include "common/include/commonUtils.h"
 #include <iomanip>
 #include <iostream>
-
-#ifdef DEBUG
 #include <cassert>
-#endif
 
 PetscClassId gmgCookie;
 PetscLogEvent meshEvent;
@@ -109,9 +106,7 @@ int main(int argc, char *argv[]) {
   std::vector<int> activeNpes;
   computePartition(dim, Nz, Ny, Nx, partZ, partY, partX, offsets, 
       scanZ, scanY, scanX, activeNpes, print);
-#ifdef DEBUG
   assert(activeNpes[activeNpes.size() - 1] == npes);
-#endif
 
   std::vector<MPI_Comm> activeComms;
   createActiveComms(activeNpes, activeComms);
@@ -127,8 +122,14 @@ int main(int argc, char *argv[]) {
   std::vector<Vec> tmpCvec;
   buildPmat(dim, dofsPerNode, Pmat, tmpCvec, da, activeComms, activeNpes); 
 
+  MPI_Barrier(MPI_COMM_WORLD);
+  std::cout<<rank<<" BuildP Done"<<std::endl;
+
   computePmat(dim, factorialsList, Pmat, Nz, Ny, Nx, partZ, partY, partX, offsets,
       scanZ, scanY, scanX, dofsPerNode, coeffs, K);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  std::cout<<rank<<" compP Done"<<std::endl;
 
   PetscLogEventEnd(buildPmatEvent, 0, 0, 0, 0);
 
@@ -137,7 +138,13 @@ int main(int argc, char *argv[]) {
   std::vector<Mat> Kmat;
   buildKmat(Kmat, da, print);
 
+  MPI_Barrier(MPI_COMM_WORLD);
+  std::cout<<rank<<" buildK Done"<<std::endl;
+
   assembleKmat(dim, Nz, Ny, Nx, Kmat, da, K, coeffs, factorialsList, print);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  std::cout<<rank<<" assembleK Done"<<std::endl;
 
   PetscLogEventEnd(buildKmatEvent, 0, 0, 0, 0);
 
@@ -159,6 +166,9 @@ int main(int argc, char *argv[]) {
   makeBoundariesConsistent(da[da.size() - 1], sol, rhs, K);
 
   PetscLogEventEnd(rhsEvent, 0, 0, 0, 0);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  std::cout<<rank<<" RHS Done"<<std::endl;
 
   PetscLogEventBegin(buildKmatEvent, 0, 0, 0, 0);
 
@@ -241,7 +251,7 @@ int main(int argc, char *argv[]) {
     if(currNorm <= 1.0e-12) {
       break;
     }
-    if(currNorm <= (1.0e-12*initNorm)) {
+    if(currNorm <= (1.0e-10*initNorm)) {
       break;
     }
     applyVcycle((nlevels - 1), ksp, Kmat, Pmat, tmpCvec, tmpRhs, tmpSol, res);
