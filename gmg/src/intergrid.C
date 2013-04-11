@@ -135,24 +135,30 @@ void computePmat(int dim, std::vector<unsigned long long int>& factorialsList, s
     std::vector<long long int>& coeffs, const int K) {
   if(dim == 1) {
     for(int lev = 0; lev < (Pmat.size()); ++lev) {
-      computePmat1D(factorialsList, Pmat[lev], Nx[lev], Nx[lev + 1], partX[lev], partX[lev + 1],
-          offsets[lev], scanX[lev], offsets[lev + 1], scanX[lev + 1], dofsPerNode, coeffs, K); 
+      if(Pmat[lev] != NULL) {
+        computePmat1D(factorialsList, Pmat[lev], Nx[lev], Nx[lev + 1], partX[lev], partX[lev + 1],
+            offsets[lev], scanX[lev], offsets[lev + 1], scanX[lev + 1], dofsPerNode, coeffs, K); 
+      }
     }//end lev
   } else if(dim == 2) {
     for(int lev = 0; lev < (Pmat.size()); ++lev) {
-      computePmat2D(factorialsList, Pmat[lev], Ny[lev], Nx[lev], Ny[lev + 1], Nx[lev + 1],
-          partY[lev], partX[lev], partY[lev + 1], partX[lev + 1], offsets[lev], scanY[lev],
-          scanX[lev], offsets[lev + 1], scanY[lev + 1], scanX[lev + 1], dofsPerNode, coeffs, K); 
+      if(Pmat[lev] != NULL) {
+        computePmat2D(factorialsList, Pmat[lev], Ny[lev], Nx[lev], Ny[lev + 1], Nx[lev + 1],
+            partY[lev], partX[lev], partY[lev + 1], partX[lev + 1], offsets[lev], scanY[lev],
+            scanX[lev], offsets[lev + 1], scanY[lev + 1], scanX[lev + 1], dofsPerNode, coeffs, K); 
+      }
     }//end lev
   } else {
     for(int lev = 0; lev < (Pmat.size()); ++lev) {
-      computePmat3D(factorialsList, Pmat[lev], Nz[lev], Ny[lev], Nx[lev],
-          Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
-          partZ[lev], partY[lev], partX[lev],
-          partZ[lev + 1], partY[lev + 1], partX[lev + 1],
-          offsets[lev], scanZ[lev], scanY[lev], scanX[lev],
-          offsets[lev + 1], scanZ[lev + 1], scanY[lev + 1], scanX[lev + 1],
-          dofsPerNode, coeffs, K); 
+      if(Pmat[lev] != NULL) {
+        computePmat3D(factorialsList, Pmat[lev], Nz[lev], Ny[lev], Nx[lev],
+            Nz[lev + 1], Ny[lev + 1], Nx[lev + 1],
+            partZ[lev], partY[lev], partX[lev],
+            partZ[lev + 1], partY[lev + 1], partX[lev + 1],
+            offsets[lev], scanZ[lev], scanY[lev], scanX[lev],
+            offsets[lev + 1], scanZ[lev + 1], scanY[lev + 1], scanX[lev + 1],
+            dofsPerNode, coeffs, K); 
+      }
     }//end lev
   }
 }
