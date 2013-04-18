@@ -2,7 +2,7 @@
 -coeffsDirPath "../../common"
 
 -dim 2
--K 2
+-K 1
 
 -finestNx 17
 -finestNy 17
