@@ -115,9 +115,11 @@ PetscErrorCode applyRTG(PC pc, Vec in, Vec out) {
     }
     MPI_Barrier(comm);
     std::cout<<"("<<rank<<"/"<<npes<<")"<<"Entering Restriction"<<std::endl;
+    MPI_Barrier(comm);
     applyRestriction(data->Pmat, data->tmpCvec, data->res, data->cRhs);
     MPI_Barrier(comm);
     std::cout<<"("<<rank<<"/"<<npes<<")"<<"Left Restriction"<<std::endl;
+    MPI_Barrier(comm);
     if(data->cKsp != NULL) {
       VecZeroEntries(data->cSol);
       KSPSolve(data->cKsp, data->cRhs, data->cSol);

@@ -2,12 +2,13 @@
 #include "gmg/include/intergrid.h"
 #include "common/include/commonUtils.h"
 
-#ifdef DEBUG
 #include <cassert>
-#endif
 
 void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
   PetscScalar* arr;
+  assert(Pmat != NULL);
+  assert(fVec != NULL);
+  assert(tmpCvec != NULL);
   if(cVec != NULL) {
     VecGetArray(cVec, &arr);
     VecPlaceArray(tmpCvec, arr);
@@ -21,6 +22,9 @@ void applyRestriction(Mat Pmat, Vec tmpCvec, Vec fVec, Vec cVec) {
 
 void applyProlongation(Mat Pmat, Vec tmpCvec, Vec cVec, Vec fVec) {
   PetscScalar* arr;
+  assert(Pmat != NULL);
+  assert(fVec != NULL);
+  assert(tmpCvec != NULL);
   if(cVec != NULL) {
     VecGetArray(cVec, &arr);
     VecPlaceArray(tmpCvec, arr);
