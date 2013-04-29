@@ -42,15 +42,6 @@ void destroySmoother(SmootherData* data) {
 
 void applySmoother(int maxIters, double tgtNorm, double currNorm,
     SmootherData* data, Vec in, Vec out) {
-  MPI_Comm comm;
-  PetscObjectGetComm((PetscObject)in, &comm);
-  MPI_Barrier(comm);
-  int rank;
-  int npes;
-  MPI_Comm_rank(comm, &rank);
-  MPI_Comm_size(comm, &npes);
-  std::cout<<"("<<rank<<"/"<<npes<<")"<<" Entered Smoother"<<std::endl;
-
   for(int iter = 0; iter < maxIters; ++iter) {
     if(currNorm <= 1.0e-12) {
       break;
@@ -73,9 +64,6 @@ void applySmoother(int maxIters, double tgtNorm, double currNorm,
     computeResidual(data->Kmat, out, in, data->res);
     VecNorm(data->res, NORM_2, &currNorm);
   }//end iter
-  
-  MPI_Barrier(comm);
-  std::cout<<"("<<rank<<"/"<<npes<<")"<<" Left Smoother"<<std::endl;
 }
 
 

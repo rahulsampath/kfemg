@@ -71,15 +71,6 @@ PetscErrorCode destroyRTG(PC pc) {
 }
 
 PetscErrorCode applyRTG(PC pc, Vec in, Vec out) {
-  MPI_Comm comm;
-  PetscObjectGetComm(((PetscObject)pc), &comm);
-  MPI_Barrier(comm);
-  int rank;
-  int npes;
-  MPI_Comm_rank(comm, &rank);
-  MPI_Comm_size(comm, &npes);
-  std::cout<<"("<<rank<<"/"<<npes<<")"<<" Entered ApplyRTG"<<std::endl;
-
   RTGdata* data;
   PCShellGetContext(pc, (void**)(&data));
   VecZeroEntries(out);
@@ -89,8 +80,6 @@ PetscErrorCode applyRTG(PC pc, Vec in, Vec out) {
   VecNorm(data->res, NORM_2, &currNorm);
   PetscReal initNorm = currNorm;
   double tgtNorm = 0.1*initNorm;
-  MPI_Barrier(comm);
-  std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-1 Pass"<<std::endl;
   for(int iter = 0; iter < 1000; ++iter) {
     if(currNorm <= 1.0e-12) {
       break;
@@ -99,45 +88,23 @@ PetscErrorCode applyRTG(PC pc, Vec in, Vec out) {
       break;
     }
     applySmoother((iter + 1), tgtNorm, currNorm, data->sData, in, out);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-2 Pass"<<std::endl;
     computeResidual(data->Kmat, out, in, data->res);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-3 Pass"<<std::endl;
     VecNorm(data->res, NORM_2, &currNorm);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-4 Pass"<<std::endl;
     if(currNorm <= 1.0e-12) {
       break;
     }
     if(currNorm <= tgtNorm) {
       break;
     }
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Entering Restriction"<<std::endl;
-    MPI_Barrier(comm);
     applyRestriction(data->Pmat, data->tmpCvec, data->res, data->cRhs);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Left Restriction"<<std::endl;
-    MPI_Barrier(comm);
     if(data->cKsp != NULL) {
       VecZeroEntries(data->cSol);
       KSPSolve(data->cKsp, data->cRhs, data->cSol);
     }
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-6 Pass"<<std::endl;
     applyProlongation(data->Pmat, data->tmpCvec, data->cSol, data->res);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-7 Pass"<<std::endl;
     VecAXPY(out, 1.0, data->res);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-8 Pass"<<std::endl;
     computeResidual(data->Kmat, out, in, data->res);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-9 Pass"<<std::endl;
     VecNorm(data->res, NORM_2, &currNorm);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-10 Pass"<<std::endl;
     if(currNorm <= 1.0e-12) {
       break;
     }
@@ -145,18 +112,9 @@ PetscErrorCode applyRTG(PC pc, Vec in, Vec out) {
       break;
     }
     applySmoother((iter + 1), tgtNorm, currNorm, data->sData, in, out);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-11 Pass"<<std::endl;
     computeResidual(data->Kmat, out, in, data->res);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-12 Pass"<<std::endl;
     VecNorm(data->res, NORM_2, &currNorm);
-    MPI_Barrier(comm);
-    std::cout<<"("<<rank<<"/"<<npes<<")"<<"Stage-12 Pass"<<std::endl;
   }//end iter
-
-  MPI_Barrier(comm);
-  std::cout<<"("<<rank<<"/"<<npes<<")"<<" Left ApplyRTG"<<std::endl;
 
   return 0;
 }
