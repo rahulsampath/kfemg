@@ -154,7 +154,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         oHat += (rVec[j] * rVec[j]);
       }//end j
       oHat *= 0.5;
-      for(int iter = 0; iter < 100; ++iter) {
+      for(int iter = 0; iter < 10; ++iter) {
         if(oHat <= 1.0e-12) {
           break;
         }
@@ -392,7 +392,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         oHat += (rVec[j] * rVec[j]);
       }//end j
       oHat *= 0.5;
-      for(int iter = 0; iter < 100; ++iter) {
+      for(int iter = 0; iter < 10; ++iter) {
         if(oHat <= 1.0e-12) {
           break;
         }
@@ -778,7 +778,7 @@ void applyLOA(LOAdata* data, Vec high, Vec low) {
         oHat += (rVec[j] * rVec[j]);
       }//end j
       oHat *= 0.5;
-      for(int iter = 0; iter < 100; ++iter) {
+      for(int iter = 0; iter < 10; ++iter) {
         if(oHat <= 1.0e-12) {
           break;
         }
