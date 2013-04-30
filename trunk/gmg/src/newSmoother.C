@@ -37,6 +37,10 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
   KSPDefaultConvergedSetUIRNorm(data->ksp2);
   KSPSetNormType(data->ksp2, KSP_NORM_UNPRECONDITIONED);
   data->ksp3 = NULL;
+  data->low = NULL;
+  data->high = NULL;
+  data->loaRhs = NULL;
+  data->loaSol = NULL;
   if(K > 0) {
     data->daL = da[K - 1][currLev];
     PC pc3;
