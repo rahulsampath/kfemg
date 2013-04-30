@@ -24,6 +24,8 @@ void setupNewRTG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
   setupNewSmoother(data->sData, K, currLev, da, coeffs, Kmat, Pmat, tmpCvec);
   MatGetVecs(Kmat[K][currLev], PETSC_NULL, &(data->res));
   data->cKsp = NULL;
+  data->cRhs = NULL;
+  data->cSol = NULL;
   if(Kmat[K][currLev - 1] != NULL) {
     MPI_Comm comm;
     PetscObjectGetComm(((PetscObject)(Kmat[K][currLev - 1])), &comm);
