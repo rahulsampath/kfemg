@@ -8,7 +8,7 @@
 #include "petscmat.h"
 #include "petscksp.h"
 #include "petscpc.h"
-#include "gmg/include/newSmoother.h"
+#include "gmg/include/newRtg/newSmoother.h"
 #include <vector>
 
 struct NewRTGdata {

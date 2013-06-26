@@ -1,5 +1,5 @@
 
-#include "gmg/include/smoother.h"
+#include "gmg/include/oldRtg/smoother.h"
 #include "gmg/include/gmgUtils.h"
 
 #include <iostream>
