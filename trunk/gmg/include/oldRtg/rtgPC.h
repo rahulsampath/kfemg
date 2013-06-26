@@ -8,7 +8,7 @@
 #include "petscksp.h"
 #include "petscpc.h"
 #include "petscdmda.h"
-#include "gmg/include/smoother.h"
+#include "gmg/include/oldRtg/smoother.h"
 #include <vector>
 
 struct RTGdata {

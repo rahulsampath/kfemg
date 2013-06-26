@@ -4,7 +4,7 @@
 #include "gmg/include/gmgUtils.h"
 #include "gmg/include/mesh.h"
 #include "gmg/include/mms.h"
-#include "gmg/include/newRtgPC.h"
+#include "gmg/include/newRtg/newRtgPC.h"
 #include "gmg/include/boundary.h"
 #include "gmg/include/assembly.h"
 #include "gmg/include/intergrid.h"

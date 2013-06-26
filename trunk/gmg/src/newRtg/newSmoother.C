@@ -1,6 +1,6 @@
 
-#include "gmg/include/newSmoother.h"
-#include "gmg/include/newRtgPC.h"
+#include "gmg/include/newRtg/newSmoother.h"
+#include "gmg/include/newRtg/newRtgPC.h"
 #include "gmg/include/gmgUtils.h"
 #include "gmg/include/fd.h"
 #include <cmath>

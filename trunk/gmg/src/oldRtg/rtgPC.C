@@ -1,42 +1,42 @@
 
-#include "gmg/include/newRtgPC.h"
+#include "gmg/include/oldRtg/rtgPC.h"
 #include "gmg/include/boundary.h"
 #include "gmg/include/gmgUtils.h"
 #include "gmg/include/intergrid.h"
+#include <iostream>
 
 #ifdef DEBUG
 #include <cassert>
 #endif
 
-void setupNewRTG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
-    std::vector<std::vector<long long int> >& coeffs, std::vector<std::vector<Mat> >& Kmat,
-    std::vector<std::vector<Mat> >& Pmat, std::vector<std::vector<Vec> >& tmpCvec) {
+void setupRTG(PC pc, int K, int currLev, std::vector<DM>& da, std::vector<Mat>& Kmat,
+    std::vector<Mat>& Pmat, std::vector<Vec>& tmpCvec) {
 #ifdef DEBUG
   assert(currLev > 0);
 #endif
-  NewRTGdata* data = new NewRTGdata; 
+  RTGdata* data = new RTGdata; 
   data->K = K;
-  data->da = da[K][currLev];
-  data->Kmat = Kmat[K][currLev];
-  data->Pmat = Pmat[K][currLev - 1];
-  data->tmpCvec = tmpCvec[K][currLev - 1];
-  data->sData = new NewSmootherData;
-  setupNewSmoother(data->sData, K, currLev, da, coeffs, Kmat, Pmat, tmpCvec);
-  MatGetVecs(Kmat[K][currLev], PETSC_NULL, &(data->res));
+  data->da = da[currLev];
+  data->Kmat = Kmat[currLev];
+  data->Pmat = Pmat[currLev - 1];
+  data->tmpCvec = tmpCvec[currLev - 1];
+  data->sData = new SmootherData;
+  setupSmoother(data->sData, data->Kmat);
+  MatGetVecs(Kmat[currLev], PETSC_NULL, &(data->res));
   data->cKsp = NULL;
   data->cRhs = NULL;
   data->cSol = NULL;
-  if(Kmat[K][currLev - 1] != NULL) {
+  if(Kmat[currLev - 1] != NULL) {
     MPI_Comm comm;
-    PetscObjectGetComm(((PetscObject)(Kmat[K][currLev - 1])), &comm);
+    PetscObjectGetComm(((PetscObject)(Kmat[currLev - 1])), &comm);
     PC cPc;
     KSPCreate(comm, &(data->cKsp));
     KSPGetPC((data->cKsp), &cPc);
-    MatGetVecs(Kmat[K][currLev - 1], &(data->cSol), &(data->cRhs));
+    MatGetVecs(Kmat[currLev - 1], &(data->cSol), &(data->cRhs));
     if(currLev > 1) {
       KSPSetType((data->cKsp), KSPFGMRES);
       KSPSetPCSide((data->cKsp), PC_RIGHT);
-      setupNewRTG(cPc, K, (currLev - 1), da, coeffs, Kmat, Pmat, tmpCvec);
+      setupRTG(cPc, K, (currLev - 1), da, Kmat, Pmat, tmpCvec);
     } else {
       KSPSetType((data->cKsp), KSPCG);
       KSPSetPCSide((data->cKsp), PC_LEFT);
@@ -46,7 +46,7 @@ void setupNewRTG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
       PCFactorSetMatSolverPackage(cPc, MATSOLVERMUMPS);
     }
     KSPSetInitialGuessNonzero(data->cKsp, PETSC_TRUE);
-    KSPSetOperators(data->cKsp, Kmat[K][currLev - 1], Kmat[K][currLev - 1], SAME_PRECONDITIONER);
+    KSPSetOperators(data->cKsp, Kmat[currLev - 1], Kmat[currLev - 1], SAME_PRECONDITIONER);
     KSPSetTolerances(data->cKsp, 0.1, 1.0e-12, 2.0, 1000);
     KSPDefaultConvergedSetUIRNorm(data->cKsp);
     KSPSetNormType(data->cKsp, KSP_NORM_UNPRECONDITIONED);
@@ -54,14 +54,14 @@ void setupNewRTG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
   PCSetType(pc, PCSHELL);
   PCShellSetContext(pc, data);
   PCShellSetName(pc, "MyRTG");
-  PCShellSetApply(pc, &applyNewRTG);
-  PCShellSetDestroy(pc, &destroyNewRTG);
+  PCShellSetApply(pc, &applyRTG);
+  PCShellSetDestroy(pc, &destroyRTG);
 }
 
-PetscErrorCode destroyNewRTG(PC pc) {
-  NewRTGdata* data;
+PetscErrorCode destroyRTG(PC pc) {
+  RTGdata* data;
   PCShellGetContext(pc, (void**)(&data));
-  destroyNewSmoother(data->sData); 
+  destroySmoother(data->sData); 
   VecDestroy(&(data->res));
   if(data->cKsp != NULL) {
     KSPDestroy(&(data->cKsp));
@@ -72,8 +72,8 @@ PetscErrorCode destroyNewRTG(PC pc) {
   return 0;
 }
 
-PetscErrorCode applyNewRTG(PC pc, Vec in, Vec out) {
-  NewRTGdata* data;
+PetscErrorCode applyRTG(PC pc, Vec in, Vec out) {
+  RTGdata* data;
   PCShellGetContext(pc, (void**)(&data));
   VecZeroEntries(out);
   makeBoundariesConsistent(data->da, in, out, data->K);
@@ -89,7 +89,7 @@ PetscErrorCode applyNewRTG(PC pc, Vec in, Vec out) {
     if(currNorm <= tgtNorm) {
       break;
     }
-    applyNewSmoother((iter + 1), tgtNorm, currNorm, data->sData, in, out);
+    applySmoother((iter + 1), tgtNorm, currNorm, data->sData, in, out);
     computeResidual(data->Kmat, out, in, data->res);
     VecNorm(data->res, NORM_2, &currNorm);
     if(currNorm <= 1.0e-12) {
@@ -113,13 +113,12 @@ PetscErrorCode applyNewRTG(PC pc, Vec in, Vec out) {
     if(currNorm <= tgtNorm) {
       break;
     }
-    applyNewSmoother((iter + 1), tgtNorm, currNorm, data->sData, in, out);
+    applySmoother((iter + 1), tgtNorm, currNorm, data->sData, in, out);
     computeResidual(data->Kmat, out, in, data->res);
     VecNorm(data->res, NORM_2, &currNorm);
   }//end iter
+
   return 0;
 }
-
-
 
 
