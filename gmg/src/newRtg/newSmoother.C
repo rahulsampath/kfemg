@@ -27,7 +27,7 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
   KSPSetNormType(data->ksp1, KSP_NORM_UNPRECONDITIONED);
   PC pc2;
   KSPCreate(comm, &(data->ksp2));
-  KSPSetType(data->ksp2, KSPGMRES);
+  KSPSetType(data->ksp2, KSPFGMRES);
   KSPSetPCSide(data->ksp2, PC_RIGHT);
   KSPGetPC(data->ksp2, &pc2);
   PCSetType(pc2, PCSOR);
@@ -45,7 +45,7 @@ void setupNewSmoother(NewSmootherData* data, int K, int currLev, std::vector<std
     data->daL = da[K - 1][currLev];
     PC pc3;
     KSPCreate(comm, &(data->ksp3));
-    KSPSetType(data->ksp3, KSPGMRES);
+    KSPSetType(data->ksp3, KSPFGMRES);
     KSPSetPCSide(data->ksp3, PC_RIGHT);
     KSPGetPC(data->ksp3, &pc3);
     setupNewRTG(pc3, (K-1), currLev, da, coeffs, Kmat, Pmat, tmpCvec); 
