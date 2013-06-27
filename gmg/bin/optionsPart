@@ -1,0 +1,14 @@
+
+-coeffsDirPath "../../common"
+
+-dim 3
+
+-finestNx 33
+-finestNy 33
+-finestNz 33
+
+-maxNumLevels 100
+-maxCoarseNpes 100
+
+%-log_summary
+
