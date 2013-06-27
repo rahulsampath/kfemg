@@ -1,6 +1,4 @@
 
--coeffsDirPath "../../common"
-
 -dim 3
 
 -finestNx 33
