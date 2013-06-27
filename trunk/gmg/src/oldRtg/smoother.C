@@ -12,7 +12,7 @@ void setupSmoother(SmootherData* data, Mat Kmat) {
   KSPCreate(comm, &(data->ksp1));
   KSPCreate(comm, &(data->ksp2));
   KSPSetType(data->ksp1, KSPCG);
-  KSPSetType(data->ksp2, KSPGMRES);
+  KSPSetType(data->ksp2, KSPFGMRES);
   KSPSetPCSide(data->ksp1, PC_LEFT);
   KSPSetPCSide(data->ksp2, PC_RIGHT);
   PC pc1;
