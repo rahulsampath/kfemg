@@ -34,8 +34,9 @@ void setupMG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
     KSPGetPC((data->cKsp), &cPc);
     MatGetVecs(Kmat[K][currLev - 1], &(data->cSol), &(data->cRhs));
     if(currLev > 1) {
-      KSPSetType((data->cKsp), KSPFGMRES);
-      KSPSetPCSide((data->cKsp), PC_RIGHT);
+      //KSPSetType((data->cKsp), KSPFGMRES);
+      KSPSetType((data->cKsp), KSPPREONLY);
+      //KSPSetPCSide((data->cKsp), PC_RIGHT);
       setupMG(cPc, K, (currLev - 1), da, coeffs, Kmat, Pmat, tmpCvec);
     } else {
       KSPSetType((data->cKsp), KSPCG);
@@ -48,8 +49,8 @@ void setupMG(PC pc, int K, int currLev, std::vector<std::vector<DM> >& da,
     KSPSetInitialGuessNonzero(data->cKsp, PETSC_TRUE);
     KSPSetOperators(data->cKsp, Kmat[K][currLev - 1], Kmat[K][currLev - 1], SAME_PRECONDITIONER);
     KSPSetTolerances(data->cKsp, 1.0e-12, 1.0e-12, 2.0, 1);
-    KSPDefaultConvergedSetUIRNorm(data->cKsp);
-    KSPSetNormType(data->cKsp, KSP_NORM_UNPRECONDITIONED);
+    //KSPDefaultConvergedSetUIRNorm(data->cKsp);
+    //KSPSetNormType(data->cKsp, KSP_NORM_UNPRECONDITIONED);
   }
   PCSetType(pc, PCSHELL);
   PCShellSetContext(pc, data);
