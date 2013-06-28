@@ -1,6 +1,7 @@
 
 #include "gmg/include/mesh.h"
 #include <iostream>
+#include <iomanip>
 #include <cmath>
 
 #ifdef DEBUG
@@ -176,7 +177,7 @@ void computePartition3D(PetscInt Nz, PetscInt Ny, PetscInt Nx, int maxNpes,
     std::vector<PetscInt>& partZ, std::vector<PetscInt>& partY, std::vector<PetscInt>& partX,
     std::vector<PetscInt>& offsets, std::vector<PetscInt>& scanZ, 
     std::vector<PetscInt>& scanY, std::vector<PetscInt>& scanX) {
-  PetscInt px = static_cast<PetscInt>(std::pow(maxNpes, (1.0/3.0)));
+  PetscInt px = static_cast<PetscInt>(std::pow(((long double)maxNpes), ((long double)(1.0L/3.0L))));
   if((5*px) > Nx) {
     px = (Nx/5);
   }

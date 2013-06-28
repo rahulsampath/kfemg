@@ -3,9 +3,9 @@
 
 -dim 3
 
--finestNx 33
--finestNy 33
--finestNz 33
+-finestNx 257
+-finestNy 257
+-finestNz 257
 
 -maxNumLevels 100
 -maxCoarseNpes 100
